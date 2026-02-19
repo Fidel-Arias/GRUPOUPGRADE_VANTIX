@@ -1,58 +1,60 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
+from datetime import datetime
 
-# --- SCHEMAS BASE (Para lectura simple) ---
-
-class DistritoBase(BaseModel):
-    id_distrito: int
-    nombre: str
-    ubigeo: Optional[str] = None
-    activo: bool = True
-    class Config:
-        from_attributes = True
-
-class ProvinciaBase(BaseModel):
-    id_provincia: int
-    nombre: str
-    activo: bool = True
-    class Config:
-        from_attributes = True
-
+# --- DEPARTAMENTO ---
 class DepartamentoBase(BaseModel):
-    id_departamento: int
     nombre: str
     activo: bool = True
-    class Config:
-        from_attributes = True
-
-# --- SCHEMAS DE CREACIÓN (Para enviar datos al backend) ---
-
-class DistritoCreate(DistritoBase):
-    pass
-
-class ProvinciaCreate(ProvinciaBase):
-    pass
 
 class DepartamentoCreate(DepartamentoBase):
     pass
 
-# --- SCHEMAS DE ACTUALIZACIÓN (Para enviar datos al backend) ---
+class DepartamentoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    activo: Optional[bool] = None
 
-class DistritoUpdate(DistritoBase):
+class DepartamentoResponse(DepartamentoBase):
+    id_departamento: int
+    fecha_creacion: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# --- PROVINCIA ---
+class ProvinciaBase(BaseModel):
+    nombre: str
+    activo: bool = True
+    id_departamento: int
+
+class ProvinciaCreate(ProvinciaBase):
     pass
 
-class ProvinciaUpdate(ProvinciaBase):
+class ProvinciaUpdate(BaseModel):
+    nombre: Optional[str] = None
+    activo: Optional[bool] = None
+    id_departamento: Optional[int] = None
+
+class ProvinciaResponse(ProvinciaBase):
+    id_provincia: int
+    fecha_creacion: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# --- DISTRITO ---
+class DistritoBase(BaseModel):
+    nombre: str
+    ubigeo: Optional[str] = None
+    activo: bool = True
+    id_provincia: int
+
+class DistritoCreate(DistritoBase):
     pass
 
-class DepartamentoUpdate(DepartamentoBase):
-    pass
+class DistritoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    ubigeo: Optional[str] = None
+    activo: Optional[bool] = None
+    id_provincia: Optional[int] = None
 
-# --- SCHEMAS CON RELACIONES (Para respuestas anidadas) ---
-
-# Ejemplo: Si pides una Provincia, te da sus distritos
-class ProvinciaConDistritos(ProvinciaBase):
-    distritos: List[DistritoBase] = []
-
-# Ejemplo: Si pides un Departamento, te da sus provincias
-class DepartamentoConProvincias(DepartamentoBase):
-    provincias: List[ProvinciaBase] = []
+class DistritoResponse(DistritoBase):
+    id_distrito: int
+    fecha_creacion: datetime
+    model_config = ConfigDict(from_attributes=True)
