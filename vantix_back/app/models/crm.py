@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, text
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 # 1. Tabla de Auditoría de Llamadas

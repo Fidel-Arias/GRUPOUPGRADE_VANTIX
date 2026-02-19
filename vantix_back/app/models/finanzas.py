@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 class GastoMovilidad(Base):
