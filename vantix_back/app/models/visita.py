@@ -14,7 +14,13 @@ class RegistroVisita(Base):
     
     fecha_hora_checkin = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     observaciones = Column(Text)
-    url_foto_evidencia = Column(Text, nullable=False)
+    
+    observaciones = Column(Text)
+    
+    # Evidencia fotográfica
+    url_foto_lugar = Column(Text, nullable=False)
+    url_foto_sello = Column(Text, nullable=False)
+    
     geolocalizacion_lat = Column(Numeric(10,8))
     geolocalizacion_lon = Column(Numeric(11,8))
     

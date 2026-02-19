@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.controller import maestro, cartera, admin, geo, empleado, plan
+from app.api.v1.controller import maestro, cartera, admin, geo, empleado, plan, visita
 
 api_router = APIRouter()
 
@@ -9,3 +9,4 @@ api_router.include_router(cartera.router, prefix="/cartera", tags=["Cartera Clie
 api_router.include_router(geo.router, prefix="/geo", tags=["Geografía"])
 api_router.include_router(empleado.router, prefix="/empleados", tags=["Empleados"])
 api_router.include_router(plan.router, prefix="/planes", tags=["Plan Trabajo Semanal"])
+api_router.include_router(visita.router, prefix="/visitas", tags=["Registro de Visitas"])

@@ -11,7 +11,7 @@ class VisitaBase(BaseModel):
     direccion_actual: Optional[str] = None
     nombre_contacto: Optional[str] = None
     telefono_contacto: Optional[str] = None
-    email_contacto: Optional[EmailStr] = None
+    email_contacto: Optional[str] = None # cambiado a str flexible
     observaciones: Optional[str] = None
     
     # ¡Agregamos el Resultado de la visita!
@@ -21,14 +21,15 @@ class VisitaBase(BaseModel):
     geolocalizacion_lon: Optional[Decimal] = None
 
 class VisitaCreate(VisitaBase):
-    url_foto_evidencia: str # Se asume que el backend generó esto tras subir el archivo
+    pass
+    # No pedimos file paths aqui, porque se manejan en el controller multipart
 
 class VisitaResponse(VisitaBase):
     id_visita: int
     fecha_hora_checkin: datetime
-    url_foto_evidencia: str
+    url_foto_lugar: str
+    url_foto_sello: str
     
-    # Para que el Frontend muestre "Visité a [Nombre de Empresa]"
     cliente: Optional[CarteraResponse] = None
 
     class Config:
