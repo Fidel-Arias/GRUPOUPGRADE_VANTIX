@@ -15,6 +15,10 @@ class MaestroBase(BaseModel):
 class MaestroCreate(MaestroBase):
     pass
 
+class MaestroUpdate(MaestroBase):
+    nombre_entidad: Optional[str] = None
+    pass
+
 class MaestroResponse(MaestroBase):
     id_entidad: int
     fecha_registro: datetime
