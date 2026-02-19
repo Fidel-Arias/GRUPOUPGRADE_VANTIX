@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey, text
+from sqlalchemy import Column, Integer, String, Date, Time, Text, ForeignKey, Enum as SQLEnum, text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.models.enums import TipoActividadEnum, DiaSemanaEnum
 
 class PlanTrabajoSemanal(Base):
     __tablename__ = "plan_trabajo_semanal"
@@ -10,25 +11,40 @@ class PlanTrabajoSemanal(Base):
     
     fecha_inicio_semana = Column(Date, nullable=False)
     fecha_fin_semana = Column(Date, nullable=False)
-    estado = Column(String(20), default='Borrador') # Borrador, Aprobado, Cerrado
+    estado = Column(String(20), default='Borrador')
     
-    # Contadores resumen (se llenan automáticos o manuales)
     total_visitas_programadas = Column(Integer, default=0)
     total_llamadas_realizadas = Column(Integer, default=0)
     total_emails_enviados = Column(Integer, default=0)
     observaciones_supervisor = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     
-    # --- RELACIONES MAESTRAS (El corazón del sistema) ---
-    
-    # 1. Hacia arriba (Empleado)
+    # RELACIONES
     empleado = relationship("Empleado", back_populates="planes")
-
-    # 2. Hacia abajo (Detalles de ejecución)
-    # cascade="all, delete-orphan" significa: si borro el plan, se borran sus visitas/llamadas automáticamente.
+    detalles_agenda = relationship("DetallePlanTrabajo", back_populates="plan", cascade="all, delete-orphan")
     visitas = relationship("RegistroVisita", back_populates="plan", cascade="all, delete-orphan")
-    llamadas = relationship("RegistroLlamada", back_populates="plan", cascade="all, delete-orphan") # Nombre de clase en crm.py
-    emails = relationship("RegistroEmail", back_populates="plan", cascade="all, delete-orphan")     # Nombre de clase en crm.py
-    gastos = relationship("GastoMovilidad", back_populates="plan", cascade="all, delete-orphan")    # Nombre de clase en finanzas.py
-    
-    # 3. Relación 1 a 1 con el Informe de KPI
+    llamadas = relationship("RegistroLlamada", back_populates="plan", cascade="all, delete-orphan")
+    emails = relationship("RegistroEmail", back_populates="plan", cascade="all, delete-orphan")
+    gastos = relationship("GastoMovilidad", back_populates="plan", cascade="all, delete-orphan")
     informe_kpi = relationship("InformeProductividad", back_populates="plan", uselist=False, cascade="all, delete-orphan")
+
+
+# EL DETALLE DEL PLAN (La Grilla)
+class DetallePlanTrabajo(Base):
+    __tablename__ = "detalle_plan_trabajo"
+
+    id_detalle = Column(Integer, primary_key=True, index=True)
+    id_plan = Column(Integer, ForeignKey("plan_trabajo_semanal.id_plan", ondelete="CASCADE"))
+    
+    dia_semana = Column(String(15), nullable=False) # Guardamos como string validado o usamos SQLEnum
+    hora_programada = Column(Time, nullable=False)
+    
+    # ¡Enum de Actividad!
+    tipo_actividad = Column(SQLEnum(TipoActividadEnum, name="tipo_actividad_enum"), nullable=False)
+    
+    # ¡Apunta a la Cartera de Clientes!
+    id_cliente = Column(Integer, ForeignKey("cartera_clientes.id_cliente", ondelete="RESTRICT"))
+
+    # Relaciones
+    plan = relationship("PlanTrabajoSemanal", back_populates="detalles_agenda")
+    cliente = relationship("CarteraClientes")
