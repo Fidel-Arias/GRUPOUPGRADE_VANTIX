@@ -2,9 +2,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from app.crud.base import CRUDBase
 from app.models.empleado import Empleado
-from app.schemas.empleado import EmpleadoCreate, EmpleadoBase # Usamos Base para update simple
+from app.schemas.empleado import EmpleadoCreate, EmpleadoUpdate
 
-class CRUDEmpleado(CRUDBase[Empleado, EmpleadoCreate, EmpleadoBase]):
+class CRUDEmpleado(CRUDBase[Empleado, EmpleadoCreate, EmpleadoUpdate]):
     
     def get_by_dni(self, db: Session, *, dni: str) -> Optional[Empleado]:
         return db.query(Empleado).filter(Empleado.dni == dni).first()

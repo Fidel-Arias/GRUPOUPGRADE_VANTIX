@@ -7,3 +7,4 @@ from .geo import (
     ProvinciaCreate, ProvinciaUpdate, ProvinciaResponse,
     DistritoCreate, DistritoUpdate, DistritoResponse
 )
+from .empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
