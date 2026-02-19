@@ -1,29 +1,35 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
-from app.schemas.maestro import EntidadResponse # Para mostrar datos del cliente
+from app.models.enums import ResultadoEstadoEnum
+from app.schemas.cartera import CarteraResponse
 
 class VisitaBase(BaseModel):
     id_plan: int
-    id_entidad: int
+    id_cliente: int  # ¡Ahora apunta a la Cartera!
+    direccion_actual: Optional[str] = None
     nombre_contacto: Optional[str] = None
+    telefono_contacto: Optional[str] = None
+    email_contacto: Optional[EmailStr] = None
     observaciones: Optional[str] = None
-    # Lat/Lon opcionales al crear
+    
+    # ¡Agregamos el Resultado de la visita!
+    resultado: ResultadoEstadoEnum 
+    
     geolocalizacion_lat: Optional[Decimal] = None
     geolocalizacion_lon: Optional[Decimal] = None
 
 class VisitaCreate(VisitaBase):
-    # La foto se sube aparte y se obtiene la URL, o se envía base64 (pero URL es mejor)
-    url_foto_evidencia: str 
+    url_foto_evidencia: str # Se asume que el backend generó esto tras subir el archivo
 
 class VisitaResponse(VisitaBase):
     id_visita: int
     fecha_hora_checkin: datetime
     url_foto_evidencia: str
     
-    # Nested: Mostramos la info oficial de la entidad
-    entidad: Optional[EntidadResponse] = None
+    # Para que el Frontend muestre "Visité a [Nombre de Empresa]"
+    cliente: Optional[CarteraResponse] = None
 
     class Config:
         from_attributes = True
