@@ -5,7 +5,7 @@ from app.core.config import settings
 
 # 1. Crear el Engine (Motor)
 engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URL,
+    str(settings.SQLALCHEMY_DATABASE_URL),
     pool_pre_ping=True,  # Verifica que la conexión esté viva antes de usarla
     pool_size=10,        # Número de conexiones en el pool
     echo=False           # Muestra las consultas SQL (útil para desarrollo)
