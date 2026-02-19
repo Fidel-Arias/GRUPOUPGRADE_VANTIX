@@ -1,34 +1,47 @@
-from sqlalchemy import Column, Integer, Numeric, Date, String, ForeignKey, text, Computed
+from sqlalchemy import Column, Integer, DECIMAL, Date, String, ForeignKey, text, Computed, Numeric
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-# 1. Tabla de Informe de Productividad
 class InformeProductividad(Base):
     __tablename__ = "informe_productividad_semanal"
 
     id_informe = Column(Integer, primary_key=True, index=True)
     id_plan = Column(Integer, ForeignKey("plan_trabajo_semanal.id_plan", ondelete="CASCADE"), unique=True)
     
-    # Métricas Reales
-    monto_ventas_real = Column(Numeric(12, 2), default=0)
-    cant_clientes_nuevos = Column(Integer, default=0)
-    cant_visitas_realizadas = Column(Integer, default=0)
+    # 1. VISITAS NORMALES
+    meta_visitas = Column(Integer, default=25)
+    real_visitas = Column(Integer, default=0)
     
-    # PUNTOS (Gamificación)
-    puntos_ventas = Column(Integer, default=0)
-    puntos_nuevos_clientes = Column(Integer, default=0)
-    puntos_visitas = Column(Integer, default=0)
-    puntos_llamadas = Column(Integer, default=0)
-    puntos_emails = Column(Integer, default=0)
+    # 2. VISITAS ASISTIDAS
+    meta_visitas_asistidas = Column(Integer, default=0)
+    real_visitas_asistidas = Column(Integer, default=0)
     
-    # Campo calculado en base de datos (PostgreSQL 12+)
-    # Si usas una versión vieja, quita Computed y calcúlalo en Python
-    puntaje_total_semanal = Column(Integer, Computed("puntos_ventas + puntos_nuevos_clientes + puntos_visitas + puntos_llamadas + puntos_emails"))
+    # 3. LLAMADAS
+    meta_llamadas = Column(Integer, default=30)
+    real_llamadas = Column(Integer, default=0)
     
+    # 4. EMAILS
+    meta_emails = Column(Integer, default=100)
+    real_emails = Column(Integer, default=0)
+    
+    # 5. COTIZACIONES
+    meta_cotizaciones = Column(Integer, default=0)
+    real_cotizaciones = Column(Integer, default=0)
+    
+    # 6. PUNTOS Y GAMIFICACIÓN
+    puntos_alcanzados = Column(Integer, default=0)
+    puntaje_objetivo = Column(Integer, default=205) # Lo que diga tu Excel/Reglas
+    
+    # 7. ALCANCE (La columna calculada automáticamente por Postgres)
+    # SQLAlchemy le dice a Python que no intente enviar este dato, que la BD lo calcula.
+    porcentaje_alcance = Column(
+        DECIMAL(5, 2), 
+        Computed("(puntos_alcanzados::numeric / NULLIF(puntaje_objetivo, 0)) * 100")
+    )
+
     fecha_evaluacion = Column(Date, server_default=text("CURRENT_DATE"))
 
-    # --- RELACIÓN AGREGADA ---
-    # Vincula este informe con su plan maestro
+    # Relación con el Plan maestro
     plan = relationship("PlanTrabajoSemanal", back_populates="informe_kpi")
 
 
