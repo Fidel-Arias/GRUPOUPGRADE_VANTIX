@@ -19,7 +19,7 @@ class RegistroVisita(Base):
     geolocalizacion_lon = Column(Numeric(11,8))
     
     # ¡Enum de Resultado!
-    resultado = Column(SQLEnum(ResultadoEstadoEnum, name="resultado_estado_enum"))
+    resultado = Column(SQLEnum(ResultadoEstadoEnum, name="resultado_estado_enum", values_callable=lambda obj: [e.value for e in obj]))
 
     # Relaciones
     plan = relationship("PlanTrabajoSemanal", back_populates="visitas")

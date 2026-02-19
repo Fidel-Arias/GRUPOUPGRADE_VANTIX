@@ -10,7 +10,7 @@ class CarteraClientes(Base):
     id_cliente = Column(Integer, primary_key=True, index=True)
     nombre_cliente = Column(String(250), nullable=False)
     ruc_dni = Column(String(20), unique=True, index=True)
-    categoria = Column(SQLEnum(CategoriaClienteEnum, name="categoria_cliente_enum"))
+    categoria = Column(SQLEnum(CategoriaClienteEnum, name="categoria_cliente_enum", values_callable=lambda obj: [e.value for e in obj]))
     
     direccion = Column(String(250))
     id_distrito = Column(Integer, ForeignKey("distritos.id_distrito", ondelete="RESTRICT"))
