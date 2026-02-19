@@ -92,3 +92,67 @@ def registrar_visita(
         db.commit()
     
     return db_visita
+
+@router.get("/", response_model=List[schemas.VisitaResponse])
+def listar_visitas(
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = 100,
+    id_empleado: Optional[int] = None,
+    id_plan: Optional[int] = None,
+    id_cliente: Optional[int] = None
+):
+    """
+    Listar visitas con múltiples filtros opcionales:
+    - Por Empleado (Historial completo de un vendedor)
+    - Por Plan (Visitas de una semana específica)
+    - Por Cliente (Historial de visitas a una empresa)
+    """
+    if id_empleado:
+        return crud.visita.get_multi_by_owner(db, id_empleado=id_empleado, skip=skip, limit=limit)
+    
+    if id_plan:
+        return crud.visita.get_by_plan(db, id_plan=id_plan) # TODO: Agregar skip/limit a este CRUD filter
+        
+    if id_cliente:
+        return crud.visita.get_by_cliente(db, id_cliente=id_cliente)
+
+    return crud.visita.get_multi(db, skip=skip, limit=limit)
+
+@router.delete("/{id_visita}", response_model=schemas.VisitaResponse)
+def eliminar_visita(
+    *,
+    db: Session = Depends(deps.get_db),
+    id_visita: int
+):
+    """
+    Eliminar una visita (Si se cometió un error).
+    IMPORTANTE: Debería restar los puntos y el contador en el KPI.
+    """
+    visita = crud.visita.get(db, id=id_visita)
+    if not visita:
+        raise HTTPException(status_code=404, detail="Visita no encontrada")
+    
+    # 1. Revertir KPI
+    informe = crud.kpi.get_by_plan(db, id_plan=visita.id_plan)
+    if informe:
+        # Evitar números negativos
+        if informe.real_visitas > 0:
+            informe.real_visitas -= 1
+        
+        # Restar los puntos (Asumiendo 2 por visita como en la creación)
+        PUNTOS_POR_VISITA = 2
+        if informe.puntos_alcanzados >= PUNTOS_POR_VISITA:
+            informe.puntos_alcanzados -= PUNTOS_POR_VISITA
+            
+        db.add(informe)
+        
+    # 2. Borrar archivos (Opcional, para limpiar disco)
+    # try:
+    #     os.remove(visita.url_foto_lugar.lstrip('/'))
+    #     os.remove(visita.url_foto_sello.lstrip('/'))
+    # except:
+    #     pass
+
+    visita_borrada = crud.visita.remove(db, id=id_visita)
+    return visita_borrada

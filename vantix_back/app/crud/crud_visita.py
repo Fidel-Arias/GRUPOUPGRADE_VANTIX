@@ -13,4 +13,16 @@ class CRUDVisita(CRUDBase[RegistroVisita, VisitaCreate, VisitaBase]):
         # Útil para el historial: "Muéstrame todas las visitas que le hicimos a este cliente"
         return db.query(RegistroVisita).filter(RegistroVisita.id_cliente == id_cliente).all()
 
+    def get_multi_by_owner(self, db: Session, *, id_empleado: int, skip: int = 0, limit: int = 100) -> List[RegistroVisita]:
+        # Join con PlanTrabajoSemanal para filtrar por empleado
+        from app.models.plan import PlanTrabajoSemanal
+        return (
+            db.query(RegistroVisita)
+            .join(PlanTrabajoSemanal, RegistroVisita.id_plan == PlanTrabajoSemanal.id_plan)
+            .filter(PlanTrabajoSemanal.id_empleado == id_empleado)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
 visita = CRUDVisita(RegistroVisita)
