@@ -5,19 +5,14 @@ from app import crud, schemas
 from app.api import deps
 from app.models.enums import ResultadoEstadoEnum
 from app.models.visita import RegistroVisita
+from app.services.common.file_manager import FileManager
 from decimal import Decimal
-import shutil
-import os
-import uuid
 from datetime import datetime
 
 router = APIRouter()
 
-UPLOAD_DIR = "static/uploads/visitas"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 @router.post("/", response_model=schemas.VisitaResponse)
-def registrar_visita(
+async def registrar_visita(
     *,
     db: Session = Depends(deps.get_db),
     # Campos del Formulario (Multipart)
@@ -25,7 +20,7 @@ def registrar_visita(
     id_cliente: int = Form(...),
     resultado: ResultadoEstadoEnum = Form(...),
     observaciones: Optional[str] = Form(None),
-    lat: Optional[str] = Form(None), # Recibimos como string y convertimos
+    lat: Optional[str] = Form(None), 
     lon: Optional[str] = Form(None),
     
     # Archivos
@@ -34,28 +29,16 @@ def registrar_visita(
 ):
     """
     Registrar una visita realizada, subiendo 2 fotos OBLIGATORIAS (Lugar y Sello).
-    Actualiza automáticamente el contador de visitas en el Informe Semanal.
+    Usa el servicio FileManager para gestionar el guardado de archivos.
     """
     # 1. Validar Plan
     plan = crud.plan.get(db, id=id_plan)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan de trabajo no encontrado")
 
-    # 2. Guardar Fotos
-    def save_upload(upload_file: UploadFile, prefix: str) -> str:
-        # Generar nombre único: uuid + prefix + extension
-        ext = upload_file.filename.split(".")[-1]
-        filename = f"{prefix}_{uuid.uuid4()}.{ext}"
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(upload_file.file, buffer)
-            
-        # Retornar URL relativa
-        return f"/static/uploads/visitas/{filename}"
-
-    path_lugar = save_upload(foto_lugar, "lugar")
-    path_sello = save_upload(foto_sello, "sello")
+    # 2. Guardar Fotos usando el servicio FileManager
+    path_lugar = await FileManager.save_upload_file(foto_lugar, subdirectory="visitas", prefix="lugar")
+    path_sello = await FileManager.save_upload_file(foto_sello, subdirectory="visitas", prefix="sello")
 
     # 3. Crear Objeto Visita
     visita_data = {
@@ -65,8 +48,6 @@ def registrar_visita(
         "observaciones": observaciones,
         "geolocalizacion_lat": Decimal(lat) if lat else None,
         "geolocalizacion_lon": Decimal(lon) if lon else None,
-        
-        # Mapeo a las nuevas columnas de la BD
         "url_foto_lugar": path_lugar,
         "url_foto_sello": path_sello
     }
@@ -76,18 +57,12 @@ def registrar_visita(
     db.commit()
     db.refresh(db_visita)
 
-    # 4. ACTUALIZAR KPI (VITAMINIZADO)
-    # Buscamos el informe del plan
+    # 4. ACTUALIZAR KPI (Gamificación)
     informe = crud.kpi.get_by_plan(db, id_plan=id_plan)
     if informe:
-        # Incrementamos visitas
         informe.real_visitas += 1
-        
-        # Incrementamos puntos (Ejemplo: 2 puntos por visita realizada)
-        # Esto debería estar en una regla de negocio más compleja, pero para empezar:
         PUNTOS_POR_VISITA = 2
         informe.puntos_alcanzados += PUNTOS_POR_VISITA
-        
         db.add(informe)
         db.commit()
     
@@ -103,16 +78,13 @@ def listar_visitas(
     id_cliente: Optional[int] = None
 ):
     """
-    Listar visitas con múltiples filtros opcionales:
-    - Por Empleado (Historial completo de un vendedor)
-    - Por Plan (Visitas de una semana específica)
-    - Por Cliente (Historial de visitas a una empresa)
+    Listar visitas con múltiples filtros opcionales.
     """
     if id_empleado:
         return crud.visita.get_multi_by_owner(db, id_empleado=id_empleado, skip=skip, limit=limit)
     
     if id_plan:
-        return crud.visita.get_by_plan(db, id_plan=id_plan) # TODO: Agregar skip/limit a este CRUD filter
+        return crud.visita.get_by_plan(db, id_plan=id_plan)
         
     if id_cliente:
         return crud.visita.get_by_cliente(db, id_cliente=id_cliente)
@@ -126,8 +98,7 @@ def eliminar_visita(
     id_visita: int
 ):
     """
-    Eliminar una visita (Si se cometió un error).
-    IMPORTANTE: Debería restar los puntos y el contador en el KPI.
+    Eliminar una visita y sus archivos físicos asociados.
     """
     visita = crud.visita.get(db, id=id_visita)
     if not visita:
@@ -136,23 +107,24 @@ def eliminar_visita(
     # 1. Revertir KPI
     informe = crud.kpi.get_by_plan(db, id_plan=visita.id_plan)
     if informe:
-        # Evitar números negativos
         if informe.real_visitas > 0:
             informe.real_visitas -= 1
         
-        # Restar los puntos (Asumiendo 2 por visita como en la creación)
         PUNTOS_POR_VISITA = 2
         if informe.puntos_alcanzados >= PUNTOS_POR_VISITA:
             informe.puntos_alcanzados -= PUNTOS_POR_VISITA
-            
         db.add(informe)
         
-    # 2. Borrar archivos (Opcional, para limpiar disco)
-    # try:
-    #     os.remove(visita.url_foto_lugar.lstrip('/'))
-    #     os.remove(visita.url_foto_sello.lstrip('/'))
-    # except:
-    #     pass
+    # 2. Borrar archivos físicos del disco para ahorrar espacio
+    FileManager.delete_file(visita.url_foto_lugar)
+    FileManager.delete_file(visita.url_foto_sello)
 
-    visita_borrada = crud.visita.remove(db, id=id_visita)
-    return visita_borrada
+    # 3. Serializar los datos antes de borrar para evitar DetachedInstanceError en la respuesta
+    # Esto carga las relaciones (como 'cliente') antes de que el objeto se desconecte de la sesión
+    visita_validada = schemas.VisitaResponse.model_validate(visita)
+
+    # 4. Borrar de la base de datos
+    db.delete(visita)
+    db.commit()
+    
+    return visita_validada
