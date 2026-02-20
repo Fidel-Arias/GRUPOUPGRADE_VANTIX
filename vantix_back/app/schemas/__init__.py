@@ -8,3 +8,4 @@ from .geo import (
     DistritoCreate, DistritoUpdate, DistritoResponse
 )
 from .empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
+from .finanzas import GastoCreate, GastoUpdate, GastoResponse

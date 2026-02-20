@@ -4,10 +4,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.crud.base import CRUDBase
 from app.models.finanzas import GastoMovilidad
-from app.schemas.finanzas import GastoCreate
-from pydantic import BaseModel
+from app.schemas.finanzas import GastoCreate, GastoUpdate
 
-class CRUDGasto(CRUDBase[GastoMovilidad, GastoCreate, BaseModel]):
+class CRUDGasto(CRUDBase[GastoMovilidad, GastoCreate, GastoUpdate]):
     
     def get_by_plan(self, db: Session, *, id_plan: int) -> List[GastoMovilidad]:
         return db.query(GastoMovilidad).filter(GastoMovilidad.id_plan == id_plan).all()
