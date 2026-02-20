@@ -57,14 +57,13 @@ async def registrar_visita(
     db.commit()
     db.refresh(db_visita)
 
-    # 4. ACTUALIZAR KPI (Gamificación)
-    informe = crud.kpi.get_by_plan(db, id_plan=id_plan)
-    if informe:
-        informe.real_visitas += 1
-        PUNTOS_POR_VISITA = 2
-        informe.puntos_alcanzados += PUNTOS_POR_VISITA
-        db.add(informe)
-        db.commit()
+    # 4. ACTUALIZAR KPI (Gamificación) usando el servicio centralizado
+    kpi_service.update_kpi_metrics(
+        db, 
+        id_plan=id_plan, 
+        field="real_visitas", 
+        puntos=2
+    )
     
     return db_visita
 
@@ -104,16 +103,14 @@ def eliminar_visita(
     if not visita:
         raise HTTPException(status_code=404, detail="Visita no encontrada")
     
-    # 1. Revertir KPI
-    informe = crud.kpi.get_by_plan(db, id_plan=visita.id_plan)
-    if informe:
-        if informe.real_visitas > 0:
-            informe.real_visitas -= 1
-        
-        PUNTOS_POR_VISITA = 2
-        if informe.puntos_alcanzados >= PUNTOS_POR_VISITA:
-            informe.puntos_alcanzados -= PUNTOS_POR_VISITA
-        db.add(informe)
+    # 1. Revertir KPI (Gamificación)
+    kpi_service.update_kpi_metrics(
+        db, 
+        id_plan=visita.id_plan, 
+        field="real_visitas", 
+        increment=-1,
+        puntos=-2
+    )
         
     # 2. Borrar archivos físicos del disco para ahorrar espacio
     FileManager.delete_file(visita.url_foto_lugar)

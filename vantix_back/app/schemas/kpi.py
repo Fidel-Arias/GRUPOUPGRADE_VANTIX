@@ -55,3 +55,27 @@ class InformeProductividadResponse(InformeProductividadBase):
 
     class Config:
         from_attributes = True
+
+# --- INCENTIVOS Y PAGOS ---
+
+class IncentivoPagoBase(BaseModel):
+    id_empleado: int
+    id_plan_origen: int
+    monto_bono: Decimal = Field(default=50.00)
+    concepto: str
+    estado_pago: str = "Pendiente"
+
+class IncentivoPagoCreate(IncentivoPagoBase):
+    pass
+
+class IncentivoPagoUpdate(BaseModel):
+    monto_bono: Optional[Decimal] = None
+    concepto: Optional[str] = None
+    estado_pago: Optional[str] = None
+
+class IncentivoPagoResponse(IncentivoPagoBase):
+    id_incentivo: int
+    fecha_generacion: date
+
+    class Config:
+        from_attributes = True

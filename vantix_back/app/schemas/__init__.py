@@ -9,3 +9,8 @@ from .geo import (
 )
 from .empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
 from .finanzas import GastoCreate, GastoUpdate, GastoResponse
+from .kpi import (
+    InformeProductividadResponse, KpiUpdate,
+    IncentivoPagoCreate, IncentivoPagoUpdate, IncentivoPagoResponse
+)
+from .crm import LlamadaCreate, LlamadaResponse, EmailCreate, EmailResponse

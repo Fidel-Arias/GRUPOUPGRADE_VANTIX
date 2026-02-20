@@ -5,7 +5,7 @@ from app.crud.base import CRUDBase
 # Modelos
 from app.models.kpi import InformeProductividad, IncentivoPago
 # Schemas
-from app.schemas.kpi import KpiUpdate # Usamos Update porque el Create suele ser automático al crear el plan
+from app.schemas.kpi import KpiUpdate, IncentivoPagoCreate, IncentivoPagoUpdate
 from pydantic import BaseModel
 
 # --- KPI (Informe Semanal) ---
@@ -23,7 +23,7 @@ class CRUDKpi(CRUDBase[InformeProductividad, BaseModel, KpiUpdate]):
         return db_obj
 
 # --- INCENTIVOS (Pagos) ---
-class CRUDIncentivo(CRUDBase[IncentivoPago, BaseModel, BaseModel]):
+class CRUDIncentivo(CRUDBase[IncentivoPago, IncentivoPagoCreate, IncentivoPagoUpdate]):
     
     def get_by_empleado(self, db: Session, *, id_empleado: int) -> List[IncentivoPago]:
         return db.query(IncentivoPago).filter(IncentivoPago.id_empleado == id_empleado).all()
