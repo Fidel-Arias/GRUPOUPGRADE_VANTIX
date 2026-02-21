@@ -8,6 +8,7 @@ from app.models.visita import RegistroVisita
 from app.services.common.file_manager import FileManager
 from decimal import Decimal
 from datetime import datetime
+from app.services.gamificacion.kpi_service import kpi_service
 
 router = APIRouter()
 

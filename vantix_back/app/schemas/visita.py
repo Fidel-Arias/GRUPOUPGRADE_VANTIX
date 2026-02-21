@@ -17,8 +17,8 @@ class VisitaBase(BaseModel):
     # ¡Agregamos el Resultado de la visita!
     resultado: ResultadoEstadoEnum 
     
-    geolocalizacion_lat: Optional[Decimal] = None
-    geolocalizacion_lon: Optional[Decimal] = None
+    geolocalizacion_lat: Optional[float] = None
+    geolocalizacion_lon: Optional[float] = None
 
 class VisitaCreate(VisitaBase):
     pass
