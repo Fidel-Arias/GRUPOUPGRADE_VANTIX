@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date
 from app.models.enums import CategoriaClienteEnum # Importamos tu Enum
@@ -14,17 +14,17 @@ class CarteraBase(BaseModel):
     # Contactos (Principal)
     nombre_contacto: Optional[str] = None
     celular_contacto: Optional[str] = None
-    email_contacto: Optional[EmailStr] = None
+    email_contacto: Optional[str] = None
     
     # Contactos (Gerencia)
     nombre_gerente: Optional[str] = None
     celular_gerente: Optional[str] = None
-    email_gerente: Optional[EmailStr] = None
+    email_gerente: Optional[str] = None
     
     # Contactos (Logística/TI)
     nombre_logistico: Optional[str] = None
     celular_logistico: Optional[str] = None
-    email_logistico: Optional[EmailStr] = None
+    email_logistico: Optional[str] = None
     
     observaciones: Optional[str] = None
     activo: bool = True
