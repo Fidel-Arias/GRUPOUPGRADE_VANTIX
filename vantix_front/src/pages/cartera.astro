@@ -1,0 +1,38 @@
+---
+import Layout from "../layouts/Layout.astro";
+import CarteraList from "../components/Cartera/CarteraList";
+---
+
+<Layout title="Cartera de Clientes | VANTIX Elite">
+    <main class="page-container">
+        <CarteraList client:load />
+    </main>
+</Layout>
+
+<style>
+    .page-container {
+        padding: 2rem;
+        max-width: 1600px;
+        margin: 0 auto;
+        min-height: 100vh;
+    }
+
+    /* Estilos globales para las tarjetas premium que se usan en los componentes hijos */
+    :global(.card-premium) {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow:
+            0 10px 25px -5px rgba(0, 0, 0, 0.03),
+            0 8px 10px -6px rgba(0, 0, 0, 0.03);
+        backdrop-filter: blur(10px);
+    }
+
+    :global(.text-right) {
+        text-align: right;
+    }
+
+    :global(.text-center) {
+        text-align: center;
+    }
+</style>
