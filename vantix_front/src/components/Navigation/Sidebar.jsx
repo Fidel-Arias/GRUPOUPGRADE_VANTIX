@@ -24,6 +24,7 @@ const menuItems = [
   { icon: Users, label: 'Empleados', path: '/empleados' },
   { icon: Briefcase, label: 'Cartera Clientes', path: '/cartera' },
   { icon: CalendarCheck, label: 'Planes Semanales', path: '/planes' },
+  { icon: PhoneCall, label: 'Registro Visitas', path: '#' },
   { icon: MapPin, label: 'Visitas', path: '/visitas' },
   { icon: PhoneCall, label: 'CRM / Llamadas', path: '/crm' },
   { icon: TrendingUp, label: 'Rendimiento (KPI)', path: '/kpi' },
