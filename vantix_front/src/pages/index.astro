@@ -1,0 +1,860 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+	TrendingUp,
+	Users,
+	MapPin,
+	Calendar,
+	Activity,
+	Zap,
+	PlusCircle,
+	FileText,
+	ArrowRight,
+	TrendingDown,
+	Clock,
+	Briefcase,
+} from "lucide-react";
+---
+
+<Layout title="Vista General">
+	<div class="dashboard-wrapper">
+		<!-- Header Section -->
+		<header class="page-header section-animate">
+			<div class="header-main">
+				<div class="date-chip">
+					<Calendar size={14} />
+					<span
+						>{
+							new Date().toLocaleDateString("es-ES", {
+								weekday: "long",
+								year: "numeric",
+								month: "long",
+								day: "numeric",
+							})
+						}</span
+					>
+				</div>
+				<h1 class="glitch-text">
+					Panel de <span class="text-gradient">Control</span>
+				</h1>
+				<p class="subtitle">
+					Bienvenido, Sr. Yoshiro. Aquí tienes el estado real de tus
+					operaciones.
+				</p>
+			</div>
+			<div class="header-actions">
+				<button class="btn-create ripple">
+					<PlusCircle size={18} />
+					<span>Nueva Acción</span>
+				</button>
+			</div>
+		</header>
+
+		<!-- Bento Grid -->
+		<div class="bento-container">
+			<!-- 1. Hero Metric: Monthly Performance -->
+			<div class="bento-card hero-card section-animate">
+				<div class="card-glass"></div>
+				<div class="card-body">
+					<header>
+						<span class="label">Rendimiento Mensual</span>
+						<div class="trend positive">
+							<TrendingUp size={14} />
+							<span>+14.2%</span>
+						</div>
+					</header>
+					<div class="main-stat">
+						<span class="currency">S/</span>
+						<h2 class="counter">124,500</h2>
+					</div>
+					<div class="goal-track">
+						<div class="track-header">
+							<span>Progreso de Meta</span>
+							<span>78%</span>
+						</div>
+						<div class="track-bar">
+							<div class="progress" style="width: 78%"></div>
+						</div>
+						<p class="footer-text">
+							Faltan <strong>S/ 32,000</strong> para el objetivo de
+							Marzo.
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- 2. Interactive Quick Actions -->
+			<div class="bento-card actions-card section-animate">
+				<h3>Accesos Rápidos</h3>
+				<div class="actions-grid">
+					<a href="/empleados" class="action-btn">
+						<div class="icon-wrap ico-blue">
+							<Users size={20} />
+						</div>
+						<span>Empleados</span>
+					</a>
+					<a href="/visitas" class="action-btn">
+						<div class="icon-wrap ico-orange">
+							<MapPin size={20} />
+						</div>
+						<span>Visitas</span>
+					</a>
+					<a href="/kpi" class="action-btn">
+						<div class="icon-wrap ico-purple">
+							<TrendingUp size={20} />
+						</div>
+						<span>KPIs</span>
+					</a>
+					<a href="/reportes" class="action-btn">
+						<div class="icon-wrap ico-green">
+							<FileText size={20} />
+						</div>
+						<span>Reportes</span>
+					</a>
+				</div>
+			</div>
+
+			<!-- 3. Mini Stat: Active Clients -->
+			<div class="bento-card mini-card section-animate">
+				<div class="mini-icon blue"><Users size={22} /></div>
+				<div class="mini-data">
+					<h4>1,248</h4>
+					<p>Clientes Activos</p>
+					<span class="mini-trend">+12 hoy</span>
+				</div>
+			</div>
+
+			<!-- 4. Mini Stat: Planned Visits -->
+			<div class="bento-card mini-card section-animate">
+				<div class="mini-icon orange"><MapPin size={22} /></div>
+				<div class="mini-data">
+					<h4>342</h4>
+					<p>Visitas del Mes</p>
+					<span class="mini-trend">+5 planeadas</span>
+				</div>
+			</div>
+
+			<!-- 5. Advanced Chart: Sales Projection -->
+			<div class="bento-card chart-card section-animate">
+				<header>
+					<div class="title">
+						<Activity size={18} />
+						<h3>Proyección Semanal</h3>
+					</div>
+					<div class="legend">
+						<span class="it actual"><i></i> Real</span>
+						<span class="it target"><i></i> Meta</span>
+					</div>
+				</header>
+				<div class="chart-visual">
+					<div class="chart-y-axis">
+						<span>100%</span>
+						<span>50%</span>
+						<span>0%</span>
+					</div>
+					<div class="chart-bars-wrap">
+						{
+							[45, 78, 52, 91, 68, 85, 60].map((val, i) => (
+								<div class="bar-col">
+									<div class="bar-container">
+										<div
+											class="bar-target"
+											style="height: 75%"
+										/>
+										<div
+											class="bar-actual"
+											style={`height: ${val}%`}
+											data-val={`${val}%`}
+										>
+											<div class="glow" />
+										</div>
+									</div>
+									<span class="day-label">
+										{
+											[
+												"Lun",
+												"Mar",
+												"Mié",
+												"Jue",
+												"Vie",
+												"Sáb",
+												"Dom",
+											][i]
+										}
+									</span>
+								</div>
+							))
+						}
+					</div>
+				</div>
+			</div>
+
+			<!-- 6. Real-time Activity Stream -->
+			<div class="bento-card feed-card section-animate">
+				<header>
+					<h3>Actividad Reciente</h3>
+					<button class="btn-more"><ArrowRight size={16} /></button>
+				</header>
+				<div class="feed-body">
+					<div class="feed-item pulse-item">
+						<div class="avatar">JP</div>
+						<div class="info">
+							<p><strong>Juan Pérez</strong> registró visita</p>
+							<span class="meta"
+								><Clock size={12} /> Hace 5 min • Hospital Rebagliati</span
+							>
+						</div>
+					</div>
+					<div class="feed-item">
+						<div class="avatar icon-bg success">
+							<TrendingUp size={16} />
+						</div>
+						<div class="info">
+							<p><strong>Meta Diaria</strong> alcanzada</p>
+							<span class="meta"
+								><Clock size={12} /> Hace 2h • Equipo Lima Sur</span
+							>
+						</div>
+					</div>
+					<div class="feed-item">
+						<div class="avatar">MG</div>
+						<div class="info">
+							<p><strong>Maria Garcia</strong> creó nuevo plan</p>
+							<span class="meta"
+								><Clock size={12} /> Hace 4h • Semana 09</span
+							>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- GSAP Elite Implementation -->
+	<script>
+		import { gsap } from "gsap";
+
+		document.addEventListener("DOMContentLoaded", () => {
+			// 1. Entrance Animation
+			const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+
+			tl.from(".section-animate", {
+				y: 40,
+				opacity: 0,
+				duration: 1.2,
+				stagger: 0.15,
+				clearProps: "all",
+			});
+
+			// 2. Continuous Subtle Glow Animation for Hero Card
+			gsap.to(".progress", {
+				boxShadow: "0 0 15px var(--primary)",
+				repeat: -1,
+				yoyo: true,
+				duration: 2,
+				ease: "sine.inOut",
+			});
+
+			// 3. Hover Parallax Effect for Bento Cards
+			const cards = document.querySelectorAll(".bento-card");
+			cards.forEach((card) => {
+				card.addEventListener("mousemove", ((e: MouseEvent) => {
+					const { left, top, width, height } =
+						card.getBoundingClientRect();
+					const x = (e.clientX - left) / width - 0.5;
+					const y = (e.clientY - top) / height - 0.5;
+
+					gsap.to(card, {
+						rotationY: x * 8,
+						rotationX: -y * 8,
+						transformPerspective: 1000,
+						duration: 0.5,
+						ease: "power2.out",
+					});
+				}) as EventListener);
+
+				card.addEventListener("mouseleave", () => {
+					gsap.to(card, {
+						rotationY: 0,
+						rotationX: 0,
+						duration: 0.8,
+						ease: "elastic.out(1, 0.3)",
+					});
+				});
+			});
+
+			// 4. Counter Animation for stats
+			const counter = document.querySelector(".counter");
+			if (counter) {
+				const val = 124500;
+				const obj = { value: 0 };
+				gsap.to(obj, {
+					value: val,
+					duration: 2,
+					ease: "power3.out",
+					onUpdate: () => {
+						if (counter instanceof HTMLElement) {
+							counter.textContent = Math.floor(
+								obj.value,
+							).toLocaleString("es-ES");
+						}
+					},
+				});
+			}
+		});
+	</script>
+
+	<style>
+		.dashboard-wrapper {
+			padding: 1rem 0 3rem;
+			max-width: 1400px;
+			margin: 0 auto;
+		}
+
+		/* Header Styling */
+		.page-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-end;
+			margin-bottom: 3rem;
+		}
+
+		.date-chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 6px 14px;
+			background: var(--primary-soft);
+			color: var(--primary);
+			border-radius: 30px;
+			font-size: 0.75rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			margin-bottom: 1rem;
+		}
+
+		h1 {
+			font-size: 2.8rem;
+			font-weight: 800;
+			color: var(--text-heading);
+			letter-spacing: -0.04em;
+			line-height: 1;
+		}
+
+		.text-gradient {
+			background: linear-gradient(
+				135deg,
+				var(--primary) 0%,
+				#6366f1 100%
+			);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.subtitle {
+			color: var(--text-muted);
+			margin-top: 0.75rem;
+			font-size: 1.1rem;
+			font-weight: 500;
+		}
+
+		.btn-create {
+			background: var(--bg-sidebar);
+			color: white;
+			border: none;
+			padding: 1rem 1.8rem;
+			border-radius: 16px;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			font-weight: 700;
+			cursor: pointer;
+			box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.3);
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.btn-create:hover {
+			transform: translateY(-4px) scale(1.02);
+			box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.4);
+		}
+
+		/* Bento Grid System */
+		.bento-container {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			grid-template-rows: repeat(2, auto);
+			gap: 1.5rem;
+		}
+
+		.bento-card {
+			background: white;
+			border-radius: var(--radius-lg);
+			border: 1px solid var(--border-subtle);
+			padding: 1.8rem;
+			position: relative;
+			overflow: hidden;
+			box-shadow: var(--shadow-md);
+			transition: border-color 0.3s ease;
+			transform-style: preserve-3d;
+		}
+
+		.bento-card:hover {
+			border-color: var(--primary);
+		}
+
+		/* 1. Hero Card Specifics */
+		.hero-card {
+			grid-column: span 2;
+			background: #0f172a;
+			color: white;
+			border: none;
+		}
+
+		.card-glass {
+			position: absolute;
+			inset: 0;
+			background: radial-gradient(
+				circle at top right,
+				rgba(14, 165, 233, 0.2),
+				transparent 70%
+			);
+			pointer-events: none;
+		}
+
+		.hero-card header {
+			display: flex;
+			justify-content: space-between;
+			margin-bottom: 2rem;
+		}
+
+		.hero-card .label {
+			font-size: 0.8rem;
+			font-weight: 800;
+			color: #94a3b8;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+		}
+
+		.trend {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 4px 10px;
+			border-radius: 20px;
+			font-size: 0.75rem;
+			font-weight: 800;
+		}
+
+		.trend.positive {
+			background: rgba(34, 197, 94, 0.15);
+			color: #4ade80;
+		}
+
+		.main-stat {
+			display: flex;
+			align-items: baseline;
+			gap: 10px;
+			margin-bottom: 2.5rem;
+		}
+
+		.currency {
+			font-size: 2rem;
+			color: var(--primary);
+			font-weight: 600;
+		}
+
+		.counter {
+			font-size: 4rem;
+			font-weight: 900;
+			letter-spacing: -0.05em;
+		}
+
+		.track-header {
+			display: flex;
+			justify-content: space-between;
+			font-size: 0.9rem;
+			font-weight: 700;
+			color: #cbd5e1;
+			margin-bottom: 0.75rem;
+		}
+
+		.track-bar {
+			height: 10px;
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 10px;
+			margin-bottom: 1rem;
+			overflow: hidden;
+		}
+
+		.progress {
+			height: 100%;
+			background: linear-gradient(90deg, var(--primary), #818cf8);
+			border-radius: 10px;
+		}
+
+		.hero-card .footer-text {
+			font-size: 0.85rem;
+			color: #94a3b8;
+		}
+
+		/* 2. Actions Card */
+		.actions-card h3 {
+			font-size: 1.1rem;
+			margin-bottom: 1.5rem;
+			color: var(--text-heading);
+		}
+
+		.actions-grid {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.75rem;
+		}
+
+		.action-btn {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 10px;
+			padding: 1.5rem 1rem;
+			background: #f8fafc;
+			border: 1px solid #f1f5f9;
+			border-radius: 20px;
+			transition: all 0.3s ease;
+		}
+
+		.action-btn:hover {
+			background: white;
+			border-color: var(--primary);
+			box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+			transform: translateY(-5px);
+		}
+
+		.icon-wrap {
+			width: 48px;
+			height: 48px;
+			border-radius: 14px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+			background: white;
+		}
+
+		.ico-blue {
+			color: var(--primary);
+		}
+		.ico-orange {
+			color: #f97316;
+		}
+		.ico-purple {
+			color: #8b5cf1;
+		}
+		.ico-green {
+			color: #10b981;
+		}
+
+		.action-btn span {
+			font-size: 0.8rem;
+			font-weight: 700;
+			color: var(--text-body);
+		}
+
+		/* 3/4. Mini Cards */
+		.mini-card {
+			display: flex;
+			align-items: center;
+			gap: 1.25rem;
+		}
+
+		.mini-icon {
+			width: 52px;
+			height: 52px;
+			border-radius: 16px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.mini-icon.blue {
+			background: #eff6ff;
+			color: var(--primary);
+		}
+		.mini-icon.orange {
+			background: #fff7ed;
+			color: #f97316;
+		}
+
+		.mini-data h4 {
+			font-size: 1.8rem;
+			font-weight: 800;
+			color: var(--text-heading);
+			letter-spacing: -0.02em;
+		}
+
+		.mini-data p {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 600;
+		}
+
+		.mini-trend {
+			font-size: 0.7rem;
+			font-weight: 800;
+			color: #22c55e;
+			margin-top: 4px;
+			display: block;
+		}
+
+		/* 5. Advanced Chart */
+		.chart-card {
+			grid-column: span 3;
+		}
+
+		.chart-card header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 2rem;
+		}
+
+		.chart-card header .title {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.legend {
+			display: flex;
+			gap: 20px;
+		}
+
+		.legend .it {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 0.75rem;
+			font-weight: 700;
+			color: var(--text-muted);
+		}
+
+		.legend i {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+		}
+		.actual i {
+			background: var(--primary);
+			box-shadow: 0 0 10px var(--primary);
+		}
+		.target i {
+			background: #e2e8f0;
+		}
+
+		.chart-visual {
+			height: 240px;
+			display: flex;
+			gap: 1.5rem;
+			position: relative;
+		}
+
+		.chart-y-axis {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			font-size: 0.7rem;
+			font-weight: 700;
+			color: #94a3b8;
+			padding-bottom: 30px;
+		}
+
+		.chart-bars-wrap {
+			flex: 1;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-end;
+			border-bottom: 1px solid var(--border-subtle);
+			padding: 0 1rem 30px;
+		}
+
+		.bar-col {
+			flex: 1;
+			max-width: 48px;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-end;
+			align-items: center;
+			position: relative;
+		}
+
+		.bar-container {
+			width: 100%;
+			height: 100%;
+			position: relative;
+			background: rgba(248, 250, 252, 0.5);
+			border-radius: 10px;
+			margin-bottom: 12px;
+			overflow: hidden;
+		}
+
+		.bar-target {
+			position: absolute;
+			bottom: 0;
+			width: 100%;
+			background: #f1f5f9;
+			border-top: 1px dashed #94a3b8;
+			z-index: 0;
+		}
+
+		.bar-actual {
+			position: absolute;
+			bottom: 0;
+			width: 100%;
+			background: var(--primary);
+			border-radius: 8px;
+			z-index: 1;
+			transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.bar-actual .glow {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 20px;
+			background: linear-gradient(
+				0deg,
+				transparent,
+				rgba(255, 255, 255, 0.4)
+			);
+			border-radius: 8px 8px 0 0;
+		}
+
+		.day-label {
+			font-size: 0.75rem;
+			font-weight: 800;
+			color: var(--text-muted);
+			position: absolute;
+			bottom: -30px;
+		}
+
+		/* 6. Feed Card */
+		.feed-card header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+		}
+
+		.btn-more {
+			background: #f1f5f9;
+			border: none;
+			width: 32px;
+			height: 32px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			color: var(--text-heading);
+			transition: all 0.3s ease;
+		}
+
+		.btn-more:hover {
+			background: var(--primary);
+			color: white;
+			transform: rotate(-45deg);
+		}
+
+		.feed-body {
+			display: flex;
+			flex-direction: column;
+			gap: 1.25rem;
+		}
+
+		.feed-item {
+			display: flex;
+			gap: 1rem;
+			align-items: center;
+		}
+
+		.avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: var(--bg-app);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 0.8rem;
+			font-weight: 800;
+			color: var(--primary);
+			border: 2px solid white;
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+		}
+
+		.icon-bg {
+			background: #f0fdf4;
+			color: #22c55e;
+		}
+
+		.feed-item .info p {
+			font-size: 0.85rem;
+			color: var(--text-heading);
+		}
+
+		.feed-item .meta {
+			font-size: 0.7rem;
+			color: var(--text-muted);
+			font-weight: 600;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			margin-top: 2px;
+		}
+
+		.pulse-item .avatar {
+			box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4);
+			animation: pulse 2s infinite;
+		}
+
+		@keyframes pulse {
+			0% {
+				box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4);
+			}
+			70% {
+				box-shadow: 0 0 0 10px rgba(14, 165, 233, 0);
+			}
+			100% {
+				box-shadow: 0 0 0 0 rgba(14, 165, 233, 0);
+			}
+		}
+
+		/* Responsive */
+		@media (max-width: 1400px) {
+			.bento-container {
+				grid-template-columns: repeat(2, 1fr);
+			}
+			.chart-card {
+				grid-column: span 2;
+			}
+		}
+
+		@media (max-width: 768px) {
+			.bento-container {
+				grid-template-columns: 1fr;
+			}
+			.hero-card,
+			.chart-card {
+				grid-column: span 1;
+			}
+			h1 {
+				font-size: 2rem;
+			}
+			.counter {
+				font-size: 2.8rem;
+			}
+		}
+	</style>
+</Layout>
