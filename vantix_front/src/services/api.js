@@ -117,3 +117,39 @@ export const planService = {
         return response.json();
     }
 };
+
+export const visitaService = {
+    async getAll(filters = {}) {
+        const params = new URLSearchParams();
+        if (filters.id_empleado) params.append('id_empleado', filters.id_empleado);
+        if (filters.id_plan) params.append('id_plan', filters.id_plan);
+        if (filters.id_cliente) params.append('id_cliente', filters.id_cliente);
+        if (filters.skip) params.append('skip', filters.skip);
+        if (filters.limit) params.append('limit', filters.limit);
+
+        const response = await fetch(`${API_URL}/visitas/?${params.toString()}`);
+        if (!response.ok) throw new Error('Error al obtener visitas');
+        return response.json();
+    },
+
+    async create(formData) {
+        // Usamos FormData directamente porque el controller es multipart/form-data
+        const response = await fetch(`${API_URL}/visitas/`, {
+            method: 'POST',
+            body: formData,
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar visita');
+        }
+        return response.json();
+    },
+
+    async delete(id) {
+        const response = await fetch(`${API_URL}/visitas/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Error al eliminar visita');
+        return response.json();
+    }
+};
