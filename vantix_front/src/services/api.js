@@ -186,6 +186,12 @@ export const visitaService = {
         });
         if (!response.ok) throw new Error('Error al eliminar visita');
         return response.json();
+    },
+
+    async getById(id) {
+        const response = await fetch(`${API_URL}/visitas/${id}`);
+        if (!response.ok) throw new Error('Error al obtener detalle de visita');
+        return response.json();
     }
 };
 export const crmService = {
@@ -247,6 +253,30 @@ export const kpiService = {
         if (idEmpleado) url += `&id_empleado=${idEmpleado}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error('Error al obtener incentivos');
+        return response.json();
+    },
+
+    async getInformeByPlan(idPlan) {
+        const response = await fetch(`${API_URL}/kpi/informes/${idPlan}`);
+        if (!response.ok) throw new Error('Error al obtener informe de KPI');
+        return response.json();
+    },
+
+    async updateInforme(idInforme, data) {
+        const response = await fetch(`${API_URL}/kpi/informes/${idInforme}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al actualizar metas de KPI');
+        return response.json();
+    },
+
+    async marcarIncentivoPagado(idIncentivo) {
+        const response = await fetch(`${API_URL}/kpi/incentivos/${idIncentivo}/pagar`, {
+            method: 'PATCH'
+        });
+        if (!response.ok) throw new Error('Error al procesar pago de incentivo');
         return response.json();
     }
 };
