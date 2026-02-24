@@ -698,6 +698,13 @@ const VisitaList = () => {
         .evidencia-thumbnails .thumb { cursor: pointer; transition: transform 0.2s; }
         .evidencia-thumbnails .thumb:hover { transform: scale(1.1); border-color: var(--primary); }
 
+        /* Modal Overlay for Delete and other overlays */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px); display: flex; align-items: center;
+            justify-content: center; z-index: 4000; padding: 2rem;
+        }
+
         /* Delete Modal Styles */
         .delete-modal-card {
             background: white; border-radius: 24px; padding: 2.5rem;
