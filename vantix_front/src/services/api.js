@@ -71,6 +71,41 @@ export const clienteService = {
     }
 };
 
+export const maestroService = {
+    async create(prospectoData) {
+        const response = await fetch(`${API_URL}/maestro/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(prospectoData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar prospecto/cliente');
+        }
+        return response.json();
+    }
+};
+
+export const geoService = {
+    async getDepartamentos() {
+        const response = await fetch(`${API_URL}/geo/departamentos?limit=30`);
+        if (!response.ok) throw new Error('Error al obtener departamentos');
+        return response.json();
+    },
+
+    async getProvincias(idDepartamento) {
+        const response = await fetch(`${API_URL}/geo/provincias?id_departamento=${idDepartamento}&limit=100`);
+        if (!response.ok) throw new Error('Error al obtener provincias');
+        return response.json();
+    },
+
+    async getDistritos(idProvincia) {
+        const response = await fetch(`${API_URL}/geo/distritos?id_provincia=${idProvincia}&limit=100`);
+        if (!response.ok) throw new Error('Error al obtener distritos');
+        return response.json();
+    }
+};
+
 export const planService = {
     async getAll(skip = 0, limit = 100, idEmpleado = null) {
         let url = `${API_URL}/planes/?skip=${skip}&limit=${limit}`;
@@ -163,11 +198,11 @@ export const crmService = {
         return response.json();
     },
 
-    async registrarLlamada(llamadaData) {
+    async registrarLlamada(formData) {
+        // Backend ahora usa Form(...) y UploadFile, recibimos FormData
         const response = await fetch(`${API_URL}/crm/llamadas/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(llamadaData),
+            body: formData, // No enviamos cabecera Content-Type para que el navegador ponga el boundary
         });
         if (!response.ok) {
             const error = await response.json();
@@ -185,16 +220,77 @@ export const crmService = {
         return response.json();
     },
 
-    async registrarEmail(emailData) {
+    async registrarEmail(formData) {
+        // Backend ahora usa Form(...) y UploadFile, recibimos FormData
         const response = await fetch(`${API_URL}/crm/emails/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailData),
+            body: formData,
         });
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || 'Error al registrar correo');
         }
+        return response.json();
+    }
+};
+export const kpiService = {
+    async getInformes(idEmpleado = null) {
+        let url = `${API_URL}/kpi/informes/`;
+        if (idEmpleado) url += `?id_empleado=${idEmpleado}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener informes de KPI');
+        return response.json();
+    },
+
+    async getIncentivos(idEmpleado = null, soloPendientes = false) {
+        let url = `${API_URL}/kpi/incentivos/?solo_pendientes=${soloPendientes}`;
+        if (idEmpleado) url += `&id_empleado=${idEmpleado}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener incentivos');
+        return response.json();
+    }
+};
+
+export const finanzasService = {
+    async getAll(idPlan = null) {
+        let url = `${API_URL}/finanzas/`;
+        if (idPlan) url += `?id_plan=${idPlan}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener gastos');
+        return response.json();
+    },
+
+    async create(data) {
+        const response = await fetch(`${API_URL}/finanzas/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al registrar gasto');
+        return response.json();
+    },
+
+    async update(id, data) {
+        const response = await fetch(`${API_URL}/finanzas/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Error al actualizar gasto');
+        return response.json();
+    },
+
+    async delete(id) {
+        const response = await fetch(`${API_URL}/finanzas/${id}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Error al eliminar gasto');
+        return response.json();
+    },
+
+    async getTotalByPlan(idPlan) {
+        const response = await fetch(`${API_URL}/finanzas/total/${idPlan}`);
+        if (!response.ok) throw new Error('Error al obtener total del plan');
         return response.json();
     }
 };

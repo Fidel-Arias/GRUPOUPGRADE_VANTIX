@@ -16,8 +16,9 @@ import {
     Users
 } from 'lucide-react';
 import { clienteService, planService } from '../../services/api';
+import NuevoClienteModal from '../Cartera/NuevoClienteModal';
 
-const ClientSearchSelect = ({ clientes, value, onChange }) => {
+const ClientSearchSelect = ({ clientes, value, onChange, onOpenNuevo }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef(null);
@@ -69,6 +70,16 @@ const ClientSearchSelect = ({ clientes, value, onChange }) => {
                             />
                         </div>
                         <div className="results-list">
+                            <button
+                                className="add-new-client-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenNuevo();
+                                }}
+                            >
+                                <Plus size={14} />
+                                <span>No está en la lista: Registrar Nuevo</span>
+                            </button>
                             {filtered.map(c => (
                                 <div
                                     key={c.id_cliente}
@@ -113,6 +124,13 @@ const ClientSearchSelect = ({ clientes, value, onChange }) => {
                 .result-item.selected { background: #eff6ff; border-left: 4px solid var(--primary); }
                 .result-item .name { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
                 .result-item .ruc { font-size: 0.75rem; color: #64748b; }
+                .add-new-client-btn {
+                    display: flex; align-items: center; gap: 8px; width: 100%;
+                    padding: 10px; border: 1.5px dashed #e2e8f0; border-radius: 10px;
+                    background: #f8fafc; color: #0ea5e9; font-weight: 700; font-size: 0.8rem;
+                    cursor: pointer; transition: all 0.2s; margin-bottom: 8px;
+                }
+                .add-new-client-btn:hover { background: #f0f9ff; border-color: #0ea5e9; }
             `}</style>
         </div>
     );
@@ -123,6 +141,7 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
     const [clientes, setClientes] = useState([]);
     const [planes, setPlanes] = useState([]);
     const [location, setLocation] = useState({ lat: null, lon: null, loading: false });
+    const [isNuevoClienteOpen, setIsNuevoClienteOpen] = useState(false);
 
     const [previews, setPreviews] = useState({ lugar: null, sello: null });
     const [formData, setFormData] = useState({
@@ -132,6 +151,7 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
         observaciones: '',
         es_asistida: false,
         acompanante: '',
+        nombre_tecnico: '',
         foto_lugar: null,
         foto_sello: null
     });
@@ -144,6 +164,7 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
             observaciones: '',
             es_asistida: false,
             acompanante: '',
+            nombre_tecnico: '',
             foto_lugar: null,
             foto_sello: null
         });
@@ -225,6 +246,7 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
         data.append('id_plan', formData.id_plan);
         data.append('id_cliente', formData.id_cliente);
         data.append('resultado', formData.resultado);
+        data.append('nombre_tecnico', formData.nombre_tecnico);
         data.append('observaciones', finalObservations);
         if (location.lat) {
             data.append('lat', location.lat.toString());
@@ -266,6 +288,7 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
                                 clientes={clientes}
                                 value={formData.id_cliente}
                                 onChange={(val) => setFormData({ ...formData, id_cliente: val })}
+                                onOpenNuevo={() => setIsNuevoClienteOpen(true)}
                             />
                         </div>
 
@@ -285,6 +308,19 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Nombre del Técnico</label>
+                            <div className="input-with-icon">
+                                <User size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Nombre del técnico que visita..."
+                                    value={formData.nombre_tecnico}
+                                    onChange={(e) => setFormData({ ...formData, nombre_tecnico: e.target.value })}
+                                />
                             </div>
                         </div>
 
@@ -426,6 +462,19 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
                     </div>
                 </form>
             </motion.div>
+
+            <NuevoClienteModal
+                isOpen={isNuevoClienteOpen}
+                onClose={() => setIsNuevoClienteOpen(false)}
+                onSave={(newCli) => {
+                    fetchData(); // Recargar lista
+                    // Opcional: auto-seleccionar el recién creado. 
+                    // El back en maestroService.create devuelve el objeto MaestroResponse.
+                    // Pero la lista de clientes viene de Cartera. El back de maestro crea la cartera.
+                    // Esperamos un momento para que se procese la migración (que es inmediata en el back pero por si acaso)
+                    setTimeout(() => fetchData(), 500);
+                }}
+            />
 
             <style jsx>{`
         .modal-overlay {

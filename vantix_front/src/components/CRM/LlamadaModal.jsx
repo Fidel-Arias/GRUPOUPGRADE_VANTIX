@@ -8,20 +8,24 @@ import {
     CheckCircle,
     ClipboardList,
     MessageSquare,
-    Phone
+    Phone,
+    Camera,
+    Upload
 } from 'lucide-react';
 import { planService } from '../../services/api';
 
 const LlamadaModal = ({ isOpen, onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
     const [planes, setPlanes] = useState([]);
+    const [preview, setPreview] = useState(null);
     const [formData, setFormData] = useState({
         id_plan: '',
         numero_destino: '',
         nombre_destinatario: '',
         duracion_segundos: '',
         resultado: 'Contestó',
-        notas_llamada: ''
+        notas_llamada: '',
+        foto_prueba: null
     });
 
     useEffect(() => {
@@ -33,8 +37,10 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
                 nombre_destinatario: '',
                 duracion_segundos: '',
                 resultado: 'Contestó',
-                notas_llamada: ''
+                notas_llamada: '',
+                foto_prueba: null
             });
+            setPreview(null);
         }
     }, [isOpen]);
 
@@ -50,11 +56,33 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
         }
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFormData(prev => ({ ...prev, foto_prueba: file }));
+            const reader = new FileReader();
+            reader.onloadend = () => setPreview(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+
+        const data = new FormData();
+        data.append('id_plan', formData.id_plan);
+        data.append('numero_destino', formData.numero_destino);
+        data.append('resultado', formData.resultado);
+        data.append('nombre_destinatario', formData.nombre_destinatario || '');
+        data.append('duracion_segundos', formData.duracion_segundos || 0);
+        data.append('notas_llamada', formData.notas_llamada || '');
+        if (formData.foto_prueba) {
+            data.append('foto_prueba', formData.foto_prueba);
+        }
+
         try {
-            await onSave(formData);
+            await onSave(data);
             onClose();
         } catch (err) {
             alert('Error: ' + err.message);
@@ -161,6 +189,28 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
                         </div>
 
                         <div className="form-group full">
+                            <label>Evidencia (Opcional)</label>
+                            <div className="photo-input-card">
+                                <input
+                                    type="file"
+                                    id="foto_prueba_call"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                                <label htmlFor="foto_prueba_call" className={preview ? 'has-preview' : ''}>
+                                    {preview ? (
+                                        <img src={preview} className="preview-img" />
+                                    ) : (
+                                        <div className="upload-placeholder">
+                                            <Upload size={24} />
+                                            <span>Subir captura o foto de prueba</span>
+                                        </div>
+                                    )}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="form-group full">
                             <label>Notas de la Llamada</label>
                             <textarea
                                 placeholder="Escribe un breve resumen de lo conversado..."
@@ -203,8 +253,8 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
                 .title-wrap p { font-size: 0.85rem; color: #64748b; font-weight: 500; }
                 .close-btn { background: none; border: none; color: #94a3b8; cursor: pointer; }
 
-                .modal-body { padding: 2rem; }
-                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+                .modal-body { padding: 1.5rem 2rem; overflow-y: auto; max-height: 80vh; }
+                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
                 .form-group.full { grid-column: span 2; }
                 .form-group label { display: block; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
                 
@@ -218,6 +268,18 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
                     width: 100%; height: 100%; background: none; border: none; padding: 0 1rem 0 44px;
                     font-size: 0.95rem; font-weight: 600; color: #1e293b; outline: none;
                 }
+
+                .photo-input-card { position: relative; }
+                .photo-input-card input { display: none; }
+                .photo-input-card label {
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    height: 120px; border: 2px dashed #cbd5e1; border-radius: 16px; background: #f8fafc;
+                    cursor: pointer; transition: all 0.2s; overflow: hidden;
+                }
+                .photo-input-card label:hover { border-color: #0ea5e9; background: #eff6ff; }
+                .photo-input-card label.has-preview { border-style: solid; border-color: #0ea5e9; }
+                .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #64748b; }
+                .preview-img { width: 100%; height: 100%; object-fit: cover; }
 
                 textarea {
                     width: 100%; height: 80px; background: #f8fafc; border: 1.5px solid #e2e8f0;

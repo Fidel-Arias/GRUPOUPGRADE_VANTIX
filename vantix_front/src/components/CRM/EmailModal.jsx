@@ -8,18 +8,22 @@ import {
     Send,
     ClipboardList,
     MessageSquare,
-    Info
+    Info,
+    Upload,
+    Camera
 } from 'lucide-react';
 import { planService } from '../../services/api';
 
 const EmailModal = ({ isOpen, onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
     const [planes, setPlanes] = useState([]);
+    const [preview, setPreview] = useState(null);
     const [formData, setFormData] = useState({
         id_plan: '',
         email_destino: '',
         asunto: '',
-        estado_envio: 'Enviado'
+        estado_envio: 'Enviado',
+        foto_prueba: null
     });
 
     useEffect(() => {
@@ -29,8 +33,10 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
                 id_plan: '',
                 email_destino: '',
                 asunto: '',
-                estado_envio: 'Enviado'
+                estado_envio: 'Enviado',
+                foto_prueba: null
             });
+            setPreview(null);
         }
     }, [isOpen]);
 
@@ -46,11 +52,31 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
         }
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFormData(prev => ({ ...prev, foto_prueba: file }));
+            const reader = new FileReader();
+            reader.onloadend = () => setPreview(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+
+        const data = new FormData();
+        data.append('id_plan', formData.id_plan);
+        data.append('email_destino', formData.email_destino);
+        data.append('asunto', formData.asunto || '');
+        data.append('estado_envio', formData.estado_envio);
+        if (formData.foto_prueba) {
+            data.append('foto_prueba', formData.foto_prueba);
+        }
+
         try {
-            await onSave(formData);
+            await onSave(data);
             onClose();
         } catch (err) {
             alert('Error: ' + err.message);
@@ -129,6 +155,28 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
                         </div>
 
                         <div className="form-group full">
+                            <label>Evidencia / Screenshot (Opcional)</label>
+                            <div className="photo-input-card">
+                                <input
+                                    type="file"
+                                    id="foto_prueba_email"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                />
+                                <label htmlFor="foto_prueba_email" className={preview ? 'has-preview' : ''}>
+                                    {preview ? (
+                                        <img src={preview} className="preview-img" />
+                                    ) : (
+                                        <div className="upload-placeholder">
+                                            <Upload size={24} />
+                                            <span>Subir captura de pantalla del envío</span>
+                                        </div>
+                                    )}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="form-group full">
                             <div className="info-badge">
                                 <Info size={14} />
                                 <span>El estado se marcará como "Enviado" automáticamente para auditoría.</span>
@@ -169,8 +217,8 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
                 .title-wrap p { font-size: 0.85rem; color: #64748b; font-weight: 500; }
                 .close-btn { background: none; border: none; color: #94a3b8; cursor: pointer; }
 
-                .modal-body { padding: 2rem; }
-                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+                .modal-body { padding: 1.5rem 2rem; overflow-y: auto; max-height: 80vh; }
+                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
                 .form-group.full { grid-column: span 2; }
                 .form-group label { display: block; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
                 
@@ -184,6 +232,18 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
                     width: 100%; height: 100%; background: none; border: none; padding: 0 1rem 0 44px;
                     font-size: 0.95rem; font-weight: 600; color: #1e293b; outline: none;
                 }
+
+                .photo-input-card { position: relative; }
+                .photo-input-card input { display: none; }
+                .photo-input-card label {
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    height: 120px; border: 2px dashed #cbd5e1; border-radius: 16px; background: #f8fafc;
+                    cursor: pointer; transition: all 0.2s; overflow: hidden;
+                }
+                .photo-input-card label:hover { border-color: #db2777; background: #fff1f2; }
+                .photo-input-card label.has-preview { border-style: solid; border-color: #db2777; }
+                .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #64748b; }
+                .preview-img { width: 100%; height: 100%; object-fit: cover; }
 
                 .info-badge {
                     display: flex; align-items: center; gap: 8px; background: #f0fdf4;

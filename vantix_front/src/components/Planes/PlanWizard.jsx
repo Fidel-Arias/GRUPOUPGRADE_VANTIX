@@ -21,8 +21,9 @@ import {
     Users
 } from 'lucide-react';
 import { empleadoService, clienteService, planService } from '../../services/api';
+import NuevoClienteModal from '../Cartera/NuevoClienteModal';
 
-const ClientSearchSelect = ({ clientes, value, onChange }) => {
+const ClientSearchSelect = ({ clientes, value, onChange, onOpenNuevo }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef(null);
@@ -74,6 +75,16 @@ const ClientSearchSelect = ({ clientes, value, onChange }) => {
                             />
                         </div>
                         <div className="results-list">
+                            <button
+                                className="add-new-client-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenNuevo();
+                                }}
+                            >
+                                <Plus size={14} />
+                                <span>No está en la lista: Registrar Nuevo</span>
+                            </button>
                             {filtered.map(c => (
                                 <div
                                     key={c.id_cliente}
@@ -171,6 +182,13 @@ const ClientSearchSelect = ({ clientes, value, onChange }) => {
                 .result-item .name { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
                 .result-item .ruc { font-size: 0.75rem; color: #64748b; font-weight: 500; }
                 .no-results { padding: 30px 20px; text-align: center; color: #94a3b8; font-size: 0.85rem; font-weight: 500; }
+                .add-new-client-btn {
+                    display: flex; align-items: center; gap: 8px; width: 100%;
+                    padding: 8px 10px; border: 1.5px dashed #e2e8f0; border-radius: 10px;
+                    background: #f8fafc; color: #0ea5e9; font-weight: 700; font-size: 0.75rem;
+                    cursor: pointer; transition: all 0.2s; margin-bottom: 8px;
+                }
+                .add-new-client-btn:hover { background: #f0f9ff; border-color: #0ea5e9; }
             `}</style>
         </div>
     );
@@ -181,6 +199,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [empleados, setEmpleados] = useState([]);
     const [clientes, setClientes] = useState([]);
+    const [isNuevoClienteOpen, setIsNuevoClienteOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         id_empleado: '',
@@ -495,6 +514,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                         clientes={clientes}
                                                         value={act.id_cliente}
                                                         onChange={(val) => handleUpdateActivity(index, 'id_cliente', val)}
+                                                        onOpenNuevo={() => setIsNuevoClienteOpen(true)}
                                                     />
                                                 </div>
                                                 <button
@@ -653,6 +673,12 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     </div>
                 </div>
             </motion.div>
+
+            <NuevoClienteModal
+                isOpen={isNuevoClienteOpen}
+                onClose={() => setIsNuevoClienteOpen(false)}
+                onSave={() => fetchInitialData()}
+            />
 
             <style jsx>{`
                 .wizard-overlay {

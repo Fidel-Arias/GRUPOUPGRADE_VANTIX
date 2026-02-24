@@ -190,6 +190,12 @@ const VisitaList = () => {
                                         <MapPin size={14} />
                                         <span>{visita.cliente?.id_distrito || 'Ubicación'}</span>
                                     </div>
+                                    {visita.nombre_tecnico && (
+                                        <div className="meta-item">
+                                            <Users size={14} />
+                                            <span>Técnico: {visita.nombre_tecnico}</span>
+                                        </div>
+                                    )}
                                     {visita.geolocalizacion_lat && (
                                         <div className="meta-item location">
                                             <CheckCircle size={14} />
@@ -219,6 +225,7 @@ const VisitaList = () => {
                                 <th>Resultado</th>
                                 <th>Fecha / Hora</th>
                                 <th>Ubicación</th>
+                                <th>Técnico</th>
                                 <th>Evidencia</th>
                                 <th className="text-right">Acciones</th>
                             </tr>
@@ -253,6 +260,9 @@ const VisitaList = () => {
                                                 Ver Mapa <ExternalLink size={12} />
                                             </a>
                                         ) : 'N/A'}
+                                    </td>
+                                    <td>
+                                        <span className="tech-name">{visita.nombre_tecnico || 'N/A'}</span>
                                     </td>
                                     <td>
                                         <div className="evidencia-thumbnails">

@@ -1,36 +1,16 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Sidebar from "../components/Navigation/Sidebar";
 import PlanesList from "../components/Planes/PlanesList";
 ---
 
 <Layout title="Planes Semanales | VANTIX">
-    <div class="app-layout">
-        <Sidebar client:load />
-        <main class="main-content">
-            <div class="content-container">
-                <PlanesList client:load />
-            </div>
-        </main>
+    <div class="planes-wrapper">
+        <PlanesList client:load />
     </div>
 </Layout>
 
 <style is:global>
-    .app-layout {
-        display: flex;
-        min-height: 100vh;
-        background-color: #f8fafc;
-    }
-
-    .main-content {
-        flex: 1;
-        padding: 2rem;
-        overflow-y: auto;
-    }
-
-    .content-container {
-        max-width: 1400px;
-        margin: 0 auto;
+    .planes-wrapper {
         animation: fadeIn 0.5s ease-out;
     }
 

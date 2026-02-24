@@ -169,6 +169,11 @@ const CRMList = () => {
                                                     </div>
                                                 </div>
                                                 <p className="item-notes">{item.notas_llamada || 'Sin notas adicionales.'}</p>
+                                                {item.url_foto_prueba && (
+                                                    <div className="proof-photo-wrapper">
+                                                        <img src={`http://127.0.0.1:8000${item.url_foto_prueba}`} alt="Prueba" onClick={() => window.open(`http://127.0.0.1:8000${item.url_foto_prueba}`)} />
+                                                    </div>
+                                                )}
                                             </>
                                         ) : (
                                             <>
@@ -179,6 +184,11 @@ const CRMList = () => {
                                                     </div>
                                                 </div>
                                                 <p className="item-notes"><strong>Asunto:</strong> {item.asunto || '(Sin asunto)'}</p>
+                                                {item.url_foto_prueba && (
+                                                    <div className="proof-photo-wrapper">
+                                                        <img src={`http://127.0.0.1:8000${item.url_foto_prueba}`} alt="Prueba" onClick={() => window.open(`http://127.0.0.1:8000${item.url_foto_prueba}`)} />
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                     </div>
@@ -250,6 +260,10 @@ const CRMList = () => {
                 
                 .item-notes { font-size: 0.85rem; color: #475569; line-height: 1.5; margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
                 
+                .proof-photo-wrapper { margin-top: 10px; border-radius: 12px; overflow: hidden; height: 100px; border: 1px solid #e2e8f0; cursor: pointer; }
+                .proof-photo-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+                .proof-photo-wrapper img:hover { transform: scale(1.1); }
+
                 .card-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
                 .plan-badge { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
 

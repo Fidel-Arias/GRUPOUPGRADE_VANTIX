@@ -17,7 +17,8 @@ import {
     AlertCircle,
     MoreVertical,
     Trash2,
-    ExternalLink
+    ExternalLink,
+    X
 } from 'lucide-react';
 
 const PlanesList = () => {
@@ -27,6 +28,7 @@ const PlanesList = () => {
     const [filterEmpleado, setFilterEmpleado] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, planId: null });
 
     useEffect(() => {
         fetchInitialData();
@@ -65,6 +67,55 @@ const PlanesList = () => {
         const matchesEmpleado = filterEmpleado === '' || p.id_empleado === parseInt(filterEmpleado);
         return matchesSearch && matchesEmpleado;
     });
+
+    const handleDelete = async (id) => {
+        setDeleteModal({ isOpen: true, planId: id });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            setLoading(true);
+            await planService.delete(deleteModal.planId);
+            setDeleteModal({ isOpen: false, planId: null });
+            fetchInitialData();
+        } catch (error) {
+            alert('Error al eliminar: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewDetail = (plan) => {
+        window.location.href = `/planes/detalle?id=${plan.id_plan}`;
+    };
+
+    const handleExport = (plan) => {
+        const headers = ["Fecha", "Tipo", "Cliente", "Observaciones"];
+        const rows = plan.detalles_agenda?.map(act => [
+            new Date(act.fecha_actividad).toLocaleDateString(),
+            act.tipo_actividad,
+            act.nombre_cliente,
+            act.observaciones || ""
+        ]) || [];
+
+        const csvContent = [
+            ["Plan Semanal - " + (empleados.find(e => e.id_empleado === plan.id_empleado)?.nombre_completo || "Asesor")],
+            ["Periodo: " + new Date(plan.fecha_inicio_semana).toLocaleDateString() + " al " + new Date(plan.fecha_fin_semana).toLocaleDateString()],
+            [],
+            headers,
+            ...rows
+        ].map(e => e.join(",")).join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Plan_${plan.id_plan}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return (
         <div className="planes-container">
@@ -156,15 +207,29 @@ const PlanesList = () => {
                                         </div>
 
                                         <div className="plan-card-footer">
-                                            <button className="btn-view">
+                                            <button className="btn-view" onClick={() => handleViewDetail(plan)}>
                                                 <span>Ver Detalle</span>
                                                 <ChevronRight size={16} />
                                             </button>
                                             <div className="actions-group">
-                                                <button className="icon-btn" title="Exportar">
+                                                <button
+                                                    className="icon-btn"
+                                                    title="Exportar"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleExport(plan);
+                                                    }}
+                                                >
                                                     <ExternalLink size={16} />
                                                 </button>
-                                                <button className="icon-btn delete" title="Eliminar">
+                                                <button
+                                                    className="icon-btn delete"
+                                                    title="Eliminar"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(plan.id_plan);
+                                                    }}
+                                                >
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -192,6 +257,44 @@ const PlanesList = () => {
                 onClose={() => setIsWizardOpen(false)}
                 onSuccess={fetchInitialData}
             />
+
+            <AnimatePresence>
+                {deleteModal.isOpen && (
+                    <div className="modal-overlay" onClick={() => setDeleteModal({ isOpen: false, planId: null })}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="confirm-modal card-premium"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="confirm-icon-wrap">
+                                <div className="icon-bg-red">
+                                    <Trash2 size={32} />
+                                </div>
+                            </div>
+                            <h3>¿Eliminar Plan de Trabajo?</h3>
+                            <p>Esta acción no se puede deshacer. Se eliminará permanentemente la agenda y los objetivos asignados.</p>
+
+                            <div className="confirm-actions">
+                                <button
+                                    className="btn-cancel"
+                                    onClick={() => setDeleteModal({ isOpen: false, planId: null })}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="btn-confirm-delete"
+                                    onClick={confirmDelete}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Eliminando...' : 'Sí, Eliminar Plan'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <style jsx>{`
                 .planes-container {
@@ -320,12 +423,15 @@ const PlanesList = () => {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
+                    gap: 12px;
                 }
 
                 .user-info {
                     display: flex;
                     gap: 12px;
                     align-items: center;
+                    flex: 1;
+                    min-width: 0;
                 }
 
                 .user-avatar {
@@ -342,12 +448,19 @@ const PlanesList = () => {
                 .user-text {
                     display: flex;
                     flex-direction: column;
+                    min-width: 0;
+                    flex: 1;
                 }
 
                 .user-name {
                     font-weight: 700;
                     color: #1e293b;
                     font-size: 1rem;
+                    line-height: 1.2;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
                 }
 
                 .user-role {
@@ -360,11 +473,13 @@ const PlanesList = () => {
                     display: flex;
                     align-items: center;
                     gap: 6px;
-                    padding: 6px 14px;
+                    padding: 6px 12px;
                     border-radius: 30px;
-                    font-size: 0.75rem;
+                    font-size: 0.7rem;
                     font-weight: 800;
                     letter-spacing: 0.02em;
+                    white-space: nowrap;
+                    flex-shrink: 0;
                 }
 
                 .plan-card-body {
@@ -480,6 +595,104 @@ const PlanesList = () => {
                     0% { background-position: 200% 0; }
                     100% { background-position: -200% 0; }
                 }
+
+                .modal-overlay {
+                    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
+                    backdrop-filter: blur(8px); display: flex; align-items: center;
+                    justify-content: center; z-index: 5000;
+                }
+                .detail-modal {
+                    width: 90%; max-width: 600px; background: white; border-radius: 24px;
+                    display: flex; flex-direction: column; overflow: hidden; padding: 24px;
+                }
+                .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                .detail-header h3 { margin: 0; font-size: 1.5rem; font-weight: 800; color: #1e293b; }
+                .close-btn { background: #f1f5f9; border: none; padding: 8px; border-radius: 50%; cursor: pointer; color: #64748b; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+                .info-item label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px; }
+                .info-item p { margin: 0; font-weight: 700; color: #1e293b; }
+                .status-val { color: #0ea5e9; }
+                .activities-section h4 { font-size: 0.9rem; font-weight: 800; color: #1e293b; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+                .activities-list { display: flex; flex-direction: column; gap: 12px; }
+                .act-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 12px; }
+                .act-dot { width: 8px; height: 8px; background: #0ea5e9; border-radius: 50%; }
+                .act-info { flex: 1; display: flex; flex-direction: column; }
+                .act-type { font-size: 0.8rem; font-weight: 800; color: #1e293b; }
+                .act-client { font-size: 0.75rem; color: #64748b; }
+                .act-date { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: capitalize; }
+
+                .confirm-modal {
+                    width: 100%;
+                    max-width: 420px;
+                    padding: 2.5rem;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    gap: 1.5rem;
+                    border-radius: 32px;
+                }
+
+                .confirm-icon-wrap {
+                    width: 80px;
+                    height: 80px;
+                    background: #fef2f2;
+                    border-radius: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #ef4444;
+                    margin-bottom: 0.5rem;
+                }
+
+                .confirm-modal h3 {
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: #0f172a;
+                    margin: 0;
+                }
+
+                .confirm-modal p {
+                    color: #64748b;
+                    font-size: 1rem;
+                    line-height: 1.5;
+                    margin: 0;
+                    font-weight: 500;
+                }
+
+                .confirm-actions {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px;
+                    width: 100%;
+                    margin-top: 1rem;
+                }
+
+                .btn-cancel {
+                    padding: 0.8rem;
+                    border-radius: 14px;
+                    border: 1.5px solid #e2e8f0;
+                    background: white;
+                    color: #64748b;
+                    font-weight: 800;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btn-cancel:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
+
+                .btn-confirm-delete {
+                    padding: 0.8rem;
+                    border-radius: 14px;
+                    border: none;
+                    background: #ef4444;
+                    color: white;
+                    font-weight: 800;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+                }
+                .btn-confirm-delete:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3); }
+                .btn-confirm-delete:disabled { opacity: 0.7; cursor: not-allowed; }
             `}</style>
         </div>
     );

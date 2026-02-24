@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clienteService } from '../../services/api';
 import ClienteModal from './ClienteModal';
+import NuevoClienteModal from './NuevoClienteModal';
 import {
   Building2,
   Search,
@@ -23,6 +24,7 @@ const CarteraList = () => {
   const [filterCategory, setFilterCategory] = useState('TODOS');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState(null);
+  const [isNuevoModalOpen, setIsNuevoModalOpen] = useState(false);
   const [importStatus, setImportStatus] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -109,6 +111,10 @@ const CarteraList = () => {
           <p>Base de datos oficial de clientes y prospectos corporativos.</p>
         </div>
         <div className="action-group">
+          <button className="btn-primary" onClick={() => setIsNuevoModalOpen(true)}>
+            <Building2 size={18} />
+            <span>Nuevo Cliente</span>
+          </button>
           <input
             type="file"
             ref={fileInputRef}
@@ -283,6 +289,16 @@ const CarteraList = () => {
         cliente={selectedCliente}
       />
 
+      <NuevoClienteModal
+        isOpen={isNuevoModalOpen}
+        onClose={() => setIsNuevoModalOpen(false)}
+        onSave={() => {
+          fetchClientes();
+          setImportStatus({ type: 'success', message: '¡Cliente registrado correctamente en el Maestro y Cartera!' });
+          setTimeout(() => setImportStatus(null), 5000);
+        }}
+      />
+
       <style jsx>{`
                 .cartera-container {
                     display: flex;
@@ -293,7 +309,13 @@ const CarteraList = () => {
                 .section-header {
                     display: flex;
                     justify-content: space-between;
-                    align-items: flex-end;
+                    align-items: center;
+                }
+
+                .action-group {
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
                 }
 
                 .title-group h2 {
@@ -321,6 +343,26 @@ const CarteraList = () => {
                 .status-banner.success { background: #ecfdf5; color: #059669; border: 1px solid #d1fae5; }
                 .status-banner.error { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
                 .status-banner.info { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+
+                .btn-primary {
+                    padding: 0.75rem 1.5rem;
+                    background: #0f172a;
+                    border: none;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-weight: 700;
+                    color: white;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+                }
+
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 15px 20px -5px rgba(15, 23, 42, 0.3);
+                }
 
                 .btn-secondary {
                     padding: 0.75rem 1.5rem;

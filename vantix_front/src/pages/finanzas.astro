@@ -1,0 +1,19 @@
+---
+import Layout from "../layouts/Layout.astro";
+import GastoList from "../components/Finanzas/GastoList";
+---
+
+<Layout title="Gestión de Gastos | VANTIX">
+    <div class="container py-8">
+        <GastoList client:load />
+    </div>
+</Layout>
+
+<style>
+    .container {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+</style>

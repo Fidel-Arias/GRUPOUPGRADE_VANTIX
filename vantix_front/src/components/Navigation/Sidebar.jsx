@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  DollarSign
 } from 'lucide-react';
 
 const menuItems = [
@@ -27,6 +28,7 @@ const menuItems = [
   { icon: MapPin, label: 'Registro Visitas', path: '/visitas' },
   { icon: PhoneCall, label: 'CRM / Llamadas', path: '/crm' },
   { icon: TrendingUp, label: 'Rendimiento (KPI)', path: '/kpi' },
+  { icon: DollarSign, label: 'Gastos de Movilidad', path: '/finanzas' },
 ];
 
 const Sidebar = () => {

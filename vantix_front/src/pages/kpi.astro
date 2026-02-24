@@ -1,0 +1,19 @@
+---
+import Layout from "../layouts/Layout.astro";
+import KPIDashboard from "../components/KPI/KPIDashboard";
+---
+
+<Layout title="Rendimiento y Gamificación | VANTIX">
+    <div class="container py-8">
+        <KPIDashboard client:load />
+    </div>
+</Layout>
+
+<style>
+    .container {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+</style>
