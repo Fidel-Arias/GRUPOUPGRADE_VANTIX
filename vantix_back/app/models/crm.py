@@ -14,6 +14,7 @@ class RegistroLlamada(Base):
     duracion_segundos = Column(Integer, default=0)
     resultado = Column(String(50)) # 'Contestó', 'Buzón', etc.
     fecha_hora = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+    url_foto_prueba = Column(Text) # Foto opcional de evidencia
     notas_llamada = Column(Text)
 
     # --- RELACIÓN AGREGADA ---
@@ -30,6 +31,7 @@ class RegistroEmail(Base):
     email_destino = Column(String(100), nullable=False)
     asunto = Column(String(200))
     estado_envio = Column(String(50), default='Enviado')
+    url_foto_prueba = Column(Text) # Foto opcional de evidencia
     fecha_hora = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
     # --- RELACIÓN AGREGADA ---

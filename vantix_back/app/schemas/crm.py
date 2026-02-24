@@ -9,6 +9,7 @@ class LlamadaCreate(BaseModel):
     nombre_destinatario: Optional[str] = None
     duracion_segundos: int = 0
     resultado: str
+    url_foto_prueba: Optional[str] = None
     notas_llamada: Optional[str] = None
 
 class LlamadaResponse(LlamadaCreate):
@@ -22,6 +23,7 @@ class EmailCreate(BaseModel):
     id_plan: int
     email_destino: EmailStr
     asunto: Optional[str] = None
+    url_foto_prueba: Optional[str] = None
     estado_envio: str = "Enviado"
 
 class EmailResponse(EmailCreate):
