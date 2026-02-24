@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, schemas, models
 from app.api import deps
 from app.models.enums import ResultadoEstadoEnum
 from app.models.visita import RegistroVisita
@@ -16,6 +16,7 @@ router = APIRouter()
 async def registrar_visita(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     # Campos del Formulario (Multipart)
     id_plan: int = Form(...),
     id_cliente: int = Form(...),
@@ -73,6 +74,7 @@ async def registrar_visita(
 @router.get("/", response_model=List[schemas.VisitaResponse])
 def listar_visitas(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100,
     id_empleado: Optional[int] = None,
@@ -97,6 +99,7 @@ def listar_visitas(
 def eliminar_visita(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
     id_visita: int
 ):
     """

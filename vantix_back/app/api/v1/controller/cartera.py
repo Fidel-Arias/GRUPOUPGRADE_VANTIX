@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 import pandas as pd
-from app import crud, schemas
+from app import crud, schemas, models
 import io
 from app.api import deps
 from app.models.clientes import CarteraClientes
@@ -14,8 +14,9 @@ router = APIRouter()
 @router.get("/", response_model=List[schemas.CarteraResponse])
 def listar_cartera_oficial(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0, 
-    limit: int = 10
+    limit: int = 100
 ):
     """
     Devuelve la lista oficial de clientes.
@@ -28,6 +29,7 @@ def listar_cartera_oficial(
 def actualizar_datos_cliente(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_cliente: int,
     cliente_in: schemas.CarteraUpdate,
 ):
@@ -76,7 +78,8 @@ def mapear_categoria(valor):
 @router.post("/importar-masivo/")
 async def importar_cartera_excel(
     file: UploadFile = File(...),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user)
 ):
     """
     Recibe un archivo .xlsx completo, recorre TODAS las hojas,

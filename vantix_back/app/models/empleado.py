@@ -9,7 +9,9 @@ class Empleado(Base):
     nombre_completo = Column(String(150), nullable=False)
     dni = Column(String(20), nullable=False)
     cargo = Column(String(100), default="Asesor de Ventas")
-    email_corporativo = Column(String(100))
+    email_corporativo = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255))
+    is_admin = Column(Boolean, default=False)
     fecha_ingreso = Column(Date, server_default=text("CURRENT_DATE"))
     activo = Column(Boolean, default=True)
 

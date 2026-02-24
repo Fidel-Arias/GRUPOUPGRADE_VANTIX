@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, models, schemas
 from app.api import deps
 
 router = APIRouter()
@@ -10,6 +10,7 @@ router = APIRouter()
 def crear_gasto_movilidad(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     gasto_in: schemas.GastoCreate
 ):
     """
@@ -25,6 +26,7 @@ def crear_gasto_movilidad(
 @router.get("/", response_model=List[schemas.GastoResponse])
 def listar_gastos_movilidad(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100,
     id_plan: Optional[int] = Query(None, description="Filtrar por ID de Plan Semanal")
@@ -40,6 +42,7 @@ def listar_gastos_movilidad(
 def obtener_gasto(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_gasto: int
 ):
     """
@@ -54,6 +57,7 @@ def obtener_gasto(
 def actualizar_gasto(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_gasto: int,
     gasto_in: schemas.GastoUpdate
 ):
@@ -70,6 +74,7 @@ def actualizar_gasto(
 def eliminar_gasto(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
     id_gasto: int
 ):
     """
@@ -85,6 +90,7 @@ def eliminar_gasto(
 def obtener_total_plan(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int
 ):
     """

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, models, schemas
 from app.api import deps
 from app.services.sales.plan_validator import PlanValidatorService
 
@@ -11,6 +11,7 @@ router = APIRouter()
 def create_plan_trabajo(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     plan_in: schemas.PlanCreate,
     id_empleado: int = Query(..., description="ID del empleado dueño del plan")
 ):
@@ -26,6 +27,7 @@ def create_plan_trabajo(
 @router.get("/", response_model=List[schemas.PlanResponse])
 def list_planes_trabajo(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100,
     id_empleado: Optional[int] = None
@@ -42,6 +44,7 @@ def list_planes_trabajo(
 def get_plan_trabajo(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int
 ):
     """
@@ -59,6 +62,7 @@ def get_plan_trabajo(
 def update_plan_trabajo(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int,
     plan_in: schemas.PlanUpdate
 ):
@@ -75,6 +79,7 @@ def update_plan_trabajo(
 def delete_plan_trabajo(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
     id_plan: int
 ):
     """

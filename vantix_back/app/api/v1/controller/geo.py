@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, models, schemas
 from app.api import deps
 
 router = APIRouter()
@@ -11,6 +11,7 @@ router = APIRouter()
 @router.get("/departamentos", response_model=List[schemas.DepartamentoResponse])
 def read_departamentos(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100
 ):
@@ -21,6 +22,7 @@ def read_departamentos(
 def toggle_active_departamento(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
     id: int
 ):
     """Activar/Desactivar departamento."""
@@ -37,6 +39,7 @@ def toggle_active_departamento(
 @router.get("/provincias", response_model=List[schemas.ProvinciaResponse])
 def read_provincias(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100,
     id_departamento: int = None
@@ -50,6 +53,7 @@ def read_provincias(
 def toggle_active_provincia(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
     id: int
 ):
     """Activar/Desactivar provincia."""
@@ -65,6 +69,7 @@ def toggle_active_provincia(
 @router.get("/distritos", response_model=List[schemas.DistritoResponse])
 def read_distritos(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100,
     id_provincia: int = None
@@ -78,6 +83,7 @@ def read_distritos(
 def toggle_active_distrito(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
     id: int
 ):
     """Activar/Desactivar distrito."""

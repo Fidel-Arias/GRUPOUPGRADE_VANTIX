@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, models, schemas
 from app.api import deps
 from app.services.gamificacion.kpi_service import kpi_service
 
@@ -12,6 +12,7 @@ router = APIRouter()
 @router.get("/informes/", response_model=List[schemas.kpi.InformeProductividadResponse])
 def listar_informes_productividad(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_empleado: Optional[int] = Query(None, description="Filtrar informes por empleado"),
     skip: int = 0,
     limit: int = 100
@@ -27,7 +28,8 @@ def listar_informes_productividad(
 @router.get("/informes/{id_plan}", response_model=schemas.kpi.InformeProductividadResponse)
 def obtener_informe_por_plan(
     id_plan: int,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user)
 ):
     """
     Obtiene el informe detallado de un plan de trabajo específico.
@@ -41,7 +43,8 @@ def obtener_informe_por_plan(
 def actualizar_metas_informe(
     id_informe: int,
     obj_in: schemas.kpi.KpiUpdate,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user)
 ):
     """
     Permite a un supervisor ajustar las metas o valores reales de un informe.
@@ -57,6 +60,7 @@ def actualizar_metas_informe(
 @router.get("/incentivos/", response_model=List[schemas.kpi.IncentivoPagoResponse])
 def listar_incentivos(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_empleado: Optional[int] = Query(None),
     solo_pendientes: bool = False
 ):
@@ -72,7 +76,8 @@ def listar_incentivos(
 @router.patch("/incentivos/{id_incentivo}/pagar", response_model=schemas.kpi.IncentivoPagoResponse)
 def marcar_incentivo_como_pagado(
     id_incentivo: int,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user)
 ):
     """
     Cambia el estado de un bono a 'Pagado'.

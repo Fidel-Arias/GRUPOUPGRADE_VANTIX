@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, models, schemas
 from app.api import deps
 from app.services.gamificacion.kpi_service import kpi_service
 from app.services.common.file_manager import FileManager
@@ -14,6 +14,7 @@ router = APIRouter()
 async def registrar_llamada(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int = Form(...),
     numero_destino: str = Form(...),
     resultado: str = Form(...),
@@ -63,6 +64,7 @@ async def registrar_llamada(
 @router.get("/llamadas/", response_model=List[schemas.crm.LlamadaResponse])
 def listar_llamadas(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: Optional[int] = None,
     skip: int = 0,
     limit: int = 100
@@ -78,6 +80,7 @@ def listar_llamadas(
 async def registrar_email(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int = Form(...),
     email_destino: str = Form(...),
     asunto: Optional[str] = Form(None),
@@ -119,6 +122,7 @@ async def registrar_email(
 @router.get("/emails/", response_model=List[schemas.crm.EmailResponse])
 def listar_emails(
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: Optional[int] = None,
     skip: int = 0,
     limit: int = 100

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app import crud, schemas
+from app import crud, models, schemas
 from app.api import deps
 
 router = APIRouter()
@@ -9,6 +9,7 @@ router = APIRouter()
 def registrar_cliente_nuevo(
     *,
     db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     prospecto_in: schemas.MaestroCreate,
 ):
     """

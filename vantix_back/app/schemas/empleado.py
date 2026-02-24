@@ -8,11 +8,13 @@ class EmpleadoBase(BaseModel):
     dni: str
     cargo: Optional[str] = "Asesor de Ventas"
     email_corporativo: Optional[EmailStr] = None
+    is_admin: Optional[bool] = False
     activo: Optional[bool] = True
 
 # Create: Campos para crear un nuevo empleado
 class EmpleadoCreate(EmpleadoBase):
-    pass # Es igual a EmpleadoBase
+    email_corporativo: EmailStr
+    password: str
 
 # Update: Campos opcionales para actualizar
 class EmpleadoUpdate(BaseModel):
@@ -20,6 +22,8 @@ class EmpleadoUpdate(BaseModel):
     dni: Optional[str] = None
     cargo: Optional[str] = None
     email_corporativo: Optional[EmailStr] = None
+    password: Optional[str] = None
+    is_admin: Optional[bool] = None
     activo: Optional[bool] = None
 
 # Response: Lo que devuelve la API
