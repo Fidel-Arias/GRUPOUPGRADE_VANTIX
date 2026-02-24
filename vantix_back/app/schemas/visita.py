@@ -12,6 +12,7 @@ class VisitaBase(BaseModel):
     nombre_contacto: Optional[str] = None
     telefono_contacto: Optional[str] = None
     email_contacto: Optional[str] = None # cambiado a str flexible
+    nombre_tecnico: Optional[str] = None
     observaciones: Optional[str] = None
     
     # ¡Agregamos el Resultado de la visita!

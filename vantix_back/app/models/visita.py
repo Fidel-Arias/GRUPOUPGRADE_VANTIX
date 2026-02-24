@@ -11,6 +11,7 @@ class RegistroVisita(Base):
     
     # ¡Apunta a la Cartera de Clientes!
     id_cliente = Column(Integer, ForeignKey("cartera_clientes.id_cliente", ondelete="RESTRICT"))
+    nombre_tecnico = Column(String(150)) # Movido desde el plan a la visita
     
     fecha_hora_checkin = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     observaciones = Column(Text)
