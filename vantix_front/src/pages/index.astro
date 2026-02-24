@@ -1,19 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import {
-	TrendingUp,
-	Users,
-	MapPin,
-	Calendar,
-	Activity,
-	Zap,
-	PlusCircle,
-	FileText,
-	ArrowRight,
-	TrendingDown,
-	Clock,
-	Briefcase,
-} from "lucide-react";
+import { PlusCircle, Calendar } from "lucide-react";
+import MainDashboard from "../components/Dashboard/MainDashboard";
 ---
 
 <Layout title="Vista General">
@@ -38,8 +26,7 @@ import {
 					Panel de <span class="text-gradient">Control</span>
 				</h1>
 				<p class="subtitle">
-					Bienvenido, Sr. Yoshiro. Aquí tienes el estado real de tus
-					operaciones.
+					Bienvenido al núcleo de operaciones de VANTIX.
 				</p>
 			</div>
 			<div class="header-actions">
@@ -50,184 +37,8 @@ import {
 			</div>
 		</header>
 
-		<!-- Bento Grid -->
-		<div class="bento-container">
-			<!-- 1. Hero Metric: Monthly Performance -->
-			<div class="bento-card hero-card section-animate">
-				<div class="card-glass"></div>
-				<div class="card-body">
-					<header>
-						<span class="label">Rendimiento Mensual</span>
-						<div class="trend positive">
-							<TrendingUp size={14} />
-							<span>+14.2%</span>
-						</div>
-					</header>
-					<div class="main-stat">
-						<span class="currency">S/</span>
-						<h2 class="counter">124,500</h2>
-					</div>
-					<div class="goal-track">
-						<div class="track-header">
-							<span>Progreso de Meta</span>
-							<span>78%</span>
-						</div>
-						<div class="track-bar">
-							<div class="progress" style="width: 78%"></div>
-						</div>
-						<p class="footer-text">
-							Faltan <strong>S/ 32,000</strong> para el objetivo de
-							Marzo.
-						</p>
-					</div>
-				</div>
-			</div>
-
-			<!-- 2. Interactive Quick Actions -->
-			<div class="bento-card actions-card section-animate">
-				<h3>Accesos Rápidos</h3>
-				<div class="actions-grid">
-					<a href="/empleados" class="action-btn">
-						<div class="icon-wrap ico-blue">
-							<Users size={20} />
-						</div>
-						<span>Empleados</span>
-					</a>
-					<a href="/visitas" class="action-btn">
-						<div class="icon-wrap ico-orange">
-							<MapPin size={20} />
-						</div>
-						<span>Visitas</span>
-					</a>
-					<a href="/kpi" class="action-btn">
-						<div class="icon-wrap ico-purple">
-							<TrendingUp size={20} />
-						</div>
-						<span>KPIs</span>
-					</a>
-					<a href="/reportes" class="action-btn">
-						<div class="icon-wrap ico-green">
-							<FileText size={20} />
-						</div>
-						<span>Reportes</span>
-					</a>
-				</div>
-			</div>
-
-			<!-- 3. Mini Stat: Active Clients -->
-			<div class="bento-card mini-card section-animate">
-				<div class="mini-icon blue"><Users size={22} /></div>
-				<div class="mini-data">
-					<h4>1,248</h4>
-					<p>Clientes Activos</p>
-					<span class="mini-trend">+12 hoy</span>
-				</div>
-			</div>
-
-			<!-- 4. Mini Stat: Planned Visits -->
-			<div class="bento-card mini-card section-animate">
-				<div class="mini-icon orange"><MapPin size={22} /></div>
-				<div class="mini-data">
-					<h4>342</h4>
-					<p>Visitas del Mes</p>
-					<span class="mini-trend">+5 planeadas</span>
-				</div>
-			</div>
-
-			<!-- 5. Advanced Chart: Sales Projection -->
-			<div class="bento-card chart-card section-animate">
-				<header>
-					<div class="title">
-						<Activity size={18} />
-						<h3>Proyección Semanal</h3>
-					</div>
-					<div class="legend">
-						<span class="it actual"><i></i> Real</span>
-						<span class="it target"><i></i> Meta</span>
-					</div>
-				</header>
-				<div class="chart-visual">
-					<div class="chart-y-axis">
-						<span>100%</span>
-						<span>50%</span>
-						<span>0%</span>
-					</div>
-					<div class="chart-bars-wrap">
-						{
-							[45, 78, 52, 91, 68, 85, 60].map((val, i) => (
-								<div class="bar-col">
-									<div class="bar-container">
-										<div
-											class="bar-target"
-											style="height: 75%"
-										/>
-										<div
-											class="bar-actual"
-											style={`height: ${val}%`}
-											data-val={`${val}%`}
-										>
-											<div class="glow" />
-										</div>
-									</div>
-									<span class="day-label">
-										{
-											[
-												"Lun",
-												"Mar",
-												"Mié",
-												"Jue",
-												"Vie",
-												"Sáb",
-												"Dom",
-											][i]
-										}
-									</span>
-								</div>
-							))
-						}
-					</div>
-				</div>
-			</div>
-
-			<!-- 6. Real-time Activity Stream -->
-			<div class="bento-card feed-card section-animate">
-				<header>
-					<h3>Actividad Reciente</h3>
-					<button class="btn-more"><ArrowRight size={16} /></button>
-				</header>
-				<div class="feed-body">
-					<div class="feed-item pulse-item">
-						<div class="avatar">JP</div>
-						<div class="info">
-							<p><strong>Juan Pérez</strong> registró visita</p>
-							<span class="meta"
-								><Clock size={12} /> Hace 5 min • Hospital Rebagliati</span
-							>
-						</div>
-					</div>
-					<div class="feed-item">
-						<div class="avatar icon-bg success">
-							<TrendingUp size={16} />
-						</div>
-						<div class="info">
-							<p><strong>Meta Diaria</strong> alcanzada</p>
-							<span class="meta"
-								><Clock size={12} /> Hace 2h • Equipo Lima Sur</span
-							>
-						</div>
-					</div>
-					<div class="feed-item">
-						<div class="avatar">MG</div>
-						<div class="info">
-							<p><strong>Maria Garcia</strong> creó nuevo plan</p>
-							<span class="meta"
-								><Clock size={12} /> Hace 4h • Semana 09</span
-							>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+		{/* Real-time Dashboard Component */}
+		<MainDashboard client:load />
 	</div>
 
 	<!-- GSAP Elite Implementation -->
