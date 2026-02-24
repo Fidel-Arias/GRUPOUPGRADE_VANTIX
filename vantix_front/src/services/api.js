@@ -70,3 +70,131 @@ export const clienteService = {
         return response.json();
     }
 };
+
+export const planService = {
+    async getAll(skip = 0, limit = 100, idEmpleado = null) {
+        let url = `${API_URL}/planes/?skip=${skip}&limit=${limit}`;
+        if (idEmpleado) url += `&id_empleado=${idEmpleado}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener planes de trabajo');
+        return response.json();
+    },
+
+    async getById(id) {
+        const response = await fetch(`${API_URL}/planes/${id}`);
+        if (!response.ok) throw new Error('Error al obtener detalle del plan');
+        return response.json();
+    },
+
+    async create(planData, idEmpleado) {
+        const response = await fetch(`${API_URL}/planes/?id_empleado=${idEmpleado}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(planData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al crear plan de trabajo');
+        }
+        return response.json();
+    },
+
+    async update(id, planData) {
+        const response = await fetch(`${API_URL}/planes/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(planData),
+        });
+        if (!response.ok) throw new Error('Error al actualizar plan de trabajo');
+        return response.json();
+    },
+
+    async delete(id) {
+        const response = await fetch(`${API_URL}/planes/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Error al eliminar plan de trabajo');
+        return response.json();
+    }
+};
+
+export const visitaService = {
+    async getAll(filters = {}) {
+        const params = new URLSearchParams();
+        if (filters.id_empleado) params.append('id_empleado', filters.id_empleado);
+        if (filters.id_plan) params.append('id_plan', filters.id_plan);
+        if (filters.id_cliente) params.append('id_cliente', filters.id_cliente);
+        if (filters.skip) params.append('skip', filters.skip);
+        if (filters.limit) params.append('limit', filters.limit);
+
+        const response = await fetch(`${API_URL}/visitas/?${params.toString()}`);
+        if (!response.ok) throw new Error('Error al obtener visitas');
+        return response.json();
+    },
+
+    async create(formData) {
+        // Usamos FormData directamente porque el controller es multipart/form-data
+        const response = await fetch(`${API_URL}/visitas/`, {
+            method: 'POST',
+            body: formData,
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar visita');
+        }
+        return response.json();
+    },
+
+    async delete(id) {
+        const response = await fetch(`${API_URL}/visitas/${id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Error al eliminar visita');
+        return response.json();
+    }
+};
+export const crmService = {
+    // LLAMADAS
+    async getLlamadas(idPlan = null, skip = 0, limit = 100) {
+        let url = `${API_URL}/crm/llamadas/?skip=${skip}&limit=${limit}`;
+        if (idPlan) url += `&id_plan=${idPlan}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener registro de llamadas');
+        return response.json();
+    },
+
+    async registrarLlamada(llamadaData) {
+        const response = await fetch(`${API_URL}/crm/llamadas/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(llamadaData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar llamada');
+        }
+        return response.json();
+    },
+
+    // EMAILS
+    async getEmails(idPlan = null, skip = 0, limit = 100) {
+        let url = `${API_URL}/crm/emails/?skip=${skip}&limit=${limit}`;
+        if (idPlan) url += `&id_plan=${idPlan}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener registro de correos');
+        return response.json();
+    },
+
+    async registrarEmail(emailData) {
+        const response = await fetch(`${API_URL}/crm/emails/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar correo');
+        }
+        return response.json();
+    }
+};

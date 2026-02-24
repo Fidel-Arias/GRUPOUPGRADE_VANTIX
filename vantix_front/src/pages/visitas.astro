@@ -1,0 +1,36 @@
+---
+import Layout from "../layouts/Layout.astro";
+import VisitaList from "../components/Visitas/VisitaList";
+---
+
+<Layout title="Registro de Visitas | VANTIX Elite">
+    <main class="page-container">
+        <VisitaList client:load />
+    </main>
+</Layout>
+
+<style>
+    .page-container {
+        padding: 2rem;
+        max-width: 1600px;
+        margin: 0 auto;
+        min-height: 100vh;
+    }
+
+    /* Estilos globales para las tarjetas premium */
+    :global(.card-premium) {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow:
+            0 10px 25px -5px rgba(0, 0, 0, 0.03),
+            0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+
+    :global(.glass-morphism) {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+</style>
