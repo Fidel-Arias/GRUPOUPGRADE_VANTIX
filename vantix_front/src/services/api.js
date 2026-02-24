@@ -153,3 +153,48 @@ export const visitaService = {
         return response.json();
     }
 };
+export const crmService = {
+    // LLAMADAS
+    async getLlamadas(idPlan = null, skip = 0, limit = 100) {
+        let url = `${API_URL}/crm/llamadas/?skip=${skip}&limit=${limit}`;
+        if (idPlan) url += `&id_plan=${idPlan}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener registro de llamadas');
+        return response.json();
+    },
+
+    async registrarLlamada(llamadaData) {
+        const response = await fetch(`${API_URL}/crm/llamadas/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(llamadaData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar llamada');
+        }
+        return response.json();
+    },
+
+    // EMAILS
+    async getEmails(idPlan = null, skip = 0, limit = 100) {
+        let url = `${API_URL}/crm/emails/?skip=${skip}&limit=${limit}`;
+        if (idPlan) url += `&id_plan=${idPlan}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al obtener registro de correos');
+        return response.json();
+    },
+
+    async registrarEmail(emailData) {
+        const response = await fetch(`${API_URL}/crm/emails/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al registrar correo');
+        }
+        return response.json();
+    }
+};
