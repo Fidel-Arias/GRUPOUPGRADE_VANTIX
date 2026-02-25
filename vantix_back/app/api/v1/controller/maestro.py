@@ -31,6 +31,7 @@ def registrar_cliente_nuevo(
         nombre_cliente=nuevo_maestro.nombre_entidad,
         ruc_dni=nuevo_maestro.ruc,
         id_distrito=nuevo_maestro.id_distrito,
+        id_empleado=nuevo_maestro.id_empleado,
         categoria=None, # Se puede actualizar después
         observaciones="Migrado automáticamente desde Maestro de Entidades"
     )

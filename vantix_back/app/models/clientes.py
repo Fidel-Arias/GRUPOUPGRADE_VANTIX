@@ -48,9 +48,11 @@ class MaestroEntidades(Base):
     ruc = Column(String(11), unique=True, index=True)
     nombre_entidad = Column(String(250), nullable=False)
     id_distrito = Column(Integer, ForeignKey("distritos.id_distrito", ondelete="RESTRICT"))
+    id_empleado = Column(Integer, ForeignKey("empleados.id_empleado", ondelete="SET NULL"), nullable=True)
     grupo = Column(String(150))
     
     fecha_registro = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     activo = Column(Boolean, default=True)
 
     distrito = relationship("Distrito")
+    empleado = relationship("Empleado", back_populates="entidades_maestro")

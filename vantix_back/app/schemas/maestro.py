@@ -10,6 +10,7 @@ class MaestroBase(BaseModel):
     sector: Optional[str] = None
     grupo: Optional[str] = None
     id_distrito: Optional[int] = None
+    id_empleado: Optional[int] = None
     activo: bool = True
 
 class MaestroCreate(MaestroBase):
