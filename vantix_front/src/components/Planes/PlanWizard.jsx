@@ -233,14 +233,27 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
         }
     }, [isOpen]);
 
+    useEffect(() => {
+        if (formData.id_empleado) {
+            fetchClientes(formData.id_empleado);
+        } else {
+            setClientes([]); // Opcional: limpiar si no hay empleado
+        }
+    }, [formData.id_empleado]);
+
+    const fetchClientes = async (idEmpleado) => {
+        try {
+            const cliData = await clienteService.getAll(0, 500, idEmpleado);
+            setClientes(cliData);
+        } catch (error) {
+            console.error('Error fetching clients for employee:', error);
+        }
+    };
+
     const fetchInitialData = async () => {
         try {
-            const [empData, cliData] = await Promise.all([
-                empleadoService.getAll(),
-                clienteService.getAll(0, 500)
-            ]);
+            const empData = await empleadoService.getAll();
             setEmpleados(empData);
-            setClientes(cliData);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
@@ -281,12 +294,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
             const payload = {
                 fecha_inicio_semana: formData.fecha_inicio_semana,
                 fecha_fin_semana: formData.fecha_fin_semana,
-                detalles_agenda: formData.detalles_agenda,
-                meta_visitas: parseInt(formData.meta_visitas),
-                meta_visitas_asistidas: parseInt(formData.meta_visitas_asistidas),
-                meta_llamadas: parseInt(formData.meta_llamadas),
-                meta_emails: parseInt(formData.meta_emails),
-                ventas_esperadas: parseFloat(formData.ventas_esperadas || 0)
+                detalles_agenda: formData.detalles_agenda
             };
             await planService.create(payload, formData.id_empleado);
             onSuccess();
