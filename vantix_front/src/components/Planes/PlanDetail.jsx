@@ -172,10 +172,10 @@ const PlanDetail = ({ planId = null }) => {
                             </div>
                             <div className="h-stat-divider"></div>
                             <div className="h-stat">
-                                <TrendingUp size={20} />
+                                <Clock size={20} />
                                 <div>
-                                    <label>Proyección de Venta</label>
-                                    <span className="venta-val">$ {plan.ventas_esperadas?.toLocaleString() || '0.00'}</span>
+                                    <label>Estado del Plan</label>
+                                    <span style={{ color: 'var(--primary)' }}>{plan.estado}</span>
                                 </div>
                             </div>
                         </div>
@@ -249,28 +249,6 @@ const PlanDetail = ({ planId = null }) => {
 
                 <aside className="plan-sidebar">
                     {/* Card de Metas */}
-                    <PremiumCard className="sidebar-card goals-card-premium">
-                        <div className="card-top">
-                            <Trophy size={24} className="icon-gold" />
-                            <h3>Meta Comercial</h3>
-                        </div>
-                        <div className="goal-visual">
-                            <div className="goal-amount">
-                                <label>Venta Objetivo</label>
-                                <span className="currency">$</span>
-                                <span className="amount">{plan.ventas_esperadas?.toLocaleString() || '0'}</span>
-                            </div>
-                            <div className="progress-container">
-                                <div className="progress-stats">
-                                    <span>Progreso actual</span>
-                                    <span>0%</span>
-                                </div>
-                                <div className="progress-track">
-                                    <div className="progress-bar-glow"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </PremiumCard>
 
                     {/* Card de Indicaciones */}
                     <PremiumCard className="sidebar-card directive-card" hover={false}>

@@ -115,8 +115,10 @@ export const empleadoService = {
 };
 
 export const clienteService = {
-    async getAll(skip = 0, limit = 100) {
-        const response = await authFetch(`/cartera/?skip=${skip}&limit=${limit}`);
+    async getAll(skip = 0, limit = 100, idEmpleado = null) {
+        let url = `/cartera/?skip=${skip}&limit=${limit}`;
+        if (idEmpleado) url += `&id_empleado=${idEmpleado}`;
+        const response = await authFetch(url);
         if (!response.ok) throw new Error('Error al obtener clientes');
         return response.json();
     },
