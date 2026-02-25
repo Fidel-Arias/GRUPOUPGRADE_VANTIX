@@ -259,10 +259,11 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             .modal-container {
               width: 100%;
               max-width: 600px;
-              background: white;
+              background: var(--bg-panel);
               border-radius: 24px;
-              box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+              box-shadow: var(--shadow-premium);
               overflow: hidden;
+              border: 1px solid var(--border-subtle);
             }
 
             .modal-header {
@@ -270,8 +271,8 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              background: #f8fafc;
-              border-bottom: 1px solid #f1f5f9;
+              background: var(--bg-app);
+              border-bottom: 1px solid var(--border-subtle);
             }
 
             .title-wrap {
@@ -283,8 +284,8 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             .icon-badge {
               width: 36px;
               height: 36px;
-              background: #f0f9ff;
-              color: #0369a1;
+              background: var(--primary-soft);
+              color: var(--primary);
               border-radius: 10px;
               display: flex;
               align-items: center;
@@ -294,13 +295,13 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             .modal-header h3 {
               font-size: 1.25rem;
               font-weight: 800;
-              color: #1e293b;
+              color: var(--text-heading);
             }
 
             .close-btn {
               background: none;
               border: none;
-              color: #94a3b8;
+              color: var(--text-muted);
               cursor: pointer;
               padding: 8px;
               border-radius: 50%;
@@ -308,7 +309,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             }
 
             .close-btn:hover {
-              background: #f1f5f9;
+              background: var(--bg-app);
               color: #ef4444;
             }
 
@@ -317,7 +318,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             }
 
             .error-banner {
-              background: #fef2f2;
+              background: rgba(239, 68, 68, 0.1);
               color: #dc2626;
               padding: 0.75rem 1rem;
               border-radius: 12px;
@@ -327,6 +328,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
               font-size: 0.85rem;
               font-weight: 600;
               margin-bottom: 1.5rem;
+              border: 1px solid rgba(239, 68, 68, 0.2);
             }
 
             .form-grid {
@@ -342,11 +344,11 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             .section-divider {
               font-size: 0.75rem;
               font-weight: 800;
-              color: #94a3b8;
+              color: var(--text-muted);
               text-transform: uppercase;
               letter-spacing: 0.1em;
               padding: 1rem 0 0.5rem;
-              border-bottom: 1px solid #f1f5f9;
+              border-bottom: 1px solid var(--border-subtle);
               margin-bottom: 0.5rem;
             }
 
@@ -356,7 +358,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
               gap: 8px;
               font-size: 0.75rem;
               font-weight: 700;
-              color: #64748b;
+              color: var(--text-muted);
               margin-bottom: 0.5rem;
               text-transform: uppercase;
             }
@@ -365,18 +367,18 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
               width: 100%;
               padding: 0.75rem 1rem;
               border-radius: 12px;
-              border: 1px solid #e2e8f0;
-              background: #f8fafc;
+              border: 1px solid var(--border-subtle);
+              background: var(--bg-app);
               font-size: 0.9rem;
-              color: #1e293b;
+              color: var(--text-heading);
               font-weight: 500;
               transition: all 0.2s;
             }
 
             .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
-              background: white;
-              border-color: #0ea5e9;
-              box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+              background: var(--bg-panel);
+              border-color: var(--primary);
+              box-shadow: 0 0 0 4px var(--primary-glow);
               outline: none;
             }
 
@@ -390,18 +392,24 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             .btn-cancel {
               padding: 0.75rem 1.5rem;
               border-radius: 12px;
-              border: 1px solid #e2e8f0;
-              background: white;
-              color: #64748b;
+              border: 1px solid var(--border-subtle);
+              background: var(--bg-app);
+              color: var(--text-muted);
               font-weight: 700;
               cursor: pointer;
+              transition: all 0.2s;
+            }
+
+            .btn-cancel:hover {
+              background: var(--bg-panel);
+              color: var(--text-heading);
             }
 
             .btn-save {
               padding: 0.75rem 1.75rem;
               border-radius: 12px;
               border: none;
-              background: #0f172a;
+              background: var(--bg-sidebar);
               color: white;
               font-weight: 700;
               display: flex;
@@ -409,11 +417,13 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
               gap: 10px;
               cursor: pointer;
               transition: all 0.2s;
+              box-shadow: var(--shadow-md);
             }
 
             .btn-save:hover:not(:disabled) {
               background: #1e293b;
               transform: translateY(-2px);
+              box-shadow: var(--shadow-lg);
             }
 
             .spinner-small {

@@ -290,13 +290,13 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
                     justify-content: center; z-index: 5000; padding: 1.5rem;
                 }
                 .modal-card {
-                    width: 100%; max-width: 680px; background: white; border-radius: 32px;
+                    width: 100%; max-width: 680px; background: var(--bg-panel); border-radius: 32px;
                     display: flex; flex-direction: column; overflow: hidden;
-                    box-shadow: 0 40px 100px -20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);
+                    box-shadow: var(--shadow-premium); border: 1px solid var(--border-subtle);
                 }
                 .modal-header {
-                    padding: 2rem 2.5rem; border-bottom: 1px solid #f1f5f9;
-                    display: flex; justify-content: space-between; align-items: center; background: #fafafa;
+                    padding: 2rem 2.5rem; border-bottom: 1px solid var(--border-subtle);
+                    display: flex; justify-content: space-between; align-items: center; background: var(--bg-app);
                 }
                 .title-wrap { display: flex; align-items: center; gap: 20px; }
                 .icon-box-gradient {
@@ -304,11 +304,11 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
                     border-radius: 16px; display: flex; align-items: center; justify-content: center;
                     box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.3);
                 }
-                .title-wrap h3 { font-size: 1.4rem; font-weight: 800; color: #1e293b; line-height: 1; margin-bottom: 6px; }
-                .title-wrap p { font-size: 0.95rem; color: #64748b; font-weight: 500; }
+                .title-wrap h3 { font-size: 1.4rem; font-weight: 800; color: var(--text-heading); line-height: 1; margin-bottom: 6px; }
+                .title-wrap p { font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
                 
                 .close-btn { 
-                    background: #f1f5f9; border: none; color: #94a3b8; cursor: pointer; 
+                    background: var(--bg-app); border: none; color: var(--text-muted); cursor: pointer; 
                     width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
@@ -316,7 +316,7 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
 
                 .modal-body { padding: 2.5rem; overflow-y: auto; max-height: 75vh; }
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 10px; }
 
                 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
                 .form-group.full { grid-column: span 2; }
@@ -324,29 +324,29 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
                 .form-section-divider { 
                     grid-column: span 2; display: flex; align-items: center; gap: 15px; margin: 1.5rem 0 0.5rem 0;
                 }
-                .form-section-divider span { font-size: 0.75rem; font-weight: 900; color: #0ea5e9; text-transform: uppercase; letter-spacing: 2px; white-space: nowrap; }
-                .divider-line { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); }
+                .form-section-divider span { font-size: 0.75rem; font-weight: 900; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; white-space: nowrap; }
+                .divider-line { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, var(--border-subtle), transparent); }
 
-                .form-group label { display: block; font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; padding-left: 2px; }
+                .form-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; padding-left: 2px; }
                 .req { color: #f43f5e; font-weight: 900; margin-left: 2px; }
                 
                 .input-with-icon-premium {
                     position: relative; display: flex; align-items: center;
-                    background: #f8fafc; border: 2px solid #f1f5f9; border-radius: 16px;
+                    background: var(--bg-app); border: 2px solid var(--border-subtle); border-radius: 16px;
                     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                 }
-                .input-with-icon-premium:focus-within { border-color: #0ea5e9; box-shadow: 0 10px 20px -5px rgba(14, 165, 233, 0.1); background: white; transform: translateY(-1px); }
-                .input-with-icon-premium svg { position: absolute; left: 16px; color: #94a3b8; pointer-events: none; }
+                .input-with-icon-premium:focus-within { border-color: var(--primary); box-shadow: 0 10px 20px -5px var(--primary-glow); background: var(--bg-panel); transform: translateY(-1px); }
+                .input-with-icon-premium svg { position: absolute; left: 16px; color: var(--text-muted); pointer-events: none; }
                 .input-with-icon-premium input, .input-with-icon-premium select {
                     width: 100%; height: 54px; background: none; border: none; padding: 0 1rem 0 50px;
-                    font-size: 1rem; font-weight: 600; color: #1e293b; outline: none;
+                    font-size: 1rem; font-weight: 600; color: var(--text-heading); outline: none;
                 }
                 .input-with-icon-premium select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
                 .input-with-icon-premium select:disabled { opacity: 0.5; cursor: not-allowed; }
 
                 .spinner-mini {
                     position: absolute; right: 44px; width: 14px; height: 14px;
-                    border: 2px solid #e2e8f0; border-top-color: #0ea5e9; border-radius: 50%;
+                    border: 2px solid var(--border-subtle); border-top-color: var(--primary); border-radius: 50%;
                     animation: spin 0.8s linear infinite;
                 }
 
@@ -354,19 +354,19 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
                     margin-top: 2.5rem; display: flex; justify-content: flex-end; gap: 15px; align-items: center;
                 }
                 .btn-cancel-glass {
-                    padding: 1rem 2rem; border-radius: 16px; border: 1.5px solid #e2e8f0;
-                    background: white; color: #64748b; font-weight: 700; cursor: pointer; transition: all 0.2s;
+                    padding: 1rem 2rem; border-radius: 16px; border: 1.5px solid var(--border-subtle);
+                    background: var(--bg-app); color: var(--text-muted); font-weight: 700; cursor: pointer; transition: all 0.2s;
                     font-size: 0.95rem;
                 }
-                .btn-cancel-glass:hover { background: #f8fafc; color: #1e293b; border-color: #d1d5db; }
+                .btn-cancel-glass:hover { background: var(--bg-panel); color: var(--text-heading); border-color: var(--text-muted); }
                 
                 .btn-save-morph {
                     padding: 1rem 2.5rem; border-radius: 16px; border: none;
-                    background: #0f172a; color: white; font-weight: 700; cursor: pointer; transition: all 0.3s;
+                    background: var(--bg-sidebar); color: white; font-weight: 700; cursor: pointer; transition: all 0.3s;
                     display: flex; align-items: center; gap: 12px; font-size: 0.95rem;
-                    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.3);
+                    box-shadow: var(--shadow-md);
                 }
-                .btn-save-morph:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 25px 35px -5px rgba(15, 23, 42, 0.4); background: #1e293b; }
+                .btn-save-morph:hover:not(:disabled) { transform: translateY(-3px); box-shadow: var(--shadow-lg); background: #1e293b; }
                 .btn-save-morph:active { transform: translateY(-1px); }
                 .btn-save-morph:disabled { opacity: 0.7; cursor: wait; }
 

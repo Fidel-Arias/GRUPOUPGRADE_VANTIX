@@ -1,7 +1,6 @@
 ---
 import "../styles/global.css";
 import Sidebar from "../components/Navigation/Sidebar.jsx";
-import Header from "../components/Navigation/Header.jsx";
 
 interface Props {
     title: string;
@@ -18,7 +17,7 @@ const { title } = Astro.props;
             name="description"
             content="Vantix CRM - Sistema de Gestión Comercial"
         />
-        <meta name="viewport" content="width=device-width" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,12 +27,32 @@ const { title } = Astro.props;
         />
         <meta name="generator" content={Astro.generator} />
         <title>{title} | Vantix</title>
+        <script is:inline>
+            // Theme initialization to prevent flash
+            const theme = (() => {
+                if (
+                    typeof localStorage !== "undefined" &&
+                    localStorage.getItem("theme")
+                ) {
+                    return localStorage.getItem("theme");
+                }
+                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                    return "dark";
+                }
+                return "light";
+            })();
+
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        </script>
     </head>
     <body>
         <div class="app-container">
             <Sidebar client:load />
             <div class="main-wrapper">
-                <Header client:load />
                 <main class="content">
                     <slot />
                 </main>
@@ -64,7 +83,7 @@ const { title } = Astro.props;
                 transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .content {
-                padding: 1.5rem;
+                padding: 1.5rem 2rem;
                 max-width: 1600px;
                 width: 100%;
                 margin: 0 auto;

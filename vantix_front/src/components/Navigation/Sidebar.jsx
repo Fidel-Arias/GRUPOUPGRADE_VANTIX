@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -17,7 +17,9 @@ import {
   X,
   Zap,
   ShieldCheck,
-  DollarSign
+  DollarSign,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const menuItems = [
@@ -34,7 +36,31 @@ const menuItems = [
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
+    }
+    document.documentElement.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+  }, []);
+
+  const toggleTheme = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    if (newDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   // Determinamos el item activo basado en la URL
   const [activeItem, setActiveItem] = useState('Dashboard');
@@ -170,6 +196,14 @@ const Sidebar = () => {
           <div className="nav-group" style={{ marginTop: 'auto' }}>
             <ul>
               <motion.li layout>
+                <div onClick={toggleTheme} className="nav-item theme-item" style={{ cursor: 'pointer' }}>
+                  <div className="icon-wrapper">
+                    {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                  </div>
+                  {!isCollapsed && <span className="item-label">{isDark ? 'Modo Claro' : 'Modo Oscuro'}</span>}
+                </div>
+              </motion.li>
+              <motion.li layout>
                 <a href="/settings" className="nav-item">
                   <div className="icon-wrapper"><Settings size={20} /></div>
                   {!isCollapsed && <span className="item-label">Configuración</span>}
@@ -225,7 +259,7 @@ const Sidebar = () => {
           display: flex;
           flex-direction: column;
           z-index: 1000;
-          background: #0b1120;
+          background: var(--bg-sidebar);
           color: white;
           padding: 1.5rem 1rem;
           box-shadow: 10px 0 50px rgba(0,0,0,0.2);
@@ -479,13 +513,14 @@ const Sidebar = () => {
           left: 1rem;
           width: 44px;
           height: 44px;
-          background: white;
+          background: var(--bg-panel);
           border: 1px solid var(--border-subtle);
+          color: var(--text-heading);
           border-radius: 12px;
           align-items: center;
           justify-content: center;
           z-index: 1001;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+          box-shadow: var(--shadow-md);
         }
 
         @media (max-width: 1024px) {

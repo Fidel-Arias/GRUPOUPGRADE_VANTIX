@@ -117,7 +117,7 @@ const VisitaList = () => {
                     </div>
                     <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
                         <Plus size={18} />
-                        <span>Registrar Visita</span>
+                        <span className="btn-text">Registrar Visita</span>
                     </button>
                 </div>
             </div>
@@ -132,7 +132,7 @@ const VisitaList = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="quick-stats">
+                <div className="quick-stats hide-mobile">
                     <div className="stat-item">
                         <span className="stat-value">{visitas.length}</span>
                         <span className="stat-label">Total Visitas</span>
@@ -224,9 +224,9 @@ const VisitaList = () => {
                                 <th>Cliente</th>
                                 <th>Resultado</th>
                                 <th>Fecha / Hora</th>
-                                <th>Ubicación</th>
-                                <th>Técnico</th>
-                                <th>Evidencia</th>
+                                <th className="hide-tablet">Ubicación</th>
+                                <th className="hide-tablet">Técnico</th>
+                                <th className="hide-mobile">Evidencia</th>
                                 <th className="text-right">Acciones</th>
                             </tr>
                         </thead>
@@ -250,7 +250,7 @@ const VisitaList = () => {
                                             <span className="time">{new Date(visita.fecha_hora_checkin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td className="hide-tablet">
                                         {visita.geolocalizacion_lat ? (
                                             <a
                                                 href={`https://www.google.com/maps?q=${visita.geolocalizacion_lat},${visita.geolocalizacion_lon}`}
@@ -261,10 +261,10 @@ const VisitaList = () => {
                                             </a>
                                         ) : 'N/A'}
                                     </td>
-                                    <td>
+                                    <td className="hide-tablet">
                                         <span className="tech-name">{visita.nombre_tecnico || 'N/A'}</span>
                                     </td>
-                                    <td>
+                                    <td className="hide-mobile">
                                         <div className="evidencia-thumbnails">
                                             <img src={`${BACKEND_URL}${visita.url_foto_lugar}`} className="thumb" onClick={() => setPreviewPhoto(`${BACKEND_URL}${visita.url_foto_lugar}`)} />
                                             <img src={`${BACKEND_URL}${visita.url_foto_sello}`} className="thumb" onClick={() => setPreviewPhoto(`${BACKEND_URL}${visita.url_foto_sello}`)} />
@@ -680,8 +680,37 @@ const VisitaList = () => {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 1024px) {
-          .filters-bar { flex-direction: column; gap: 1rem; }
+          .section-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+          .action-group { width: 100%; justify-content: space-between; }
+          .filters-bar { flex-direction: column; gap: 1rem; align-items: stretch; }
           .search-box { width: 100%; }
+          .visitas-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+          .hide-tablet { display: none; }
+        }
+
+        @media (max-width: 640px) {
+          .title-group h2 { font-size: 1.5rem; }
+          .btn-text { display: none; }
+          .btn-primary {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            padding: 0;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
+          }
+          .visita-card { font-size: 0.9rem; }
+          .visita-image-header { height: 160px; }
+          .visita-sello { width: 60px; height: 60px; right: 15px; bottom: -15px; }
+          .visita-content { padding: 1.5rem 1rem 1rem; }
+          .hide-mobile { display: none; }
+          .table-wrapper { overflow-x: auto; }
+          .custom-table { min-width: 500px; }
+          .view-toggle { width: auto; }
         }
 
         /* Photo Preview Styles */

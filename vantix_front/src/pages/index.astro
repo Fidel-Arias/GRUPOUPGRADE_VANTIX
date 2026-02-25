@@ -199,7 +199,7 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 		}
 
 		.bento-card {
-			background: white;
+			background: var(--bg-panel);
 			border-radius: var(--radius-lg);
 			border: 1px solid var(--border-subtle);
 			padding: 1.8rem;
@@ -217,7 +217,7 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 		/* 1. Hero Card Specifics */
 		.hero-card {
 			grid-column: span 2;
-			background: #0f172a;
+			background: var(--bg-sidebar);
 			color: white;
 			border: none;
 		}
@@ -328,16 +328,16 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			align-items: center;
 			gap: 10px;
 			padding: 1.5rem 1rem;
-			background: #f8fafc;
-			border: 1px solid #f1f5f9;
+			background: var(--bg-app);
+			border: 1px solid var(--border-subtle);
 			border-radius: 20px;
 			transition: all 0.3s ease;
 		}
 
 		.action-btn:hover {
-			background: white;
+			background: var(--bg-panel);
 			border-color: var(--primary);
-			box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+			box-shadow: var(--shadow-sm);
 			transform: translateY(-5px);
 		}
 
@@ -348,8 +348,8 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-			background: white;
+			box-shadow: var(--shadow-sm);
+			background: var(--bg-panel);
 		}
 
 		.ico-blue {
@@ -388,11 +388,11 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 		}
 
 		.mini-icon.blue {
-			background: #eff6ff;
+			background: var(--primary-glow);
 			color: var(--primary);
 		}
 		.mini-icon.orange {
-			background: #fff7ed;
+			background: rgba(249, 115, 22, 0.1);
 			color: #f97316;
 		}
 
@@ -459,7 +459,7 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			box-shadow: 0 0 10px var(--primary);
 		}
 		.target i {
-			background: #e2e8f0;
+			background: var(--border-subtle);
 		}
 
 		.chart-visual {
@@ -475,7 +475,7 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			justify-content: space-between;
 			font-size: 0.7rem;
 			font-weight: 700;
-			color: #94a3b8;
+			color: var(--text-muted);
 			padding-bottom: 30px;
 		}
 
@@ -503,7 +503,7 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			width: 100%;
 			height: 100%;
 			position: relative;
-			background: rgba(248, 250, 252, 0.5);
+			background: var(--bg-app);
 			border-radius: 10px;
 			margin-bottom: 12px;
 			overflow: hidden;
@@ -513,8 +513,8 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			position: absolute;
 			bottom: 0;
 			width: 100%;
-			background: #f1f5f9;
-			border-top: 1px dashed #94a3b8;
+			background: var(--border-subtle);
+			border-top: 1px dashed var(--text-muted);
 			z-index: 0;
 		}
 
@@ -559,7 +559,7 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 		}
 
 		.btn-more {
-			background: #f1f5f9;
+			background: var(--bg-app);
 			border: none;
 			width: 32px;
 			height: 32px;
@@ -601,8 +601,8 @@ import MainDashboard from "../components/Dashboard/MainDashboard";
 			font-size: 0.8rem;
 			font-weight: 800;
 			color: var(--primary);
-			border: 2px solid white;
-			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+			border: 2px solid var(--border-subtle);
+			box-shadow: var(--shadow-sm);
 		}
 
 		.icon-bg {

@@ -113,7 +113,7 @@ const CarteraList = () => {
         <div className="action-group">
           <button className="btn-primary" onClick={() => setIsNuevoModalOpen(true)}>
             <Building2 size={18} />
-            <span>Nuevo Cliente</span>
+            <span className="btn-text">Nuevo Cliente</span>
           </button>
           <input
             type="file"
@@ -124,7 +124,7 @@ const CarteraList = () => {
           />
           <button className="btn-secondary" onClick={handleImportClick} disabled={loading}>
             <Upload size={18} />
-            <span>Importar Excel</span>
+            <span className="btn-text">Importar Excel</span>
           </button>
         </div>
       </div>
@@ -161,7 +161,8 @@ const CarteraList = () => {
                 className={`filter-tab ${filterCategory === cat ? 'active' : ''}`}
                 onClick={() => setFilterCategory(cat)}
               >
-                {cat.charAt(0) + cat.slice(1).toLowerCase()}
+                <span className="tab-full-text">{cat.charAt(0) + cat.slice(1).toLowerCase()}</span>
+                <span className="tab-short-text">{cat === 'TODOS' ? 'T' : cat.charAt(0)}</span>
               </button>
             ))}
           </div>
@@ -180,33 +181,35 @@ const CarteraList = () => {
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Cliente / Entidad</th>
-                    <th>Identificación</th>
-                    <th>Contacto</th>
-                    <th>Ubicación</th>
+                    <th><span className="hide-mobile">Cliente / Entidad</span><span className="show-mobile-only">Cliente</span></th>
+                    <th className="hide-mobile">Identificación</th>
+                    <th className="hide-tablet">Contacto</th>
+                    <th className="hide-tablet">Ubicación</th>
                     <th>Cat.</th>
-                    <th className="text-right">Acciones</th>
+                    <th className="text-right">
+                      <span className="hide-mobile">Acciones</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentItems.length > 0 ? (
                     currentItems.map((c) => (
                       <tr key={c.id_cliente}>
-                        <td>
+                        <td className="cliente-td">
                           <div className="client-info">
                             <div className={`client-icon ${c.categoria?.toLowerCase() || 'default'}`}>
                               <Building2 size={18} />
                             </div>
                             <div className="client-text">
                               <span className="client-name">{c.nombre_cliente}</span>
-                              <span className="last-visit">
+                              <span className="last-visit hide-mobile">
                                 Última visita: {c.fecha_ultima_visita || 'Sin registro'}
                               </span>
                             </div>
                           </div>
                         </td>
-                        <td><span className="ruc-tag">{c.ruc_dni}</span></td>
-                        <td>
+                        <td className="hide-mobile"><span className="ruc-tag">{c.ruc_dni}</span></td>
+                        <td className="hide-tablet">
                           <div className="contact-mini">
                             <div className="contact-name">{c.nombre_contacto || 'No asignado'}</div>
                             <div className="contact-row secondary">
@@ -215,7 +218,7 @@ const CarteraList = () => {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td className="hide-tablet">
                           <div className="location-info">
                             <MapPin size={14} className="location-icon" />
                             <div className="location-text">
@@ -226,12 +229,13 @@ const CarteraList = () => {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td className="cat-td">
                           <span className={`cat-badge ${c.categoria?.toLowerCase() || 'other'}`}>
-                            {c.categoria || 'S/C'}
+                            <span className="badge-full-text">{c.categoria || 'S/C'}</span>
+                            <span className="badge-short-text">{(c.categoria || 'S')[0]}</span>
                           </span>
                         </td>
-                        <td className="text-right">
+                        <td className="text-right actions-td">
                           <button className="action-icon-btn" onClick={() => handleEdit(c)}>
                             <Edit2 size={16} />
                           </button>
@@ -242,7 +246,9 @@ const CarteraList = () => {
                     <tr>
                       <td colSpan="6" className="empty-state-cell">
                         <div className="empty-state">
-                          <FileSpreadsheet size={48} />
+                          <div className="empty-icon-wrap">
+                            <FileSpreadsheet size={32} />
+                          </div>
                           <p>No hay clientes registrados en esta categoría.</p>
                         </div>
                       </td>
@@ -255,8 +261,8 @@ const CarteraList = () => {
             {totalPages > 1 && (
               <div className="pagination-footer">
                 <div className="page-info">
-                  Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
-                  <span className="results-count">({filteredClientes.length} clientes)</span>
+                  <span className="p-text">Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong></span>
+                  <span className="results-count hide-mobile">({filteredClientes.length} clientes)</span>
                 </div>
                 <div className="pagination-btns">
                   <button
@@ -265,14 +271,14 @@ const CarteraList = () => {
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft size={18} />
-                    Anterior
+                    <span className="pag-text">Anterior</span>
                   </button>
                   <button
                     className="pag-btn"
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Siguiente
+                    <span className="pag-text">Siguiente</span>
                     <ChevronRight size={18} />
                   </button>
                 </div>
@@ -321,12 +327,12 @@ const CarteraList = () => {
                 .title-group h2 {
                     font-size: 2rem;
                     font-weight: 800;
-                    color: #1e293b;
+                    color: var(--text-heading);
                     letter-spacing: -0.02em;
                 }
 
                 .title-group p {
-                    color: #64748b;
+                    color: var(--text-muted);
                     font-size: 1rem;
                 }
 
@@ -340,13 +346,13 @@ const CarteraList = () => {
                     font-size: 0.9rem;
                 }
 
-                .status-banner.success { background: #ecfdf5; color: #059669; border: 1px solid #d1fae5; }
-                .status-banner.error { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
-                .status-banner.info { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+                .status-banner.success { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+                .status-banner.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+                .status-banner.info { background: var(--primary-glow); color: var(--primary); border: 1px solid var(--primary-soft); }
 
                 .btn-primary {
                     padding: 0.75rem 1.5rem;
-                    background: #0f172a;
+                    background: var(--bg-sidebar);
                     border: none;
                     border-radius: 12px;
                     display: flex;
@@ -356,33 +362,33 @@ const CarteraList = () => {
                     color: white;
                     cursor: pointer;
                     transition: all 0.2s;
-                    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+                    box-shadow: var(--shadow-md);
                 }
 
                 .btn-primary:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 15px 20px -5px rgba(15, 23, 42, 0.3);
+                    box-shadow: var(--shadow-lg);
                 }
 
                 .btn-secondary {
                     padding: 0.75rem 1.5rem;
-                    background: white;
-                    border: 1px solid #e2e8f0;
+                    background: var(--bg-panel);
+                    border: 1px solid var(--border-subtle);
                     border-radius: 12px;
                     display: flex;
                     align-items: center;
                     gap: 10px;
                     font-weight: 700;
-                    color: #1e293b;
+                    color: var(--text-heading);
                     cursor: pointer;
                     transition: all 0.2s;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                    box-shadow: var(--shadow-sm);
                 }
 
                 .btn-secondary:hover:not(:disabled) {
-                    border-color: #0ea5e9;
-                    color: #0ea5e9;
-                    background: #f0f9ff;
+                    border-color: var(--primary);
+                    color: var(--primary);
+                    background: var(--bg-app);
                     transform: translateY(-2px);
                 }
 
@@ -396,12 +402,19 @@ const CarteraList = () => {
                 .search-box {
                     display: flex;
                     align-items: center;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
+                    background: var(--bg-app);
+                    border: 1px solid var(--border-subtle);
                     border-radius: 12px;
                     padding: 0 1rem;
                     width: 380px;
                     height: 44px;
+                    transition: var(--transition);
+                }
+
+                .search-box:focus-within {
+                    background: var(--bg-panel);
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 4px var(--primary-soft);
                 }
 
                 .search-box input {
@@ -411,13 +424,16 @@ const CarteraList = () => {
                     width: 100%;
                     font-size: 0.9rem;
                     margin-left: 10px;
+                    color: var(--text-heading);
+                    font-family: inherit;
                 }
 
                 .filter-tabs {
                     display: flex;
-                    background: #f1f5f9;
+                    background: var(--bg-app);
                     padding: 4px;
                     border-radius: 10px;
+                    border: 1px solid var(--border-subtle);
                 }
 
                 .filter-tab {
@@ -426,16 +442,16 @@ const CarteraList = () => {
                     background: none;
                     font-size: 0.8rem;
                     font-weight: 700;
-                    color: #64748b;
+                    color: var(--text-muted);
                     cursor: pointer;
                     border-radius: 8px;
                     transition: all 0.2s;
                 }
 
                 .filter-tab.active {
-                    background: white;
-                    color: #0ea5e9;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    background: var(--bg-panel);
+                    color: var(--primary);
+                    box-shadow: var(--shadow-sm);
                 }
 
                 .table-wrapper {
@@ -455,19 +471,20 @@ const CarteraList = () => {
                 }
 
                 .custom-table th {
-                    background: #f8fafc;
+                    background: var(--bg-app);
                     padding: 1rem 1.5rem;
                     text-align: left;
                     font-size: 0.75rem;
                     font-weight: 800;
-                    color: #64748b;
+                    color: var(--text-muted);
                     text-transform: uppercase;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid var(--border-subtle);
                 }
 
                 .custom-table td {
                     padding: 1.25rem 1.5rem;
-                    border-bottom: 1px solid #f1f5f9;
+                    border-bottom: 1px solid var(--border-light);
+                    color: var(--text-body);
                 }
 
                 .client-info {
@@ -485,10 +502,10 @@ const CarteraList = () => {
                     justify-content: center;
                 }
 
-                .client-icon.corporativo { background: #e0f2fe; color: #0369a1; }
-                .client-icon.gobierno { background: #fef3c7; color: #92400e; }
-                .client-icon.retail { background: #dcfce7; color: #166534; }
-                .client-icon.default { background: #f1f5f9; color: #64748b; }
+                .client-icon.corporativo { background: var(--primary-soft); color: var(--primary); }
+                .client-icon.gobierno { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+                .client-icon.retail { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                .client-icon.default { background: var(--bg-app); color: var(--text-muted); }
 
                 .client-text {
                     display: flex;
@@ -497,23 +514,24 @@ const CarteraList = () => {
 
                 .client-name {
                     font-weight: 700;
-                    color: #1e293b;
+                    color: var(--text-heading);
                     font-size: 0.95rem;
                 }
 
                 .last-visit {
                     font-size: 0.75rem;
-                    color: #94a3b8;
+                    color: var(--text-muted);
                 }
 
                 .ruc-tag {
                     font-family: monospace;
-                    background: #f1f5f9;
+                    background: var(--bg-app);
                     padding: 4px 8px;
                     border-radius: 6px;
                     font-size: 0.85rem;
                     font-weight: 600;
-                    color: #475569;
+                    color: var(--text-heading);
+                    border: 1px solid var(--border-subtle);
                 }
 
                 .contact-mini {
@@ -525,7 +543,7 @@ const CarteraList = () => {
                 .contact-name {
                     font-weight: 600;
                     font-size: 0.85rem;
-                    color: #1e293b;
+                    color: var(--text-heading);
                 }
 
                 .contact-row.secondary {
@@ -533,7 +551,7 @@ const CarteraList = () => {
                     align-items: center;
                     gap: 6px;
                     font-size: 0.75rem;
-                    color: #64748b;
+                    color: var(--text-muted);
                 }
 
                 .location-info {
@@ -544,7 +562,7 @@ const CarteraList = () => {
                 }
 
                 .location-icon {
-                    color: #94a3b8;
+                    color: var(--text-muted);
                     margin-top: 2px;
                     flex-shrink: 0;
                 }
@@ -558,7 +576,7 @@ const CarteraList = () => {
 
                 .address {
                     font-size: 0.85rem;
-                    color: #475569;
+                    color: var(--text-body);
                     font-weight: 500;
                     white-space: nowrap;
                     overflow: hidden;
@@ -568,7 +586,7 @@ const CarteraList = () => {
                 .district {
                     font-size: 0.7rem;
                     font-weight: 700;
-                    color: #0ea5e9;
+                    color: var(--primary);
                     text-transform: uppercase;
                     letter-spacing: 0.02em;
                 }
@@ -580,18 +598,18 @@ const CarteraList = () => {
                     font-weight: 800;
                 }
 
-                .cat-badge.corporativo { background: #e0f2fe; color: #0369a1; }
-                .cat-badge.gobierno { background: #fef3c7; color: #92400e; }
-                .cat-badge.retail { background: #dcfce7; color: #166534; }
-                .cat-badge.other { background: #f1f5f9; color: #64748b; }
+                .cat-badge.corporativo { background: var(--primary-soft); color: var(--primary); }
+                .cat-badge.gobierno { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+                .cat-badge.retail { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                .cat-badge.other { background: var(--bg-app); color: var(--text-muted); }
 
                 .action-icon-btn {
                     width: 32px;
                     height: 32px;
                     border-radius: 8px;
-                    border: 1px solid #e2e8f0;
-                    background: white;
-                    color: #64748b;
+                    border: 1px solid var(--border-subtle);
+                    background: var(--bg-panel);
+                    color: var(--text-muted);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -600,35 +618,56 @@ const CarteraList = () => {
                 }
 
                 .action-icon-btn:hover {
-                    border-color: #0ea5e9;
-                    color: #0ea5e9;
-                    background: #f0f9ff;
+                    border-color: var(--primary);
+                    color: var(--primary);
+                    background: var(--bg-app);
                 }
 
                 .empty-state-cell {
                     padding: 4rem 0;
                 }
 
+                .empty-icon-wrap {
+                    width: 64px;
+                    height: 64px;
+                    background: var(--bg-app);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 0.5rem;
+                    color: var(--text-muted);
+                }
+
                 .empty-state {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 1rem;
-                    color: #94a3b8;
+                    text-align: center;
+                    padding: 2rem;
+                    gap: 0.5rem;
+                    color: var(--text-muted);
+                }
+
+                .empty-state p {
+                    font-size: 0.9rem;
+                    max-width: 200px;
+                    line-height: 1.4;
+                    font-weight: 500;
                 }
 
                 .pagination-footer {
                     padding: 1rem 1.5rem;
-                    background: #f8fafc;
+                    background: var(--bg-app);
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    border-top: 1px solid #f1f5f9;
+                    border-top: 1px solid var(--border-subtle);
                 }
 
                 .page-info {
                     font-size: 0.9rem;
-                    color: #64748b;
+                    color: var(--text-muted);
                 }
 
                 .results-count {
@@ -645,9 +684,9 @@ const CarteraList = () => {
                 .pag-btn {
                     padding: 0.5rem 1rem;
                     border-radius: 8px;
-                    border: 1px solid #e2e8f0;
-                    background: white;
-                    color: #1e293b;
+                    border: 1px solid var(--border-subtle);
+                    background: var(--bg-panel);
+                    color: var(--text-heading);
                     font-weight: 600;
                     font-size: 0.85rem;
                     display: flex;
@@ -658,9 +697,9 @@ const CarteraList = () => {
                 }
 
                 .pag-btn:hover:not(:disabled) {
-                    border-color: #0ea5e9;
-                    color: #0ea5e9;
-                    background: #f0f9ff;
+                    border-color: var(--primary);
+                    color: var(--primary);
+                    background: var(--bg-app);
                 }
 
                 .pag-btn:disabled {
@@ -668,13 +707,139 @@ const CarteraList = () => {
                     cursor: not-allowed;
                 }
 
-                .spinner {
-                    width: 30px;
-                    height: 30px;
-                    border: 3px solid #f1f5f9;
-                    border-top-color: #0ea5e9;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
+                .tab-short-text { display: none; }
+                .badge-short-text { display: none; }
+
+                .show-mobile-only { display: none; }
+
+                @media (max-width: 1024px) {
+                    .section-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 1rem;
+                    }
+                    .action-group {
+                        width: 100%;
+                    }
+                    .action-group button {
+                        flex: 1;
+                    }
+                    .table-controls {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 1rem;
+                        padding: 1.25rem 1rem;
+                    }
+                    .search-box {
+                        width: 100%;
+                    }
+                    .filter-group {
+                        overflow-x: auto;
+                        padding-bottom: 4px;
+                    }
+                    .filter-tabs {
+                        min-width: max-content;
+                    }
+                    .hide-tablet {
+                        display: none;
+                    }
+                    .custom-table {
+                        min-width: 600px;
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .title-group h2 {
+                        font-size: 1.5rem;
+                    }
+                    .btn-text {
+                        display: none;
+                    }
+                    .btn-primary, .btn-secondary {
+                        padding: 0.75rem;
+                        width: 44px;
+                        justify-content: center;
+                    }
+                    .action-group {
+                        width: auto;
+                        position: fixed;
+                        bottom: 1.5rem;
+                        right: 1.5rem;
+                        flex-direction: column;
+                        z-index: 100;
+                        gap: 10px;
+                    }
+                    .btn-primary, .btn-secondary {
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 50%;
+                        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
+                    }
+                    .btn-primary { background: var(--bg-sidebar); color: white; }
+                    .btn-secondary { background: var(--bg-panel); border: 1px solid var(--border-subtle); }
+                    
+                    .hide-mobile {
+                        display: none;
+                    }
+                    .show-mobile-only { display: block; }
+                    .tab-full-text { display: none; }
+                    .tab-short-text { display: block; }
+                    .badge-full-text { display: none; }
+                    .badge-short-text { display: block; }
+                    
+                    .cat-badge {
+                        width: 24px;
+                        height: 24px;
+                        padding: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .pag-text { display: none; }
+                    .pagination-footer { padding: 1rem; }
+                    .empty-state-cell {
+                        padding: 2.5rem 0;
+                    }
+
+                    .empty-state {
+                        transform: none;
+                        padding: 0;
+                        width: 100%;
+                    }
+
+                    .empty-icon-wrap {
+                        width: 48px;
+                        height: 48px;
+                    }
+
+                    .client-info {
+                        min-width: 140px;
+                    }
+                    
+                    .custom-table {
+                        min-width: 100%;
+                        table-layout: fixed;
+                    }
+                    
+                    .cliente-td { width: 60%; }
+                    .cat-td { width: 30%; }
+                    .actions-td { width: 10%; }
+
+                    .custom-table th, .custom-table td {
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        padding: 1rem 0.5rem;
+                    }
+
+                    .table-scroll {
+                        overflow-x: hidden;
+                    }
+
+                    .filter-tab {
+                        padding: 8px 12px;
+                        font-size: 0.9rem;
+                    }
                 }
 
                 @keyframes spin { to { transform: rotate(360deg); } }

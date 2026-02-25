@@ -90,11 +90,11 @@ const EmpleadoList = () => {
         <div className="action-group">
           <button className="btn-secondary">
             <Download size={18} />
-            <span>Exportar</span>
+            <span className="btn-text">Exportar</span>
           </button>
           <button className="btn-primary" onClick={handleAddNew}>
             <Plus size={18} />
-            <span>Nuevo Empleado</span>
+            <span className="btn-text">Nuevo Empleado</span>
           </button>
         </div>
       </div>
@@ -144,9 +144,9 @@ const EmpleadoList = () => {
             <thead>
               <tr>
                 <th>Empleado</th>
-                <th>DNI / Identificación</th>
-                <th>Contacto</th>
-                <th>Cargo / Área</th>
+                <th className="hide-mobile">DNI / Identificación</th>
+                <th className="hide-tablet">Contacto</th>
+                <th className="hide-tablet">Cargo / Área</th>
                 <th>Estado</th>
                 <th className="text-right">Acciones</th>
               </tr>
@@ -166,8 +166,8 @@ const EmpleadoList = () => {
                         </div>
                       </div>
                     </td>
-                    <td><span className="dni-tag">{emp.dni}</span></td>
-                    <td>
+                    <td className="hide-mobile"><span className="dni-tag">{emp.dni}</span></td>
+                    <td className="hide-tablet">
                       <div className="contact-info">
                         <div className="contact-item">
                           <Mail size={14} />
@@ -179,7 +179,7 @@ const EmpleadoList = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-tablet">
                       <div className="role-tag">
                         {emp.cargo || 'Sin cargo'}
                       </div>
@@ -187,7 +187,7 @@ const EmpleadoList = () => {
                     <td>
                       <span className={`status-badge ${emp.activo ? 'active' : 'inactive'}`}>
                         {emp.activo ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                        {emp.activo ? 'Activo' : 'Inactivo'}
+                        <span className="status-text">{emp.activo ? 'Activo' : 'Inactivo'}</span>
                       </span>
                     </td>
                     <td className="text-right">
@@ -287,7 +287,7 @@ const EmpleadoList = () => {
         }
 
         .btn-secondary {
-          background: white;
+          background: var(--bg-panel);
           color: var(--text-heading);
           border: 1px solid var(--border-subtle);
           box-shadow: var(--shadow-sm);
@@ -320,7 +320,7 @@ const EmpleadoList = () => {
 
         .search-box:focus-within {
           border-color: var(--primary);
-          background: white;
+          background: var(--bg-panel);
           box-shadow: 0 0 0 3px var(--primary-soft);
         }
 
@@ -336,6 +336,7 @@ const EmpleadoList = () => {
           width: 100%;
           font-size: 0.9rem;
           font-family: inherit;
+          color: var(--text-heading);
         }
 
         .filter-tabs {
@@ -359,24 +360,26 @@ const EmpleadoList = () => {
         }
 
         .filter-tab.active {
-          background: white;
+          background: var(--bg-panel);
           color: var(--primary);
           box-shadow: var(--shadow-sm);
         }
 
         .table-wrapper {
           padding: 0;
-          overflow: hidden;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
         }
 
         .custom-table {
           width: 100%;
           border-collapse: collapse;
           text-align: left;
+          min-width: 500px;
         }
 
         .custom-table th {
-          background: #f8fafc;
+          background: var(--bg-app);
           padding: 1rem 1.5rem;
           font-size: 0.75rem;
           font-weight: 700;
@@ -384,22 +387,26 @@ const EmpleadoList = () => {
           text-transform: uppercase;
           letter-spacing: 0.05em;
           border-bottom: 1px solid var(--border-subtle);
+          white-space: nowrap;
         }
 
         .custom-table td {
           padding: 1.25rem 1.5rem;
           border-bottom: 1px solid var(--border-light);
           vertical-align: middle;
+          color: var(--text-body);
         }
 
         .custom-table tr:hover td {
-          background: #fcfdfe;
+          background: var(--bg-app);
+          opacity: 0.8;
         }
 
         .user-info {
           display: flex;
           align-items: center;
           gap: 12px;
+          min-width: 200px;
         }
 
         .user-avatar {
@@ -413,17 +420,22 @@ const EmpleadoList = () => {
           justify-content: center;
           font-weight: 700;
           font-size: 1.1rem;
+          flex-shrink: 0;
         }
 
         .user-text {
           display: flex;
           flex-direction: column;
+          min-width: 0;
         }
 
         .user-name {
           font-weight: 700;
           color: var(--text-heading);
           font-size: 0.95rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .user-id {
@@ -433,12 +445,14 @@ const EmpleadoList = () => {
 
         .dni-tag {
           font-family: monospace;
-          background: #f1f5f9;
+          background: var(--bg-app);
           padding: 4px 8px;
           border-radius: 6px;
           font-size: 0.85rem;
           font-weight: 600;
           color: var(--text-heading);
+          white-space: nowrap;
+          border: 1px solid var(--border-subtle);
         }
 
         .contact-info {
@@ -453,6 +467,7 @@ const EmpleadoList = () => {
           gap: 6px;
           font-size: 0.8rem;
           color: var(--text-body);
+          white-space: nowrap;
         }
 
         .contact-item svg {
@@ -462,11 +477,12 @@ const EmpleadoList = () => {
         .role-tag {
           display: inline-block;
           padding: 4px 10px;
-          background: #f0f9ff;
-          color: #0369a1;
+          background: var(--primary-soft);
+          color: var(--primary);
           border-radius: 30px;
           font-size: 0.75rem;
           font-weight: 700;
+          white-space: nowrap;
         }
 
         .status-badge {
@@ -477,16 +493,17 @@ const EmpleadoList = () => {
           border-radius: 30px;
           font-size: 0.75rem;
           font-weight: 700;
+          white-space: nowrap;
         }
 
         .status-badge.active {
-          background: #ecfdf5;
-          color: #059669;
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
         }
 
         .status-badge.inactive {
-          background: #fef2f2;
-          color: #dc2626;
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
         }
 
         .text-right { text-align: right; }
@@ -502,13 +519,14 @@ const EmpleadoList = () => {
           height: 32px;
           border-radius: 8px;
           border: 1px solid var(--border-subtle);
-          background: white;
+          background: var(--bg-panel);
           color: var(--text-muted);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: var(--transition);
+          flex-shrink: 0;
         }
 
         .action-icon-btn:hover {
@@ -520,13 +538,13 @@ const EmpleadoList = () => {
         .action-icon-btn.danger:hover {
           color: #ef4444;
           border-color: #ef4444;
-          background: #fef2f2;
+          background: rgba(239, 68, 68, 0.1);
         }
 
         .action-icon-btn.success:hover {
           color: #22c55e;
           border-color: #22c55e;
-          background: #f0fdf4;
+          background: rgba(34, 197, 94, 0.1);
         }
 
         .loading-state, .empty-state {
@@ -558,13 +576,81 @@ const EmpleadoList = () => {
         }
 
         @media (max-width: 1024px) {
+          .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+          }
+          .action-group {
+            width: 100%;
+          }
+          .action-group button {
+            flex: 1;
+          }
           .table-controls {
             flex-direction: column;
             align-items: stretch;
             gap: 1rem;
+            padding: 1.25rem 1rem;
           }
           .search-box {
             width: 100%;
+          }
+          .filter-group {
+            overflow-x: auto;
+            padding-bottom: 4px;
+          }
+          .filter-tabs {
+            min-width: max-content;
+          }
+          .hide-tablet {
+            display: none;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .title-group h2 {
+            font-size: 1.5rem;
+          }
+          .btn-text {
+            display: none;
+          }
+          .btn-primary, .btn-secondary {
+            padding: 0.7rem;
+            width: 44px;
+            justify-content: center;
+          }
+          .action-group {
+            width: auto;
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            flex-direction: column;
+            z-index: 100;
+          }
+          .btn-primary {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
+          }
+          .btn-secondary {
+            display: none; /* Hide export on tiny mobile or move it */
+          }
+          .hide-mobile {
+            display: none;
+          }
+          .status-text {
+            display: none;
+          }
+          .status-badge {
+            padding: 4px;
+            width: 24px;
+            height: 24px;
+            justify-content: center;
+          }
+          .custom-table td, .custom-table th {
+            padding: 1rem 0.75rem;
           }
         }
       `}</style>

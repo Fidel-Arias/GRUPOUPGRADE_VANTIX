@@ -106,21 +106,21 @@ const KPIDashboard = () => {
                             onClick={() => setSelectedView('overview')}
                         >
                             <BarChart3 size={18} />
-                            <span>Dashboard</span>
+                            <span className="sw-text">Dashboard</span>
                         </button>
                         <button
                             className={selectedView === 'ranking' ? 'active' : ''}
                             onClick={() => setSelectedView('ranking')}
                         >
                             <Trophy size={18} />
-                            <span>Ranking</span>
+                            <span className="sw-text">Ranking</span>
                         </button>
                         <button
                             className={selectedView === 'incentives' ? 'active' : ''}
                             onClick={() => setSelectedView('incentives')}
                         >
                             <Medal size={18} />
-                            <span>Incentivos</span>
+                            <span className="sw-text">Incentivos</span>
                         </button>
                     </div>
                 </div>
@@ -256,10 +256,10 @@ const KPIDashboard = () => {
                                         <tr>
                                             <th>Rango</th>
                                             <th>Asesor</th>
-                                            <th>Nivel</th>
-                                            <th>Medalla</th>
+                                            <th className="hide-mobile">Nivel</th>
+                                            <th className="hide-tablet">Medalla</th>
                                             <th>XP Acumulado</th>
-                                            <th>Crecimiento</th>
+                                            <th className="hide-tablet">Crecimiento</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -284,10 +284,10 @@ const KPIDashboard = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td><span className="level-badge">LVL {user.level}</span></td>
-                                                <td><span className={`badge-pill ${user.badge.toLowerCase()}`}>{user.badge}</span></td>
+                                                <td className="hide-mobile"><span className="level-badge">LVL {user.level}</span></td>
+                                                <td className="hide-tablet"><span className={`badge-pill ${user.badge.toLowerCase()}`}>{user.badge}</span></td>
                                                 <td><span className="xp-value">{user.totalPoints.toLocaleString()}</span></td>
-                                                <td>
+                                                <td className="hide-tablet">
                                                     <span className="growth-value positive">
                                                         <ArrowUpRight size={12} />
                                                         {user.growth}%
@@ -382,7 +382,7 @@ const KPIDashboard = () => {
                     display: flex;
                     flex-direction: column;
                     gap: 2rem;
-                    color: #1e293b;
+                    color: var(--text-body);
                 }
 
                 .kpi-header {
@@ -396,23 +396,24 @@ const KPIDashboard = () => {
                     font-weight: 800;
                     letter-spacing: -0.04em;
                     margin: 0;
-                    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                    background: linear-gradient(135deg, var(--text-heading) 0%, var(--text-body) 100%);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                 }
 
                 .header-text p {
-                    color: #64748b;
+                    color: var(--text-muted);
                     font-size: 1.1rem;
                     margin: 0.5rem 0 0 0;
                 }
 
                 .view-switcher {
                     display: flex;
-                    background: #f1f5f9;
+                    background: var(--bg-app);
                     padding: 4px;
                     border-radius: 16px;
                     gap: 4px;
+                    border: 1px solid var(--border-subtle);
                 }
 
                 .view-switcher button {
@@ -423,16 +424,16 @@ const KPIDashboard = () => {
                     border: none;
                     background: transparent;
                     border-radius: 12px;
-                    color: #64748b;
+                    color: var(--text-muted);
                     font-weight: 700;
                     cursor: pointer;
                     transition: all 0.2s;
                 }
 
                 .view-switcher button.active {
-                    background: white;
-                    color: #0ea5e9;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                    background: var(--bg-panel);
+                    color: var(--primary);
+                    box-shadow: var(--shadow-sm);
                 }
 
                 .stats-grid {
@@ -442,22 +443,22 @@ const KPIDashboard = () => {
                 }
 
                 .stat-card-premium {
-                    background: white;
+                    background: var(--bg-panel);
                     padding: 1.5rem;
                     border-radius: 24px;
                     display: flex;
                     align-items: center;
                     gap: 1.25rem;
-                    border: 1px solid #f1f5f9;
-                    box-shadow: 0 4px 15px -5px rgba(0,0,0,0.05);
+                    border: 1px solid var(--border-subtle);
+                    box-shadow: var(--shadow-sm);
                 }
 
                 .card-premium {
-                    background: white;
+                    background: var(--bg-panel);
                     padding: 1.5rem;
                     border-radius: 24px;
-                    border: 1px solid #f1f5f9;
-                    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+                    border: 1px solid var(--border-subtle);
+                    box-shadow: var(--shadow-md);
                     position: relative;
                     overflow: visible;
                 }
@@ -465,14 +466,14 @@ const KPIDashboard = () => {
                 .avatar {
                     width: 100%;
                     height: 100%;
-                    background: white;
+                    background: var(--bg-panel);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 800;
-                    color: #475569;
-                    box-shadow: 0 8px 20px -5px rgba(0,0,0,0.1);
+                    color: var(--text-body);
+                    box-shadow: var(--shadow-sm);
                     position: relative;
                 }
 
@@ -495,7 +496,7 @@ const KPIDashboard = () => {
                 .stat-label {
                     font-size: 0.85rem;
                     font-weight: 600;
-                    color: #94a3b8;
+                    color: var(--text-muted);
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                 }
@@ -509,7 +510,7 @@ const KPIDashboard = () => {
                 .stat-value {
                     font-size: 1.5rem;
                     font-weight: 800;
-                    color: #0f172a;
+                    color: var(--text-heading);
                 }
 
                 .stat-growth {
@@ -546,13 +547,13 @@ const KPIDashboard = () => {
                     margin: 0;
                     font-size: 1.25rem;
                     font-weight: 800;
-                    color: #0f172a;
+                    color: var(--text-heading);
                 }
 
                 .text-btn {
                     background: none;
                     border: none;
-                    color: #0ea5e9;
+                    color: var(--primary);
                     font-weight: 700;
                     font-size: 0.9rem;
                     cursor: pointer;
@@ -584,7 +585,7 @@ const KPIDashboard = () => {
                     width: 90px; 
                     height: 90px; 
                     border: 4px solid #f59e0b; 
-                    background: white; 
+                    background: var(--bg-panel); 
                     font-size: 2.2rem; 
                     color: #f59e0b;
                     box-shadow: 0 15px 30px -5px rgba(245, 158, 11, 0.3);
@@ -595,7 +596,7 @@ const KPIDashboard = () => {
                     width: 68px;
                     height: 68px;
                     font-size: 1.5rem;
-                    border: 3px solid #e2e8f0;
+                    border: 3px solid var(--border-subtle);
                 }
 
                 .top-user-podium.rank-2 { transform: translateY(-10px); }
@@ -619,7 +620,7 @@ const KPIDashboard = () => {
                     right: -4px;
                     width: 24px;
                     height: 24px;
-                    background: #1e293b;
+                    background: var(--bg-sidebar);
                     color: white;
                     border-radius: 50%;
                     display: flex;
@@ -636,8 +637,8 @@ const KPIDashboard = () => {
                     gap: 4px;
                 }
 
-                .top-user-podium .name { font-weight: 700; color: #0f172a; font-size: 1rem; }
-                .top-user-podium .pts { font-size: 0.85rem; font-weight: 800; color: #0ea5e9; background: #e0f2fe; padding: 2px 10px; border-radius: 20px; }
+                .top-user-podium .name { font-weight: 700; color: var(--text-heading); font-size: 1rem; }
+                .top-user-podium .pts { font-size: 0.85rem; font-weight: 800; color: var(--primary); background: var(--primary-soft); padding: 2px 10px; border-radius: 20px; }
 
                 .chart-placeholder {
                     height: 200px;
@@ -668,20 +669,20 @@ const KPIDashboard = () => {
 
                 .bar {
                     width: 100%;
-                    background: linear-gradient(to top, #0ea5e9 0%, #38bdf8 100%);
+                    background: linear-gradient(to top, var(--primary) 0%, #38bdf8 100%);
                     border-radius: 6px 6px 2px 2px;
                     opacity: 0.9;
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2);
+                    box-shadow: 0 4px 10px var(--primary-glow);
                 }
 
                 .bar:hover { 
                     opacity: 1; 
                     transform: scaleX(1.1);
-                    box-shadow: 0 8px 15px rgba(14, 165, 233, 0.3);
+                    box-shadow: 0 8px 15px var(--primary-soft);
                 }
 
-                .bar-label { font-size: 0.7rem; font-weight: 700; color: #94a3b8; }
+                .bar-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
 
                 .achievements-list { display: flex; flex-direction: column; gap: 1rem; }
                 .achievement-item {
@@ -689,49 +690,49 @@ const KPIDashboard = () => {
                     align-items: center;
                     gap: 1.25rem;
                     padding: 1.25rem 1.5rem;
-                    background: #f8fafc;
+                    background: var(--bg-app);
                     border-radius: 20px;
-                    border: 1px solid #f1f5f9;
+                    border: 1px solid var(--border-subtle);
                     transition: all 0.2s;
                 }
                 .achievement-item:hover {
-                    background: white;
-                    border-color: #e2e8f0;
-                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+                    background: var(--bg-panel);
+                    border-color: var(--border-subtle);
+                    box-shadow: var(--shadow-sm);
                     transform: translateX(5px);
                 }
 
-                .ach-icon { width: 40px; height: 40px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+                .ach-icon { width: 40px; height: 40px; background: var(--bg-panel); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
                 .ach-info { display: flex; flex-direction: column; gap: 2px; }
-                .ach-desc { font-size: 0.95rem; color: #334155; }
-                .ach-time { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
+                .ach-desc { font-size: 0.95rem; color: var(--text-body); }
+                .ach-time { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
 
                 /* Ranking Table */
                 .ranking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-                .ranking-header h2 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+                .ranking-header h2 { margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text-heading); }
                 .ranking-table-wrap { overflow-x: auto; }
                 .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-                .ranking-table th { text-align: left; padding: 1rem; color: #94a3b8; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; }
-                .ranking-table td { padding: 1.25rem 1rem; background: #f8fafc; transition: transform 0.2s; }
+                .ranking-table th { text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; }
+                .ranking-table td { padding: 1.25rem 1rem; background: var(--bg-app); transition: transform 0.2s; color: var(--text-body); }
                 .ranking-table tr td:first-child { border-radius: 16px 0 0 16px; }
                 .ranking-table tr td:last-child { border-radius: 0 16px 16px 0; }
-                .ranking-table tr:hover td { background: #f1f5f9; transform: scale(1.005); }
+                .ranking-table tr:hover td { background: var(--bg-panel); transform: scale(1.005); }
 
-                .rank-num { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748b; border-radius: 10px; }
-                .rank-num.top { background: #1e293b; color: white; }
+                .rank-num { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-muted); border-radius: 10px; }
+                .rank-num.top { background: var(--bg-sidebar); color: white; }
 
                 .user-cell { display: flex; align-items: center; gap: 1rem; }
-                .avatar-small { width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #475569; }
-                .user-info .name { display: block; font-weight: 700; color: #1e293b; }
-                .user-info .role { font-size: 0.8rem; color: #94a3b8; }
+                .avatar-small { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-panel); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-body); border: 1px solid var(--border-subtle); }
+                .user-info .name { display: block; font-weight: 700; color: var(--text-heading); }
+                .user-info .role { font-size: 0.8rem; color: var(--text-muted); }
 
-                .level-badge { background: #0ea5e9; color: white; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; }
+                .level-badge { background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; }
                 .badge-pill { padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; }
-                .badge-pill.titan { background: #fef3c7; color: #d97706; }
-                .badge-pill.elite { background: #eff6ff; color: #2563eb; }
-                .badge-pill.senior { background: #f1f5f9; color: #475569; }
+                .badge-pill.titan { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+                .badge-pill.elite { background: var(--primary-glow); color: var(--primary); }
+                .badge-pill.senior { background: var(--bg-panel); color: var(--text-body); border: 1px solid var(--border-subtle); }
 
-                .xp-value { font-weight: 800; color: #1e293b; font-size: 1.1rem; }
+                .xp-value { font-weight: 800; color: var(--text-heading); font-size: 1.1rem; }
                 .growth-value { display: flex; align-items: center; gap: 4px; font-weight: 700; }
                 .growth-value.positive { color: #10b981; }
 
@@ -743,67 +744,95 @@ const KPIDashboard = () => {
                     margin: 2rem auto; 
                     position: relative; 
                     border-radius: 50%; 
-                    background: conic-gradient(#0ea5e9 72%, #f1f5f9 0); 
+                    background: conic-gradient(var(--primary) 72%, var(--bg-app) 0); 
                     display: flex; 
                     align-items: center; 
                     justify-content: center;
-                    box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.2);
+                    box-shadow: 0 10px 25px -5px var(--primary-glow);
                 }
                 .radial-inner { 
                     width: 125px; 
                     height: 125px; 
-                    background: white; 
+                    background: var(--bg-panel); 
                     border-radius: 50%; 
                     display: flex; 
                     flex-direction: column; 
                     align-items: center; 
                     justify-content: center; 
-                    box-shadow: inset 0 4px 12px rgba(0,0,0,0.08); 
+                    box-shadow: inset 0 4px 12px rgba(0,0,0,0.1); 
                 }
-                .radial-inner .percent { font-size: 2rem; font-weight: 900; color: #0f172a; line-height: 1; }
-                .radial-inner .label { font-size: 0.8rem; color: #94a3b8; font-weight: 700; }
+                .radial-inner .percent { font-size: 2rem; font-weight: 900; color: var(--text-heading); line-height: 1; }
+                .radial-inner .label { font-size: 0.8rem; color: var(--text-muted); font-weight: 700; }
 
                 .goals-mini { display: flex; flex-direction: column; gap: 1rem; }
                 .goal-item { display: flex; flex-direction: column; gap: 6px; }
-                .goal-item span { font-size: 0.85rem; font-weight: 700; color: #475569; }
-                .p-bar { height: 8px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
-                .p-fill { height: 100%; background: #0ea5e9; border-radius: 10px; }
+                .goal-item span { font-size: 0.85rem; font-weight: 700; color: var(--text-body); }
+                .p-bar { height: 8px; background: var(--bg-app); border-radius: 10px; overflow: hidden; }
+                .p-fill { height: 100%; background: var(--primary); border-radius: 10px; }
 
                 .rewards-list { display: flex; flex-direction: column; gap: 1rem; }
-                .reward-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8fafc; border-radius: 16px; }
+                .reward-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-app); border-radius: 16px; border: 1px solid var(--border-subtle); }
                 .reward-item.locked { opacity: 0.6; filter: grayscale(0.5); }
-                .rew-icon { width: 44px; height: 44px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #64748b; }
+                .rew-icon { width: 44px; height: 44px; background: var(--bg-panel); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
                 .rew-text { display: flex; flex-direction: column; gap: 2px; }
-                .rew-text .title { font-weight: 700; color: #1e293b; }
-                .rew-text .req { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+                .rew-text .title { font-weight: 700; color: var(--text-heading); }
+                .rew-text .req { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
 
                 .incentives-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
                 .incentive-card { display: flex; flex-direction: column; gap: 1.5rem; padding: 2rem; }
                 .inc-header { display: flex; justify-content: space-between; align-items: center; }
-                .inc-icon { width: 48px; height: 48px; background: #fdf2f8; color: #db2777; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-                .inc-status { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: #fef3c7; color: #d97706; }
-                .inc-body h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; line-height: 1.4; }
+                .inc-icon { width: 48px; height: 48px; background: rgba(219, 39, 119, 0.1); color: #db2777; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+                .inc-status { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
+                .inc-body h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-heading); line-height: 1.4; }
                 .inc-body .amount { margin-top: 1rem; font-size: 2rem; font-weight: 900; color: #10b981; }
-                .inc-body .date { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
-                .btn-claim { width: 100%; padding: 12px; border-radius: 14px; border: none; background: #1e293b; color: white; font-weight: 800; cursor: pointer; transition: all 0.2s; }
-                .btn-claim:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: #0f172a; }
+                .inc-body .date { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+                .btn-claim { width: 100%; padding: 12px; border-radius: 14px; border: none; background: var(--bg-sidebar); color: white; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+                .btn-claim:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); background: #0f172a; }
                 .btn-claim:disabled { opacity: 0.5; cursor: default; }
 
-                .empty-incentives { padding: 5rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; color: #94a3b8; }
-                .empty-incentives h3 { color: #1e293b; font-weight: 800; }
+                .empty-incentives { padding: 5rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; color: var(--text-muted); }
+                .empty-incentives h3 { color: var(--text-heading); font-weight: 800; }
 
-                .view-fade-in {
-                    animation: fadeIn 0.4s ease-out;
+                @media (max-width: 1200px) {
+                    .kpi-main-layout { grid-template-columns: 1fr; }
+                    .kpi-sidebar { order: -1; flex-direction: row; flex-wrap: wrap; }
+                    .personal-progress, .next-rewards { flex: 1; min-width: 300px; }
+                }
+
+                @media (max-width: 1024px) {
+                    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+                    .dashboard-grid { grid-template-columns: 1fr; }
+                    .kpi-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+                    .view-switcher { width: 100%; }
+                    .view-switcher button { flex: 1; justify-content: center; }
+                }
+
+                @media (max-width: 768px) {
+                    .header-actions { width: 100%; }
+                    .view-switcher { width: 100%; justify-content: space-between; }
+                    .stats-grid { grid-template-columns: 1fr 1fr; }
+                    .sw-text { display: none; }
+                    .view-switcher button { padding: 10px; flex: 1; justify-content: center; }
+                }
+
+                @media (max-width: 640px) {
+                    .header-text h1 { font-size: 1.8rem; }
+                    .stats-grid { grid-template-columns: 1fr; }
+                    .sw-text { display: none; }
+                    .view-switcher button { padding: 12px; }
+                    .top-three { gap: 0.75rem; scale: 0.85; margin: 1rem 0; }
+                    .hide-tablet { display: none; }
+                    .hide-mobile { display: none; }
+                    .ranking-table td, .ranking-table th { padding: 0.8rem 0.5rem; }
+                    .ranking-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+                    .ranking-table { min-width: 500px; }
+                    .card-premium { padding: 1.25rem; }
+                    .stat-value { font-size: 1.25rem; }
                 }
 
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
-                }
-
-                @media (max-width: 1200px) {
-                    .kpi-main-layout { grid-template-columns: 1fr; }
-                    .stats-grid { grid-template-columns: repeat(2, 1fr); }
                 }
             `}</style>
         </div>

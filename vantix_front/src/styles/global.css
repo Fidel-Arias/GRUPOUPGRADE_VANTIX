@@ -21,7 +21,6 @@
 
   /* Geometry */
   --sidebar-width: 280px;
-  --header-height: 72px;
   --radius-sm: 10px;
   --radius-md: 18px;
   --radius-lg: 24px;
@@ -33,6 +32,18 @@
   --shadow-premium: 0 30px 60px -12px rgba(0, 0, 0, 0.12), 0 18px 36px -18px rgba(0, 0, 0, 0.08);
 
   --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark {
+  --bg-app: #020617;
+  --bg-panel: #0b1120;
+  --bg-sidebar: #020617;
+  --border-light: rgba(30, 41, 59, 0.5);
+  --border-subtle: #1e293b;
+  --text-heading: #f8fafc;
+  --text-body: #94a3b8;
+  --text-muted: #64748b;
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -110,10 +121,10 @@ ul {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
+  background: var(--border-subtle);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+  background: var(--text-muted);
 }

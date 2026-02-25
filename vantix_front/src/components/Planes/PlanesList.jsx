@@ -126,7 +126,7 @@ const PlanesList = () => {
                 </div>
                 <button className="btn-primary" onClick={() => setIsWizardOpen(true)}>
                     <Plus size={20} />
-                    <span>Nuevo Plan Semanal</span>
+                    <span className="btn-text">Nuevo Plan Semanal</span>
                 </button>
             </div>
 
@@ -693,6 +693,54 @@ const PlanesList = () => {
                 }
                 .btn-confirm-delete:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3); }
                 .btn-confirm-delete:disabled { opacity: 0.7; cursor: not-allowed; }
+                @media (max-width: 1024px) {
+                    .section-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 1.5rem;
+                    }
+                    .filters-card {
+                        flex-direction: column;
+                        padding: 1.25rem;
+                    }
+                    .filter-group {
+                        width: 100%;
+                    }
+                    .planes-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .title-group h2 {
+                        font-size: 1.8rem;
+                    }
+                    .btn-text {
+                        display: none;
+                    }
+                    .btn-primary {
+                        position: fixed;
+                        bottom: 1.5rem;
+                        right: 1.5rem;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 50%;
+                        padding: 0;
+                        justify-content: center;
+                        z-index: 100;
+                        box-shadow: 0 10px 25px rgba(14, 165, 233, 0.5);
+                    }
+                    .plan-card {
+                        padding: 1.25rem;
+                    }
+                    .main-header {
+                        padding-left: 4.5rem;
+                    }
+                    .confirm-modal {
+                        padding: 1.5rem;
+                        width: 90%;
+                    }
+                }
             `}</style>
         </div>
     );

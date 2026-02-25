@@ -219,11 +219,11 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             .modal-container {
               width: 100%;
               max-width: 550px;
-              background: white;
+              background: var(--bg-panel);
               border-radius: 24px;
-              box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+              box-shadow: var(--shadow-premium);
               overflow: hidden;
-              border: 1px solid rgba(255, 255, 255, 0.1);
+              border: 1px solid var(--border-subtle);
             }
 
             .modal-header {
@@ -231,8 +231,8 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              background: #f8fafc;
-              border-bottom: 1px solid #f1f5f9;
+              background: var(--bg-app);
+              border-bottom: 1px solid var(--border-subtle);
             }
 
             .title-wrap {
@@ -244,8 +244,8 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             .icon-badge {
               width: 36px;
               height: 36px;
-              background: #e0f2fe;
-              color: #0ea5e9;
+              background: var(--primary-soft);
+              color: var(--primary);
               border-radius: 10px;
               display: flex;
               align-items: center;
@@ -255,14 +255,14 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             .modal-header h3 {
               font-size: 1.25rem;
               font-weight: 800;
-              color: #1e293b;
+              color: var(--text-heading);
               letter-spacing: -0.01em;
             }
 
             .close-btn {
               background: none;
               border: none;
-              color: #94a3b8;
+              color: var(--text-muted);
               cursor: pointer;
               padding: 8px;
               border-radius: 50%;
@@ -270,7 +270,7 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             }
 
             .close-btn:hover {
-              background: #f1f5f9;
+              background: var(--bg-app);
               color: #ef4444;
             }
 
@@ -279,7 +279,7 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             }
 
             .error-banner {
-              background: #fef2f2;
+              background: rgba(239, 68, 68, 0.1);
               color: #dc2626;
               padding: 0.75rem 1rem;
               border-radius: 12px;
@@ -289,7 +289,7 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               font-size: 0.85rem;
               font-weight: 600;
               margin-bottom: 1.5rem;
-              border: 1px solid #fee2e2;
+              border: 1px solid rgba(239, 68, 68, 0.2);
             }
 
             .form-grid {
@@ -308,7 +308,7 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               gap: 8px;
               font-size: 0.8rem;
               font-weight: 700;
-              color: #64748b;
+              color: var(--text-muted);
               margin-bottom: 0.5rem;
               text-transform: uppercase;
               letter-spacing: 0.05em;
@@ -319,18 +319,18 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               height: 46px;
               padding: 0 1rem;
               border-radius: 12px;
-              border: 1px solid #e2e8f0;
-              background: #f8fafc;
+              border: 1px solid var(--border-subtle);
+              background: var(--bg-app);
               font-size: 0.95rem;
-              color: #1e293b;
+              color: var(--text-heading);
               font-weight: 500;
               transition: all 0.2s;
             }
 
             .input-group input:focus, .input-group select:focus {
-              background: white;
-              border-color: #0ea5e9;
-              box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+              background: var(--bg-panel);
+              border-color: var(--primary);
+              box-shadow: 0 0 0 4px var(--primary-glow);
               outline: none;
             }
 
@@ -354,7 +354,7 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             .toggle-slider {
               width: 44px;
               height: 22px;
-              background: #cbd5e1;
+              background: var(--border-subtle);
               border-radius: 20px;
               position: relative;
               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -387,7 +387,7 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               gap: 8px;
               font-size: 0.9rem;
               font-weight: 600;
-              color: #1e293b;
+              color: var(--text-heading);
             }
 
             .modal-footer {
@@ -400,9 +400,9 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             .btn-cancel {
               padding: 0.75rem 1.5rem;
               border-radius: 12px;
-              border: 1px solid #e2e8f0;
-              background: white;
-              color: #64748b;
+              border: 1px solid var(--border-subtle);
+              background: var(--bg-app);
+              color: var(--text-muted);
               font-weight: 700;
               font-size: 0.9rem;
               cursor: pointer;
@@ -410,15 +410,15 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
             }
 
             .btn-cancel:hover {
-              background: #f1f5f9;
-              color: #1e293b;
+              background: var(--bg-panel);
+              color: var(--text-heading);
             }
 
             .btn-save {
               padding: 0.75rem 1.75rem;
               border-radius: 12px;
               border: none;
-              background: #0f172a;
+              background: var(--bg-sidebar);
               color: white;
               font-weight: 700;
               font-size: 0.9rem;
@@ -427,13 +427,13 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               gap: 10px;
               cursor: pointer;
               transition: all 0.2s;
-              box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.3);
+              box-shadow: var(--shadow-md);
             }
 
             .btn-save:hover:not(:disabled) {
               background: #1e293b;
               transform: translateY(-2px);
-              box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.4);
+              box-shadow: var(--shadow-lg);
             }
 
             .btn-save:disabled {

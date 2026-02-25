@@ -130,13 +130,13 @@ const GastoList = () => {
                     />
                 </div>
                 <div className="toolbar-actions">
-                    <button className="btn-filter">
+                    <button className="btn-filter hide-tablet">
                         <Filter size={18} />
                         <span>Filtros Avanzados</span>
                     </button>
                     <button className="btn-primary" onClick={() => setShowModal(true)}>
                         <Plus size={20} />
-                        <span>Nuevo Registro</span>
+                        <span className="btn-text">Nuevo Registro</span>
                     </button>
                 </div>
             </div>
@@ -734,10 +734,57 @@ const GastoList = () => {
                     to { transform: rotate(360deg); }
                 }
 
+                @media (max-width: 1024px) {
+                    .finanzas-header {
+                        flex-direction: column;
+                        gap: 1.5rem;
+                    }
+                    .header-stats {
+                        width: 100%;
+                    }
+                    .stat-card-mini {
+                        padding: 1.25rem;
+                    }
+                    .finanzas-toolbar {
+                        flex-direction: column;
+                        gap: 1rem;
+                    }
+                    .toolbar-actions {
+                        width: 100%;
+                    }
+                    .toolbar-actions button {
+                        flex: 1;
+                    }
+                }
+
                 @media (max-width: 768px) {
                     .gastos-grid { grid-template-columns: 1fr; }
                     .form-grid { grid-template-columns: 1fr; }
                     .form-group.full { grid-column: auto; }
+                    .hide-tablet { display: none; }
+                }
+
+                @media (max-width: 640px) {
+                    .header-info h1 { font-size: 1.8rem; }
+                    .header-info p { font-size: 1rem; }
+                    .btn-text { display: none; }
+                    .btn-primary {
+                        position: fixed;
+                        bottom: 1.5rem;
+                        right: 1.5rem;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 50%;
+                        padding: 0;
+                        justify-content: center;
+                        z-index: 100;
+                        box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4);
+                    }
+                    .gasto-card-premium { padding: 1.25rem; }
+                    .card-route { padding: 1rem; flex-direction: column; gap: 1rem; align-items: flex-start; }
+                    .route-arrow { transform: rotate(90deg); align-self: center; padding: 0.5rem 0; }
+                    .modal-container-premium { border-radius: 0; height: 100%; max-width: 100%; }
+                    .modal-form { padding: 1.5rem; }
                 }
             `}</style>
         </div>
