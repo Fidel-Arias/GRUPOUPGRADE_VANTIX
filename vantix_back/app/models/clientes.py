@@ -14,6 +14,7 @@ class CarteraClientes(Base):
     
     direccion = Column(String(250))
     id_distrito = Column(Integer, ForeignKey("distritos.id_distrito", ondelete="RESTRICT"))
+    id_empleado = Column(Integer, ForeignKey("empleados.id_empleado", ondelete="SET NULL"), nullable=True)
     fecha_ultima_visita = Column(Date)
 
     # Contactos
@@ -34,6 +35,7 @@ class CarteraClientes(Base):
 
     # Relaciones
     distrito = relationship("Distrito")
+    empleado = relationship("Empleado", back_populates="clientes_asignados")
 
 
 # 2. MAESTRO DE ENTIDADES (Bandeja de Entrada / Prospectos Nuevos)

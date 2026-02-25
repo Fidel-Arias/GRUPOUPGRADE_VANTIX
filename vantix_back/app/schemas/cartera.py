@@ -10,6 +10,7 @@ class CarteraBase(BaseModel):
     categoria: Optional[CategoriaClienteEnum] = None
     direccion: Optional[str] = None
     id_distrito: Optional[int] = None
+    id_empleado: Optional[int] = None
     
     # Contactos (Principal)
     nombre_contacto: Optional[str] = None

@@ -12,10 +12,9 @@ class CRUDCartera(CRUDBase[CarteraClientes, CarteraCreate, CarteraUpdate]):
 
     # Obtener clientes activos asignados a un vendedor específico
     def get_activos_by_vendedor(self, db: Session, id_vendedor: int) -> List[CarteraClientes]:
-        # Si usaste id_empleado_asignado en tu modelo
         return db.query(CarteraClientes).filter(
             CarteraClientes.activo == True,
-            # CarteraClientes.id_empleado_asignado == id_vendedor  <-- Descomenta si usas esta relación
+            CarteraClientes.id_empleado == id_vendedor
         ).all()
 
 cartera = CRUDCartera(CarteraClientes)

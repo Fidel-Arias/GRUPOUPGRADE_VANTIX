@@ -20,3 +20,6 @@ class Empleado(Base):
     
     # Relación: Un empleado tiene MUCHOS incentivos ganados
     incentivos = relationship("IncentivoPago", back_populates="empleado")
+
+    # Relación: Un empleado tiene MUCHOS clientes asignados
+    clientes_asignados = relationship("CarteraClientes", back_populates="empleado")
