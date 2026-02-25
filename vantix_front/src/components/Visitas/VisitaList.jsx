@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { visitaService, clienteService, planService } from '../../services/api';
+import { visitaService, BASE_URL } from '../../services/api';
 import VisitaModal from './VisitaModal';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
+import SearchInput from '../Common/SearchInput';
+import LoadingSpinner from '../Common/LoadingSpinner';
+import EmptyState from '../Common/EmptyState';
+import ConfirmModal from '../Common/ConfirmModal';
+import PhotoPreview from '../Common/PhotoPreview';
 import {
     MapPin,
-    Search,
     Plus,
-    Calendar,
-    Camera,
-    CheckCircle,
     Clock,
     Trash2,
-    Filter,
     Users,
     Eye,
     ExternalLink,
-    ChevronRight,
-    X,
-    AlertCircle
+    CheckCircle
 } from 'lucide-react';
 
 const VisitaList = () => {
@@ -25,11 +24,9 @@ const VisitaList = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'table'
-    const [previewPhoto, setPreviewPhoto] = useState(null); // URL de la foto a previsualizar
-    const [deleteConfirm, setDeleteConfirm] = useState(null); // ID de la visita a eliminar
-
-    const BACKEND_URL = 'http://127.0.0.1:8000';
+    const [viewMode, setViewMode] = useState('grid');
+    const [previewPhoto, setPreviewPhoto] = useState(null);
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
 
     useEffect(() => {
         fetchVisitas();
@@ -73,23 +70,20 @@ const VisitaList = () => {
         v.observaciones?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getStatusColor = (status) => {
+    const getStatusVariant = (status) => {
         switch (status) {
-            case 'Venta cerrada': return 'status-success';
-            case 'Cliente interesado': return 'status-info';
-            case 'En evaluación': return 'status-warning';
-            case 'No interesado': return 'status-danger';
-            default: return '';
+            case 'Venta cerrada': return 'success';
+            case 'Cliente interesado': return 'info';
+            case 'En evaluación': return 'warning';
+            case 'No interesado': return 'danger';
+            default: return 'default';
         }
     };
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
     };
 
@@ -102,75 +96,58 @@ const VisitaList = () => {
                 </div>
                 <div className="action-group">
                     <div className="view-toggle card-premium">
-                        <button
-                            className={viewMode === 'grid' ? 'active' : ''}
-                            onClick={() => setViewMode('grid')}
-                        >
-                            Grid
-                        </button>
-                        <button
-                            className={viewMode === 'table' ? 'active' : ''}
-                            onClick={() => setViewMode('table')}
-                        >
-                            Tabla
-                        </button>
+                        <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')}>Grid</button>
+                        <button className={viewMode === 'table' ? 'active' : ''} onClick={() => setViewMode('table')}>Tabla</button>
                     </div>
                     <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
                         <Plus size={18} />
-                        <span className="btn-text">Registrar Visita</span>
+                        <span className="btn-text">Registrar</span>
                     </button>
                 </div>
             </div>
 
-            <div className="filters-bar card-premium">
-                <div className="search-box">
-                    <Search size={18} className="search-icon" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por cliente u observaciones..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+            <PremiumCard className="filters-bar" hover={false}>
+                <SearchInput
+                    placeholder="Buscar por cliente u observaciones..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
                 <div className="quick-stats hide-mobile">
                     <div className="stat-item">
                         <span className="stat-value">{visitas.length}</span>
                         <span className="stat-label">Total Visitas</span>
                     </div>
                 </div>
-            </div>
+            </PremiumCard>
 
             {loading ? (
-                <div className="loading-state">
-                    <div className="spinner"></div>
-                    <p>Cargando registros...</p>
-                </div>
+                <LoadingSpinner message="Consultando bitácora de campo..." />
             ) : filteredVisitas.length === 0 ? (
-                <div className="empty-state card-premium">
-                    <MapPin size={48} />
-                    <p>No se encontraron visitas registradas.</p>
-                    <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-                        Registrar Primera Visita
-                    </button>
-                </div>
+                <EmptyState
+                    icon={MapPin}
+                    title="Cero Registros"
+                    message="No se encontraron visitas que coincidan con los filtros."
+                    actionLabel="Registrar Visita"
+                    onAction={() => setIsModalOpen(true)}
+                />
             ) : viewMode === 'grid' ? (
                 <div className="visitas-grid">
                     {filteredVisitas.map((visita) => (
-                        <div key={visita.id_visita} className="visita-card card-premium">
+                        <PremiumCard key={visita.id_visita} className="visita-card">
                             <div className="visita-image-header">
                                 <img
-                                    src={`${BACKEND_URL}${visita.url_foto_lugar}`}
+                                    src={`${BASE_URL}${visita.url_foto_lugar}`}
                                     alt="Lugar"
                                     className="main-img"
                                     onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=500&auto=format&fit=crop'}
                                 />
                                 <div className="visita-badge">
-                                    <span className={`status-tag ${getStatusColor(visita.resultado)}`}>
+                                    <Badge variant={getStatusVariant(visita.resultado)}>
                                         {visita.resultado}
-                                    </span>
+                                    </Badge>
                                 </div>
                                 <div className="visita-sello">
-                                    <img src={`${BACKEND_URL}${visita.url_foto_sello}`} alt="Sello" />
+                                    <img src={`${BASE_URL}${visita.url_foto_sello}`} alt="Sello" />
                                 </div>
                             </div>
 
@@ -196,16 +173,10 @@ const VisitaList = () => {
                                             <span>Técnico: {visita.nombre_tecnico}</span>
                                         </div>
                                     )}
-                                    {visita.geolocalizacion_lat && (
-                                        <div className="meta-item location">
-                                            <CheckCircle size={14} />
-                                            <span>Geo-referenciado</span>
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="visita-footer">
-                                    <button className="btn-view" onClick={() => setPreviewPhoto(`${BACKEND_URL}${visita.url_foto_lugar}`)}>
+                                    <button className="btn-view" onClick={() => setPreviewPhoto(`${BASE_URL}${visita.url_foto_lugar}`)}>
                                         <Eye size={16} />
                                     </button>
                                     <button className="btn-delete" onClick={() => setDeleteConfirm(visita.id_visita)}>
@@ -213,19 +184,18 @@ const VisitaList = () => {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </PremiumCard>
                     ))}
                 </div>
             ) : (
-                <div className="table-wrapper card-premium">
+                <PremiumCard className="table-wrapper" hover={false}>
                     <table className="custom-table">
                         <thead>
                             <tr>
                                 <th>Cliente</th>
                                 <th>Resultado</th>
                                 <th>Fecha / Hora</th>
-                                <th className="hide-tablet">Ubicación</th>
-                                <th className="hide-tablet">Técnico</th>
+                                <th className="hide-tablet">Mapa</th>
                                 <th className="hide-mobile">Evidencia</th>
                                 <th className="text-right">Acciones</th>
                             </tr>
@@ -240,14 +210,14 @@ const VisitaList = () => {
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`status-tag ${getStatusColor(visita.resultado)}`}>
+                                        <Badge variant={getStatusVariant(visita.resultado)}>
                                             {visita.resultado}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <div className="date-cell">
-                                            <span>{new Date(visita.fecha_hora_checkin).toLocaleDateString()}</span>
                                             <span className="time">{new Date(visita.fecha_hora_checkin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span>{new Date(visita.fecha_hora_checkin).toLocaleDateString()}</span>
                                         </div>
                                     </td>
                                     <td className="hide-tablet">
@@ -257,17 +227,14 @@ const VisitaList = () => {
                                                 target="_blank"
                                                 className="location-link"
                                             >
-                                                Ver Mapa <ExternalLink size={12} />
+                                                Ver <ExternalLink size={12} />
                                             </a>
                                         ) : 'N/A'}
                                     </td>
-                                    <td className="hide-tablet">
-                                        <span className="tech-name">{visita.nombre_tecnico || 'N/A'}</span>
-                                    </td>
                                     <td className="hide-mobile">
                                         <div className="evidencia-thumbnails">
-                                            <img src={`${BACKEND_URL}${visita.url_foto_lugar}`} className="thumb" onClick={() => setPreviewPhoto(`${BACKEND_URL}${visita.url_foto_lugar}`)} />
-                                            <img src={`${BACKEND_URL}${visita.url_foto_sello}`} className="thumb" onClick={() => setPreviewPhoto(`${BACKEND_URL}${visita.url_foto_sello}`)} />
+                                            <img src={`${BASE_URL}${visita.url_foto_lugar}`} className="thumb" onClick={() => setPreviewPhoto(`${BASE_URL}${visita.url_foto_lugar}`)} />
+                                            <img src={`${BASE_URL}${visita.url_foto_sello}`} className="thumb" onClick={() => setPreviewPhoto(`${BASE_URL}${visita.url_foto_sello}`)} />
                                         </div>
                                     </td>
                                     <td className="text-right">
@@ -279,72 +246,20 @@ const VisitaList = () => {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </PremiumCard>
             )}
 
-            <VisitaModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSaveVisita}
+            <VisitaModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveVisita} />
+
+            <PhotoPreview url={previewPhoto} isOpen={!!previewPhoto} onClose={() => setPreviewPhoto(null)} />
+
+            <ConfirmModal
+                isOpen={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={handleDelete}
+                title="¿Eliminar Registro?"
+                message="Esta acción es irreversible y eliminará las fotos del servidor. Los reportes se recalcularán automáticamente."
             />
-
-            {/* Modal de Previsualización de Foto */}
-            <AnimatePresence>
-                {previewPhoto && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="photo-preview-overlay"
-                        onClick={() => setPreviewPhoto(null)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="preview-content"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <button className="close-preview" onClick={() => setPreviewPhoto(null)}>
-                                <X size={24} />
-                            </button>
-                            <img src={previewPhoto} alt="Vista previa" />
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Modal de Confirmación de Eliminación */}
-            <AnimatePresence>
-                {deleteConfirm && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="modal-overlay"
-                        onClick={() => setDeleteConfirm(null)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="delete-modal-card glass-morphism"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="delete-icon-box">
-                                <AlertCircle size={32} />
-                            </div>
-                            <h3>¿Eliminar Registro?</h3>
-                            <p>Esta acción es irreversible y eliminará las fotos y datos del servidor. Se recalcularán los KPIs del empleado.</p>
-
-                            <div className="delete-actions">
-                                <button className="btn-cancel-alt" onClick={() => setDeleteConfirm(null)}>No, cancelar</button>
-                                <button className="btn-confirm-delete" onClick={handleDelete}>Sí, eliminar ahora</button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <style jsx>{`
         .visitas-container {

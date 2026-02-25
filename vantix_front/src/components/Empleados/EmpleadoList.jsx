@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { empleadoService } from '../../services/api';
 import EmpleadoModal from './EmpleadoModal';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
+import SearchInput from '../Common/SearchInput';
+import LoadingSpinner from '../Common/LoadingSpinner';
+import EmptyState from '../Common/EmptyState';
 import {
   Users,
-  Search,
   Plus,
-  MoreHorizontal,
   Edit2,
   Trash2,
   CheckCircle,
   XCircle,
   Mail,
-  Phone,
-  Filter,
-  Download
+  Download,
+  ShieldAlert
 } from 'lucide-react';
 
 const EmpleadoList = () => {
@@ -42,10 +44,8 @@ const EmpleadoList = () => {
 
   const handleSaveEmpleado = async (formData) => {
     if (selectedEmpleado) {
-      // Actualizar
       await empleadoService.update(selectedEmpleado.id_empleado, formData);
     } else {
-      // Crear
       await empleadoService.create(formData);
     }
     fetchEmpleados();
@@ -99,54 +99,38 @@ const EmpleadoList = () => {
         </div>
       </div>
 
-      <div className="table-controls card-premium">
-        <div className="search-box">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o DNI..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <PremiumCard className="table-controls" hover={false}>
+        <SearchInput
+          placeholder="Buscar por nombre o DNI..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <div className="filter-group">
           <div className="filter-tabs">
-            <button
-              className={`filter-tab ${filterActive === 'todos' ? 'active' : ''}`}
-              onClick={() => setFilterActive('todos')}
-            >
-              Todos
-            </button>
-            <button
-              className={`filter-tab ${filterActive === 'activos' ? 'active' : ''}`}
-              onClick={() => setFilterActive('activos')}
-            >
-              Activos
-            </button>
-            <button
-              className={`filter-tab ${filterActive === 'inactivos' ? 'active' : ''}`}
-              onClick={() => setFilterActive('inactivos')}
-            >
-              Inactivos
-            </button>
+            {['todos', 'activos', 'inactivos'].map(f => (
+              <button
+                key={f}
+                className={`filter-tab ${filterActive === f ? 'active' : ''}`}
+                onClick={() => setFilterActive(f)}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      </PremiumCard>
 
-      <div className="table-wrapper card-premium">
+      <PremiumCard className="table-wrapper" hover={false}>
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Cargando empleados...</p>
-          </div>
+          <LoadingSpinner message="Sincronizando plantilla..." />
         ) : (
           <table className="custom-table">
             <thead>
               <tr>
                 <th>Empleado</th>
-                <th className="hide-mobile">DNI / Identificación</th>
+                <th className="hide-mobile">Identificación</th>
                 <th className="hide-tablet">Contacto</th>
-                <th className="hide-tablet">Cargo / Área</th>
+                <th className="hide-tablet">Cargo</th>
                 <th>Estado</th>
                 <th className="text-right">Acciones</th>
               </tr>
@@ -161,42 +145,34 @@ const EmpleadoList = () => {
                           {emp.nombre_completo?.charAt(0)}
                         </div>
                         <div className="user-text">
-                          <span className="user-name">{emp.nombre_completo}</span>
+                          <div className="name-wrapper">
+                            <span className="user-name">{emp.nombre_completo}</span>
+                            {emp.is_admin && (
+                              <Badge variant="danger" icon={ShieldAlert}>Admin</Badge>
+                            )}
+                          </div>
                           <span className="user-id">ID: #{emp.id_empleado}</span>
                         </div>
                       </div>
                     </td>
                     <td className="hide-mobile"><span className="dni-tag">{emp.dni}</span></td>
                     <td className="hide-tablet">
-                      <div className="contact-info">
-                        <div className="contact-item">
-                          <Mail size={14} />
-                          <span>{emp.email_corporativo || 'N/A'}</span>
-                        </div>
-                        <div className="contact-item">
-                          <Phone size={14} />
-                          <span>{emp.telefono || 'N/A'}</span>
-                        </div>
+                      <div className="contact-item">
+                        <Mail size={14} />
+                        <span>{emp.email_corporativo || 'N/A'}</span>
                       </div>
                     </td>
                     <td className="hide-tablet">
-                      <div className="role-tag">
-                        {emp.cargo || 'Sin cargo'}
-                      </div>
+                      <Badge variant="primary">{emp.cargo || 'Asesor'}</Badge>
                     </td>
                     <td>
-                      <span className={`status-badge ${emp.activo ? 'active' : 'inactive'}`}>
-                        {emp.activo ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                        <span className="status-text">{emp.activo ? 'Activo' : 'Inactivo'}</span>
-                      </span>
+                      <Badge variant={emp.activo ? 'success' : 'default'} icon={emp.activo ? CheckCircle : XCircle}>
+                        {emp.activo ? 'Activo' : 'Inactivo'}
+                      </Badge>
                     </td>
                     <td className="text-right">
                       <div className="actions-menu">
-                        <button
-                          className="action-icon-btn"
-                          title="Editar"
-                          onClick={() => handleEdit(emp)}
-                        >
+                        <button className="action-icon-btn" title="Editar" onClick={() => handleEdit(emp)}>
                           <Edit2 size={16} />
                         </button>
                         <button
@@ -212,16 +188,21 @@ const EmpleadoList = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="empty-state">
-                    <Users size={48} />
-                    <p>No se encontraron empleados que coincidan con la búsqueda.</p>
+                  <td colSpan="6">
+                    <EmptyState
+                      icon={Users}
+                      title="Sin resultados"
+                      message="No encontramos empleados con esos criterios."
+                      actionLabel="Ver Todos"
+                      onAction={() => { setFilterActive('todos'); setSearchTerm(''); }}
+                    />
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
-      </div>
+      </PremiumCard>
 
       <EmpleadoModal
         isOpen={isModalOpen}
@@ -427,6 +408,26 @@ const EmpleadoList = () => {
           display: flex;
           flex-direction: column;
           min-width: 0;
+        }
+
+        .name-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .admin-badge {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: #fef2f2;
+          color: #ef4444;
+          padding: 2px 6px;
+          border-radius: 6px;
+          font-size: 0.65rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          border: 1px solid #fee2e2;
         }
 
         .user-name {
