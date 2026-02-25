@@ -102,6 +102,15 @@ async def importar_cartera_excel(
         # Obtenemos empleados para vinculación automática por nombre de hoja
         empleados = db.query(models.empleado.Empleado).filter(models.empleado.Empleado.activo == True).all()
         
+        import re
+        import unicodedata
+
+        def normalizar(texto):
+            return ''.join(
+                c for c in unicodedata.normalize('NFD', texto)
+                if unicodedata.category(c) != 'Mn'
+            ).lower()
+
         clientes_nuevos = []
         filas_omitidas = 0
         hojas_procesadas = []
@@ -112,12 +121,18 @@ async def importar_cartera_excel(
             if "calendarizaci" in nombre_hoja.lower() or "edutec" in nombre_hoja.lower():
                 continue
             
-            # Busqueda de empleado por nombre de hoja (ej: 'Paola' -> 'Paola Gutierrez')
+            # --- Busqueda de empleado por nombre de hoja ---
+            # 1. Limpiar nombre de hoja: '6. Alfonso Ruiz' -> 'alfonso ruiz'
+            nombre_hoja_limpio = re.sub(r'^\d+\.\s*', '', nombre_hoja).lower().strip()
+            
             id_empleado_hoja = None
-            for emp in empleados:
-                if nombre_hoja.lower() in emp.nombre_completo.lower():
-                    id_empleado_hoja = emp.id_empleado
-                    break
+            if nombre_hoja_limpio:
+                nombre_hoja_norm = normalizar(nombre_hoja_limpio)
+                for emp in empleados:
+                    emp_nombre_norm = normalizar(emp.nombre_completo)
+                    if nombre_hoja_norm in emp_nombre_norm:
+                        id_empleado_hoja = emp.id_empleado
+                        break
                 
             hojas_procesadas.append(f"{nombre_hoja} (Asignado a ID: {id_empleado_hoja})" if id_empleado_hoja else nombre_hoja)
 
