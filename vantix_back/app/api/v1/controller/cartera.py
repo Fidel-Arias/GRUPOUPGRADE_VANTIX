@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import pandas as pd
 from app import crud, schemas, models
 import io
@@ -15,13 +15,16 @@ router = APIRouter()
 def listar_cartera_oficial(
     db: Session = Depends(deps.get_db),
     current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
+    id_empleado: Optional[int] = None,
     skip: int = 0, 
     limit: int = 100
 ):
     """
     Devuelve la lista oficial de clientes.
-    Se usa para que el vendedor seleccione a quién va a visitar.
+    Se puede filtrar por id_empleado para ver sus clientes asignados.
     """
+    if id_empleado:
+        return crud.cartera.get_activos_by_vendedor(db, id_vendedor=id_empleado)
     return crud.cartera.get_multi(db, skip=skip, limit=limit)
 
 # 2. PUT: Actualizar un dato (Ej: Si el cliente cambió de celular)
@@ -96,6 +99,9 @@ async def importar_cartera_excel(
             c.ruc_dni for c in db.query(CarteraClientes.ruc_dni).filter(CarteraClientes.ruc_dni.isnot(None)).all()
         }
         
+        # Obtenemos empleados para vinculación automática por nombre de hoja
+        empleados = db.query(models.empleado.Empleado).filter(models.empleado.Empleado.activo == True).all()
+        
         clientes_nuevos = []
         filas_omitidas = 0
         hojas_procesadas = []
@@ -105,8 +111,15 @@ async def importar_cartera_excel(
             # Saltamos hojas que no son carteras
             if "calendarizaci" in nombre_hoja.lower() or "edutec" in nombre_hoja.lower():
                 continue
+            
+            # Busqueda de empleado por nombre de hoja (ej: 'Paola' -> 'Paola Gutierrez')
+            id_empleado_hoja = None
+            for emp in empleados:
+                if nombre_hoja.lower() in emp.nombre_completo.lower():
+                    id_empleado_hoja = emp.id_empleado
+                    break
                 
-            hojas_procesadas.append(nombre_hoja)
+            hojas_procesadas.append(f"{nombre_hoja} (Asignado a ID: {id_empleado_hoja})" if id_empleado_hoja else nombre_hoja)
 
             # --- BUSCADOR INTELIGENTE DE ENCABEZADOS ---
             header_idx = 0
@@ -184,6 +197,7 @@ async def importar_cartera_excel(
                 nuevo_cliente = CarteraClientes(
                     nombre_cliente=nombre,
                     ruc_dni=ruc_dni,
+                    id_empleado=id_empleado_hoja,
                     categoria=mapear_categoria(row.get(cat_col)) if cat_col else None,
                     direccion=limpiar_dato(row.get(dir_col)) if dir_col else None,
                     celular_contacto=cel_contacto,
