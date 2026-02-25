@@ -21,6 +21,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
+import { authService } from '../../services/api';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -38,8 +39,10 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Sincronizar tema
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -48,6 +51,10 @@ const Sidebar = () => {
       document.documentElement.classList.add('dark');
     }
     document.documentElement.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+
+    // Obtener usuario
+    const currentUser = authService.getUser();
+    setUser(currentUser);
   }, []);
 
   const toggleTheme = () => {
@@ -60,6 +67,10 @@ const Sidebar = () => {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
+  };
+
+  const handleLogout = () => {
+    authService.logout();
   };
 
   // Determinamos el item activo basado en la URL
@@ -225,15 +236,19 @@ const Sidebar = () => {
                 animate={{ opacity: 1 }}
                 className="user-details"
               >
-                <p className="user-name">Yoshiro Milton</p>
-                <div className="badge-pro">
+                <p className="user-name">{user?.nombre_completo || 'Cargando...'}</p>
+                <div className={`badge-pro ${user?.is_admin ? 'admin' : ''}`}>
                   <ShieldCheck size={10} />
-                  <span>Admin Pro</span>
+                  <span>{user?.cargo || 'Usuario'}</span>
                 </div>
               </motion.div>
             )}
             {!isCollapsed && (
-              <button className="logout-btn" title="Salir">
+              <button
+                className="logout-btn"
+                title="Salir"
+                onClick={handleLogout}
+              >
                 <LogOut size={16} />
               </button>
             )}

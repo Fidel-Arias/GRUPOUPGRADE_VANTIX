@@ -3,21 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     PhoneCall,
     Mail,
-    Search,
     Plus,
     Calendar,
     Clock,
-    User,
-    ChevronRight,
-    Filter,
-    MessageSquare,
     Send,
-    CheckCircle2,
-    X
+    CheckCircle2
 } from 'lucide-react';
-import { crmService } from '../../services/api';
+import { crmService, BASE_URL } from '../../services/api';
 import LlamadaModal from './LlamadaModal';
 import EmailModal from './EmailModal';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
+import SearchInput from '../Common/SearchInput';
+import LoadingSpinner from '../Common/LoadingSpinner';
+import EmptyState from '../Common/EmptyState';
+import PhotoPreview from '../Common/PhotoPreview';
 
 const CRMList = () => {
     const [activeTab, setActiveTab] = useState('llamadas'); // 'llamadas' o 'emails'
@@ -25,6 +25,7 @@ const CRMList = () => {
     const [emails, setEmails] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [previewPhoto, setPreviewPhoto] = useState(null);
 
     // Estados para modales
     const [isLlamadaModalOpen, setIsLlamadaModalOpen] = useState(false);
@@ -63,11 +64,8 @@ const CRMList = () => {
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
     };
 
@@ -83,33 +81,21 @@ const CRMList = () => {
                     <p>Auditoría y registro de interacciones comerciales.</p>
                 </div>
                 <div className="tab-switcher card-premium">
-                    <button
-                        className={activeTab === 'llamadas' ? 'active' : ''}
-                        onClick={() => setActiveTab('llamadas')}
-                    >
-                        <PhoneCall size={16} />
-                        Llamadas
+                    <button className={activeTab === 'llamadas' ? 'active' : ''} onClick={() => setActiveTab('llamadas')}>
+                        <PhoneCall size={16} /> Llamadas
                     </button>
-                    <button
-                        className={activeTab === 'emails' ? 'active' : ''}
-                        onClick={() => setActiveTab('emails')}
-                    >
-                        <Mail size={16} />
-                        Emails
+                    <button className={activeTab === 'emails' ? 'active' : ''} onClick={() => setActiveTab('emails')}>
+                        <Mail size={16} /> Emails
                     </button>
                 </div>
             </div>
 
-            <div className="control-bar card-premium">
-                <div className="search-box">
-                    <Search size={18} className="search-icon" />
-                    <input
-                        type="text"
-                        placeholder={activeTab === 'llamadas' ? "Buscar por número o nombre..." : "Buscar por email o asunto..."}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+            <PremiumCard className="control-bar" hover={false}>
+                <SearchInput
+                    placeholder={activeTab === 'llamadas' ? "Buscar por número o nombre..." : "Buscar por email o asunto..."}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
                 <button
                     className="btn-primary"
                     onClick={() => activeTab === 'llamadas' ? setIsLlamadaModalOpen(true) : setIsEmailModalOpen(true)}
@@ -117,7 +103,7 @@ const CRMList = () => {
                     <Plus size={18} />
                     <span className="btn-text">{activeTab === 'llamadas' ? 'Registrar Llamada' : 'Registrar Email'}</span>
                 </button>
-            </div>
+            </PremiumCard>
 
             <AnimatePresence mode="wait">
                 <motion.div
@@ -128,22 +114,21 @@ const CRMList = () => {
                     className="crm-content"
                 >
                     {loading ? (
-                        <div className="loading-state">
-                            <div className="spinner"></div>
-                            <p>Sincronizando registros...</p>
-                        </div>
+                        <LoadingSpinner message="Sincronizando registros..." />
                     ) : filteredData.length === 0 ? (
-                        <div className="empty-state card-premium">
-                            {activeTab === 'llamadas' ? <PhoneCall size={48} /> : <Mail size={48} />}
-                            <p>No hay {activeTab} registradas recientemente.</p>
-                        </div>
+                        <EmptyState
+                            icon={activeTab === 'llamadas' ? PhoneCall : Mail}
+                            title={`Sin ${activeTab}`}
+                            message={`No se encontraron registros de ${activeTab} en este periodo.`}
+                            actionLabel="Registrar Ahora"
+                            onAction={() => activeTab === 'llamadas' ? setIsLlamadaModalOpen(true) : setIsEmailModalOpen(true)}
+                        />
                     ) : (
                         <div className="crm-grid">
                             {filteredData.map((item) => (
-                                <motion.div
-                                    layout
+                                <PremiumCard
                                     key={activeTab === 'llamadas' ? item.id_llamada : item.id_email}
-                                    className="crm-card card-premium"
+                                    className="crm-card"
                                 >
                                     <div className="card-header">
                                         <div className={`icon-indicator ${activeTab}`}>
@@ -156,40 +141,24 @@ const CRMList = () => {
                                     </div>
 
                                     <div className="card-body">
-                                        {activeTab === 'llamadas' ? (
-                                            <>
-                                                <div className="meta-row">
-                                                    <div className="meta-item">
-                                                        <Clock size={14} />
-                                                        <span>{item.duracion_segundos} seg.</span>
-                                                    </div>
-                                                    <div className="meta-item">
-                                                        <CheckCircle2 size={14} />
-                                                        <span>{item.resultado}</span>
-                                                    </div>
-                                                </div>
-                                                <p className="item-notes">{item.notas_llamada || 'Sin notas adicionales.'}</p>
-                                                {item.url_foto_prueba && (
-                                                    <div className="proof-photo-wrapper">
-                                                        <img src={`http://127.0.0.1:8000${item.url_foto_prueba}`} alt="Prueba" onClick={() => window.open(`http://127.0.0.1:8000${item.url_foto_prueba}`)} />
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="meta-row">
-                                                    <div className="meta-item">
-                                                        <Send size={14} />
-                                                        <span>{item.estado_envio}</span>
-                                                    </div>
-                                                </div>
-                                                <p className="item-notes"><strong>Asunto:</strong> {item.asunto || '(Sin asunto)'}</p>
-                                                {item.url_foto_prueba && (
-                                                    <div className="proof-photo-wrapper">
-                                                        <img src={`http://127.0.0.1:8000${item.url_foto_prueba}`} alt="Prueba" onClick={() => window.open(`http://127.0.0.1:8000${item.url_foto_prueba}`)} />
-                                                    </div>
-                                                )}
-                                            </>
+                                        <div className="meta-row">
+                                            {activeTab === 'llamadas' ? (
+                                                <>
+                                                    <div className="meta-item"><Clock size={14} /> <span>{item.duracion_segundos}s</span></div>
+                                                    <Badge variant={item.resultado === 'Éxitosa' ? 'success' : 'warning'}>{item.resultado}</Badge>
+                                                </>
+                                            ) : (
+                                                <Badge variant="info" icon={Send}>{item.estado_envio}</Badge>
+                                            )}
+                                        </div>
+                                        <p className="item-notes">
+                                            {activeTab === 'emails' && <strong>Asunto: </strong>}
+                                            {activeTab === 'llamadas' ? item.notas_llamada : item.asunto}
+                                        </p>
+                                        {item.url_foto_prueba && (
+                                            <div className="proof-photo-wrapper">
+                                                <img src={`${BASE_URL}${item.url_foto_prueba}`} alt="Prueba" onClick={() => setPreviewPhoto(`${BASE_URL}${item.url_foto_prueba}`)} />
+                                            </div>
                                         )}
                                     </div>
                                     <div className="card-footer">
@@ -198,24 +167,16 @@ const CRMList = () => {
                                             <span>Semana {item.id_plan}</span>
                                         </div>
                                     </div>
-                                </motion.div>
+                                </PremiumCard>
                             ))}
                         </div>
                     )}
                 </motion.div>
             </AnimatePresence>
 
-            {/* Modales */}
-            <LlamadaModal
-                isOpen={isLlamadaModalOpen}
-                onClose={() => setIsLlamadaModalOpen(false)}
-                onSave={handleSaveLlamada}
-            />
-            <EmailModal
-                isOpen={isEmailModalOpen}
-                onClose={() => setIsEmailModalOpen(false)}
-                onSave={handleSaveEmail}
-            />
+            <LlamadaModal isOpen={isLlamadaModalOpen} onClose={() => setIsLlamadaModalOpen(false)} onSave={handleSaveLlamada} />
+            <EmailModal isOpen={isEmailModalOpen} onClose={() => setIsEmailModalOpen(false)} onSave={handleSaveEmail} />
+            <PhotoPreview url={previewPhoto} isOpen={!!previewPhoto} onClose={() => setPreviewPhoto(null)} />
 
             <style jsx>{`
                 .crm-container { display: flex; flex-direction: column; gap: 1.5rem; animation: fadeIn 0.5s ease-out; }
@@ -232,9 +193,6 @@ const CRMList = () => {
                 .tab-switcher button.active { background: var(--bg-panel); color: var(--primary); box-shadow: var(--shadow-sm); }
 
                 .control-bar { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; }
-                .search-box { display: flex; align-items: center; background: var(--bg-app); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 0 1rem; width: 400px; height: 44px; }
-                .search-icon { color: var(--text-muted); margin-right: 10px; }
-                .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 0.9rem; color: var(--text-heading); }
                 
                 .btn-primary { 
                     background: var(--bg-sidebar); color: white; border: none; padding: 0.75rem 1.25rem; border-radius: 12px;
@@ -243,8 +201,7 @@ const CRMList = () => {
                 .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); background: #0f172a; }
 
                 .crm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-                .crm-card { display: flex; flex-direction: column; padding: 1.5rem; gap: 1rem; transition: all 0.3s; }
-                .crm-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+                .crm-card { display: flex; flex-direction: column; padding: 1.5rem; gap: 1rem; }
                 
                 .card-header { display: flex; gap: 12px; align-items: flex-start; }
                 .icon-indicator { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
@@ -255,7 +212,7 @@ const CRMList = () => {
                 .item-info h4 { font-size: 0.95rem; font-weight: 800; color: var(--text-heading); }
                 .item-info span { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
                 
-                .meta-row { display: flex; gap: 1rem; margin-top: 0.5rem; }
+                .meta-row { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
                 .meta-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
                 
                 .item-notes { font-size: 0.85rem; color: var(--text-body); line-height: 1.5; margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -267,49 +224,25 @@ const CRMList = () => {
                 .card-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; }
                 .plan-badge { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
 
-                .loading-state, .empty-state { display: flex; flex-direction: column; align-items: center; padding: 5rem; gap: 1rem; color: var(--text-muted); text-align: center; }
-                .spinner { width: 30px; height: 30px; border: 3px solid var(--bg-app); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-                
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
                 @media (max-width: 1024px) {
-                    .section-header {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 1.5rem;
-                    }
-                    .tab-switcher {
-                        width: 100%;
-                    }
-                    .tab-switcher button {
-                        flex: 1;
-                        justify-content: center;
-                    }
-                    .control-bar {
-                        flex-direction: column;
-                        gap: 1rem;
-                        align-items: stretch;
-                    }
-                    .search-box {
-                        width: 100%;
-                    }
+                    .section-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+                    .tab-switcher { width: 100%; }
+                    .tab-switcher button { flex: 1; justify-content: center; }
+                    .control-bar { flex-direction: column; gap: 1rem; align-items: stretch; }
                 }
 
                 @media (max-width: 640px) {
                     .title-group h2 { font-size: 1.5rem; }
                     .btn-text { display: none; }
                     .btn-primary {
-                        position: fixed;
-                        bottom: 1.5rem;
-                        right: 1.5rem;
-                        width: 56px;
-                        height: 56px;
-                        border-radius: 50%;
-                        padding: 0;
-                        justify-content: center;
-                        z-index: 100;
+                        position: fixed; bottom: 1.5rem; right: 1.5rem; width: 56px; height: 56px;
+                        border-radius: 50%; padding: 0; justify-content: center; z-index: 100;
                         box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
                     }
                     .crm-card { padding: 1.25rem; }
-                    .item-notes { -webkit-line-clamp: 3; }
                 }
             `}</style>
         </div>

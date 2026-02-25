@@ -20,8 +20,12 @@ import {
     Mail,
     Users
 } from 'lucide-react';
-import { empleadoService, clienteService, planService } from '../../services/api';
+import { empleadoService, clienteService, planService, BASE_URL } from '../../services/api';
 import NuevoClienteModal from '../Cartera/NuevoClienteModal';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
+import LoadingSpinner from '../Common/LoadingSpinner';
+import EmptyState from '../Common/EmptyState';
 
 const ClientSearchSelect = ({ clientes, value, onChange, onOpenNuevo }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -249,7 +253,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
         const newActivity = {
             dia_semana: dia,
             hora_programada: '09:00',
-            tipo_actividad: 'VISITA',
+            tipo_actividad: 'Visita',
             id_cliente: ''
         };
         setFormData(prev => ({
@@ -281,7 +285,8 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                 meta_visitas: parseInt(formData.meta_visitas),
                 meta_visitas_asistidas: parseInt(formData.meta_visitas_asistidas),
                 meta_llamadas: parseInt(formData.meta_llamadas),
-                meta_emails: parseInt(formData.meta_emails)
+                meta_emails: parseInt(formData.meta_emails),
+                ventas_esperadas: parseFloat(formData.ventas_esperadas || 0)
             };
             await planService.create(payload, formData.id_empleado);
             onSuccess();
@@ -384,7 +389,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                 <p>Establece los objetivos de actividad para esta semana.</p>
 
                                 <div className="metas-dashboard-grid">
-                                    <div className="meta-card-premium visit">
+                                    <PremiumCard className="meta-card-premium visit" hover={true}>
                                         <div className="meta-info">
                                             <div className="meta-icon-box"><Briefcase size={22} /></div>
                                             <div className="meta-text">
@@ -400,9 +405,9 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                             />
                                             <span className="meta-unit">unid.</span>
                                         </div>
-                                    </div>
+                                    </PremiumCard>
 
-                                    <div className="meta-card-premium asistida">
+                                    <PremiumCard className="meta-card-premium asistida" hover={true}>
                                         <div className="meta-info">
                                             <div className="meta-icon-box"><Users size={22} /></div>
                                             <div className="meta-text">
@@ -418,9 +423,9 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                             />
                                             <span className="meta-unit">unid.</span>
                                         </div>
-                                    </div>
+                                    </PremiumCard>
 
-                                    <div className="meta-card-premium call">
+                                    <PremiumCard className="meta-card-premium call" hover={true}>
                                         <div className="meta-info">
                                             <div className="meta-icon-box"><Phone size={22} /></div>
                                             <div className="meta-text">
@@ -436,9 +441,9 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                             />
                                             <span className="meta-unit">unid.</span>
                                         </div>
-                                    </div>
+                                    </PremiumCard>
 
-                                    <div className="meta-card-premium email">
+                                    <PremiumCard className="meta-card-premium email" hover={true}>
                                         <div className="meta-info">
                                             <div className="meta-icon-box"><Mail size={22} /></div>
                                             <div className="meta-text">
@@ -454,7 +459,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                             />
                                             <span className="meta-unit">unid.</span>
                                         </div>
-                                    </div>
+                                    </PremiumCard>
                                 </div>
                                 <div className="director-note">
                                     <strong>Nota de Dirección:</strong> "Mantener la calidad de las visitas presenciales es prioridad semana 08."
@@ -469,7 +474,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
 
                                 <div className="agenda-manager">
                                     <div className="days-nav">
-                                        {['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'].map(dia => (
+                                        {['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'].map(dia => (
                                             <button
                                                 key={dia}
                                                 className="day-add-btn"
@@ -503,10 +508,10 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                         value={act.tipo_actividad}
                                                         onChange={(e) => handleUpdateActivity(index, 'tipo_actividad', e.target.value)}
                                                     >
-                                                        <option value="VISITA">Visita</option>
-                                                        <option value="VISITA_ASISTIDA">Visita Asistida</option>
-                                                        <option value="LLAMADA">Llamada</option>
-                                                        <option value="EMAIL">Email</option>
+                                                        <option value="Visita">Visita</option>
+                                                        <option value="Visita asistida">Visita Asistida</option>
+                                                        <option value="Llamada">Llamada</option>
+                                                        <option value="Correo">Email / Correo</option>
                                                     </select>
                                                 </div>
                                                 <div className="act-client-wrapper">
@@ -526,10 +531,12 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                             </motion.div>
                                         ))}
                                         {formData.detalles_agenda.length === 0 && (
-                                            <div className="empty-agenda">
-                                                <Clock size={32} />
-                                                <p>Haz clic en los botones superiores para agregar actividades por día.</p>
-                                            </div>
+                                            <EmptyState
+                                                icon={Clock}
+                                                title="Agenda Vacía"
+                                                message="Haz clic en los botones superiores para agregar actividades por día."
+                                                compact
+                                            />
                                         )}
                                     </div>
                                 </div>
@@ -562,7 +569,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                 <div className="stat-details">
                                                     <span className="stat-label">Visitas</span>
                                                     <div className="stat-value">
-                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'VISITA').length}</span>
+                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita').length}</span>
                                                         <span className="total">/{formData.meta_visitas}</span>
                                                     </div>
                                                 </div>
@@ -572,7 +579,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                 <div className="stat-details">
                                                     <span className="stat-label">Asistidas</span>
                                                     <div className="stat-value">
-                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'VISITA_ASISTIDA').length}</span>
+                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita asistida').length}</span>
                                                         <span className="total">/{formData.meta_visitas_asistidas}</span>
                                                     </div>
                                                 </div>
@@ -582,7 +589,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                 <div className="stat-details">
                                                     <span className="stat-label">Llamadas</span>
                                                     <div className="stat-value">
-                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'LLAMADA').length}</span>
+                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Llamada').length}</span>
                                                         <span className="total">/{formData.meta_llamadas}</span>
                                                     </div>
                                                 </div>
@@ -592,7 +599,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                 <div className="stat-details">
                                                     <span className="stat-label">Emails</span>
                                                     <div className="stat-value">
-                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'EMAIL').length}</span>
+                                                        <span className="current">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Correo').length}</span>
                                                         <span className="total">/{formData.meta_emails}</span>
                                                     </div>
                                                 </div>
@@ -613,7 +620,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                         </thead>
                                         <tbody>
                                             {formData.detalles_agenda.sort((a, b) => {
-                                                const days = { 'LUNES': 1, 'MARTES': 2, 'MIERCOLES': 3, 'JUEVES': 4, 'VIERNES': 5, 'SÁBADO': 6 };
+                                                const days = { 'Lunes': 1, 'Martes': 2, 'Miercoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sabado': 6 };
                                                 if (days[a.dia_semana] !== days[b.dia_semana]) return days[a.dia_semana] - days[b.dia_semana];
                                                 return a.hora_programada.localeCompare(b.hora_programada);
                                             }).map((act, i) => (
@@ -621,9 +628,13 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                                                     <td className="day-cell">{act.dia_semana}</td>
                                                     <td className="time-cell">{act.hora_programada}</td>
                                                     <td className="type-cell">
-                                                        <span className={`badge-type ${act.tipo_actividad.toLowerCase()}`}>
+                                                        <Badge variant={
+                                                            act.tipo_actividad === 'Visita' ? 'error' :
+                                                                act.tipo_actividad === 'Llamada' ? 'success' :
+                                                                    act.tipo_actividad === 'Correo' ? 'warning' : 'info'
+                                                        }>
                                                             {act.tipo_actividad}
-                                                        </span>
+                                                        </Badge>
                                                     </td>
                                                     <td className="client-cell">
                                                         {clientes.find(c => c.id_cliente === parseInt(act.id_cliente))?.nombre_cliente || 'N/A'}
@@ -666,8 +677,12 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                             </button>
                         ) : (
                             <button className="btn-wizard-success" onClick={handleSubmit} disabled={loading}>
-                                {loading ? 'Registrando...' : 'Finalizar y Crear Plan'}
-                                <CheckCircle size={20} />
+                                {loading ? <LoadingSpinner size="sm" color="white" inline /> : (
+                                    <>
+                                        <span>Finalizar y Crear Plan</span>
+                                        <CheckCircle size={20} />
+                                    </>
+                                )}
                             </button>
                         )}
                     </div>
@@ -862,20 +877,10 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
 
                 .metas-dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
                 .meta-card-premium {
-                    background: white;
                     padding: 1.5rem;
-                    border-radius: 20px;
-                    border: 1px solid #e2e8f0;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-
-                .meta-card-premium:hover {
-                    box-shadow: 0 10px 25px -4px rgba(0,0,0,0.05);
-                    transform: translateY(-2px);
-                    border-color: #cbd5e1;
                 }
 
                 .meta-info { display: flex; align-items: center; gap: 1rem; }
@@ -886,40 +891,40 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    background: #f8fafc;
+                    background: var(--bg-app);
                 }
 
-                .meta-card-premium.visit .meta-icon-box { background: #e0f2fe; color: #0ea5e9; }
-                .meta-card-premium.asistida .meta-icon-box { background: #f3e8ff; color: #a855f7; }
-                .meta-card-premium.call .meta-icon-box { background: #dcfce7; color: #10b981; }
-                .meta-card-premium.email .meta-icon-box { background: #fffbeb; color: #f59e0b; }
+                .meta-card-premium.visit .meta-icon-box { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+                .meta-card-premium.asistida .meta-icon-box { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+                .meta-card-premium.call .meta-icon-box { background: var(--primary-glow); color: var(--primary); }
+                .meta-card-premium.email .meta-icon-box { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
 
                 .meta-text { display: flex; flex-direction: column; }
-                .meta-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; letter-spacing: -0.01em; }
-                .meta-desc { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+                .meta-title { font-size: 0.95rem; font-weight: 800; color: var(--text-heading); letter-spacing: -0.01em; }
+                .meta-desc { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
 
                 .meta-input-section { display: flex; align-items: baseline; gap: 6px; }
                 .meta-input-section input {
                     width: 70px;
                     font-size: 1.5rem;
                     font-weight: 800;
-                    color: #1e293b;
+                    color: var(--text-heading);
                     border: none;
-                    background: #f1f5f9;
+                    background: var(--bg-app);
                     border-radius: 10px;
                     padding: 4px 8px;
                     text-align: center;
                     outline: none;
                 }
 
-                .meta-unit { font-size: 0.75rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; }
+                .meta-unit { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
 
-                .agenda-manager { background: white; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; height: 420px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-                .days-nav { display: flex; gap: 10px; padding: 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+                .agenda-manager { background: var(--bg-panel); border-radius: 24px; border: 1px solid var(--border-subtle); overflow: hidden; height: 420px; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); }
+                .days-nav { display: flex; gap: 10px; padding: 1.25rem; background: var(--bg-app); border-bottom: 1px solid var(--border-subtle); }
                 .day-add-btn {
                     padding: 8px 16px;
-                    background: white;
-                    border: 1px solid #e2e8f0;
+                    background: var(--bg-panel);
+                    border: 1px solid var(--border-subtle);
                     border-radius: 12px;
                     font-size: 0.75rem;
                     font-weight: 800;
@@ -928,82 +933,59 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     gap: 8px;
                     cursor: pointer;
                     transition: all 0.2s;
-                    color: #475569;
+                    color: var(--text-muted);
                 }
-                .day-add-btn i { color: #0ea5e9; }
-                .day-add-btn:hover { background: #1e293b; color: white; border-color: #1e293b; transform: translateY(-1px); }
+                .day-add-btn:hover { background: var(--bg-sidebar); color: white; border-color: var(--bg-sidebar); transform: translateY(-1px); }
 
                 .activities-list { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; }
                 .activity-row {
                     display: grid;
-                    grid-template-columns: 60px 100px 120px 300px 40px;
+                    grid-template-columns: 60px 100px 120px 1fr 40px;
                     align-items: center;
                     gap: 15px;
                     padding: 8px 12px;
-                    background: #f1f5f9;
+                    background: var(--bg-app);
                     border-radius: 14px;
                     transition: all 0.2s;
                 }
 
-                .activity-row:hover { background: #e2e8f0; }
+                .activity-row:hover { background: var(--border-subtle); }
 
-                .act-dia { font-weight: 800; color: #1e293b; font-size: 0.8rem; text-align: center; }
-                .act-hora, .act-type { display: flex; align-items: center; gap: 8px; background: white; padding: 6px 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
-                .act-hora input, .act-type select { border: none; outline: none; background: none; font-size: 0.85rem; font-weight: 700; width: 100%; color: #1e293b; }
+                .act-dia { font-weight: 800; color: var(--text-heading); font-size: 0.8rem; text-align: center; }
+                .act-hora, .act-type { display: flex; align-items: center; gap: 8px; background: var(--bg-panel); padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-subtle); }
+                .act-hora input, .act-type select { border: none; outline: none; background: none; font-size: 0.85rem; font-weight: 700; width: 100%; color: var(--text-heading); }
                 .act-client-wrapper { width: 100%; position: relative; }
 
-                .remove-act { border: none; background: none; color: #94a3b8; cursor: pointer; }
-                .remove-act:hover { color: #ef4444; }
+                .remove-act { border: none; background: none; color: var(--text-muted); cursor: pointer; }
+                .remove-act:hover { color: var(--error); }
 
-                .empty-agenda { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #94a3b8; text-align: center; padding: 2rem; }
+                .empty-agenda { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; padding: 2rem; }
 
-                .summary-card { background: white; padding: 2rem; border-radius: 20px; border: 2px solid #e2e8f0; display: flex; flex-direction: column; gap: 1rem; }
-                .summary-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }
-                .summary-row span { color: #64748b; font-weight: 600; }
-                .summary-row strong { color: #1e293b; }
+                .summary-card { background: var(--bg-panel); padding: 2rem; border-radius: 20px; border: 2px solid var(--border-subtle); display: flex; flex-direction: column; gap: 1rem; }
+                .summary-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--bg-app); padding-bottom: 0.75rem; }
+                .summary-row span { color: var(--text-muted); font-weight: 600; }
+                .summary-row strong { color: var(--text-heading); }
 
-                .badge-summary { background: #0ea5e9; color: white; padding: 2px 10px; border-radius: 10px; font-weight: 800; }
-
-                .summary-metas { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
-                .meta-sum-item { background: #f8fafc; padding: 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
-
-                .confirmation-disclaimer { display: flex; align-items: center; gap: 10px; margin-top: 2rem; color: #64748b; font-size: 0.9rem; }
-
-                .wizard-actions { display: flex; margin-top: auto; padding-top: 2rem; }
-                .spacer { flex: 1; }
-
-                .btn-wizard-primary, .btn-wizard-secondary, .btn-wizard-success {
-                    padding: 0.8rem 1.8rem;
-                    border-radius: 14px;
-                    border: none;
-                    font-weight: 700;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                }
-
-                .btn-wizard-primary { background: #1e293b; color: white; }
-                .btn-wizard-primary:hover { transform: translateX(5px); background: #334155; }
+                .btn-wizard-primary { background: var(--bg-sidebar); color: white; }
+                .btn-wizard-primary:hover { transform: translateX(5px); opacity: 0.9; }
                 .btn-wizard-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-                .btn-wizard-secondary { background: #f1f5f9; color: #475569; }
-                .btn-wizard-secondary:hover { background: #e2e8f0; }
+                .btn-wizard-secondary { background: var(--bg-app); color: var(--text-muted); }
+                .btn-wizard-secondary:hover { background: var(--border-subtle); }
 
                 .btn-wizard-success { background: #10b981; color: white; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
                 .btn-wizard-success:hover { transform: scale(1.02); box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4); }
 
-                /* Summary Revamp Styles - Obsidian Premium */
+                /* Summary Revamp Styles */
                 .summary-step-revamp { padding: 0.5rem; }
                 
                 .header-premium-glass {
-                    background: linear-gradient(135deg, #ffffff, #f8fafc);
-                    border: 1px solid #e2e8f0;
+                    background: linear-gradient(135deg, var(--bg-panel), var(--bg-app));
+                    border: 1px solid var(--border-subtle);
                     border-radius: 24px;
                     padding: 1.5rem;
                     margin-bottom: 2rem;
-                    box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+                    box-shadow: var(--shadow-sm);
                 }
 
                 .header-info-main {
@@ -1023,7 +1005,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                 .avatar-gradient {
                     width: 56px;
                     height: 56px;
-                    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+                    background: var(--bg-sidebar);
                     color: white;
                     border-radius: 18px;
                     display: flex;
@@ -1031,13 +1013,12 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     justify-content: center;
                     font-weight: 800;
                     font-size: 1.5rem;
-                    box-shadow: 0 8px 16px -4px rgba(14, 165, 233, 0.4);
                 }
 
                 .user-meta .user-name {
                     font-size: 1.25rem;
                     font-weight: 800;
-                    color: #1e293b;
+                    color: var(--text-heading);
                     margin: 0 0 4px 0;
                     letter-spacing: -0.02em;
                 }
@@ -1046,13 +1027,13 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     display: flex;
                     align-items: center;
                     gap: 6px;
-                    background: #f1f5f9;
+                    background: var(--bg-app);
                     padding: 4px 12px;
                     border-radius: 30px;
                     font-size: 0.8rem;
-                    color: #64748b;
+                    color: var(--text-muted);
                     font-weight: 700;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid var(--border-subtle);
                 }
 
                 .stats-dashboard-mini {
@@ -1061,8 +1042,8 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                 }
 
                 .stat-card-mini {
-                    background: white;
-                    border: 1px solid #f1f5f9;
+                    background: var(--bg-panel);
+                    border: 1px solid var(--border-subtle);
                     padding: 10px 16px;
                     border-radius: 18px;
                     display: flex;
@@ -1073,7 +1054,7 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                 }
 
                 .stat-card-mini:hover {
-                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+                    box-shadow: var(--shadow-sm);
                     transform: translateY(-2px);
                 }
 
@@ -1086,25 +1067,26 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     justify-content: center;
                 }
 
-                .stat-card-mini.visit .stat-icon { background: #e0f2fe; color: #0ea5e9; }
-                .stat-card-mini.call .stat-icon { background: #dcfce7; color: #10b981; }
-                .stat-card-mini.email .stat-icon { background: #fffbeb; color: #f59e0b; }
+                .stat-card-mini.visit .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+                .stat-card-mini.call .stat-icon { background: var(--primary-glow); color: var(--primary); }
+                .stat-card-mini.email .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+                .stat-card-mini.asistida .stat-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
 
                 .stat-details { display: flex; flex-direction: column; }
-                .stat-label { font-size: 0.7rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; }
+                .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; }
                 
                 .stat-value { display: flex; align-items: baseline; gap: 2px; }
-                .stat-value .current { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
-                .stat-value .total { font-size: 0.8rem; color: #cbd5e1; font-weight: 600; }
+                .stat-value .current { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); }
+                .stat-value .total { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
 
                 .agenda-review-list {
-                    background: white;
+                    background: var(--bg-panel);
                     border-radius: 20px;
-                    border: 1px solid #f1f5f9;
+                    border: 1px solid var(--border-subtle);
                     max-height: 400px;
                     overflow-y: auto;
                     margin-bottom: 2rem;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+                    box-shadow: var(--shadow-sm);
                 }
 
                 .summary-table {
@@ -1116,8 +1098,8 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                 .summary-table th {
                     text-align: left;
                     padding: 1.1rem;
-                    background: #f8fafc;
-                    color: #64748b;
+                    background: var(--bg-app);
+                    color: var(--text-muted);
                     font-weight: 800;
                     text-transform: uppercase;
                     font-size: 0.7rem;
@@ -1125,44 +1107,30 @@ const PlanWizard = ({ isOpen, onClose, onSuccess }) => {
                     position: sticky;
                     top: 0;
                     z-index: 10;
-                    border-bottom: 1px solid #e2e8f0;
+                    border-bottom: 1px solid var(--border-subtle);
                 }
 
                 .summary-table td {
                     padding: 1.1rem;
-                    border-bottom: 1px solid #f8fafc;
-                    color: #334155;
+                    border-bottom: 1px solid var(--bg-app);
+                    color: var(--text-body);
                 }
 
-                .day-cell { font-weight: 800; color: #0ea5e9; font-size: 0.75rem; }
-                .time-cell { font-family: 'Inter', sans-serif; font-weight: 700; color: #64748b; }
-                .client-cell { font-weight: 600; color: #1e293b; }
+                .day-cell { font-weight: 800; color: var(--primary); font-size: 0.75rem; }
+                .time-cell { font-family: inherit; font-weight: 700; color: var(--text-muted); }
+                .client-cell { font-weight: 600; color: var(--text-heading); }
 
-                .badge-type {
-                    padding: 5px 12px;
-                    border-radius: 10px;
-                    font-size: 0.7rem;
-                    font-weight: 800;
-                    text-transform: uppercase;
-                }
-
-                .badge-type.visita { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-                .badge-type.visita_asistida { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-                .badge-type.llamada { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-                .badge-type.email { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-
-                .stat-card-mini.asistida .stat-icon { background: #f3e8ff; color: #a855f7; }
-
-                .empty-row { text-align: center; color: #94a3b8; padding: 3rem !important; font-style: italic; }
+                .empty-row { text-align: center; color: var(--text-muted); padding: 3rem !important; font-style: italic; }
 
                 .final-disclaimer {
                     display: flex;
                     align-items: center;
                     gap: 12px;
                     padding: 1rem 1.5rem;
+                    background: var(--bg-app);
                     border-radius: 12px;
                     font-size: 0.9rem;
-                    color: #92400e;
+                    color: var(--text-muted);
                 }
 
                 @media (max-height: 700px) {

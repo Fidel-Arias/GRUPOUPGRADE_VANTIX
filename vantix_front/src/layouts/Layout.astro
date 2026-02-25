@@ -28,6 +28,17 @@ const { title } = Astro.props;
         <meta name="generator" content={Astro.generator} />
         <title>{title} | Vantix</title>
         <script is:inline>
+            // Auth Guard check
+            const isLoginPage = window.location.pathname === "/login";
+            const token =
+                typeof localStorage !== "undefined"
+                    ? localStorage.getItem("token")
+                    : null;
+
+            if (!token && !isLoginPage) {
+                window.location.href = "/login";
+            }
+
             // Theme initialization to prevent flash
             const theme = (() => {
                 if (

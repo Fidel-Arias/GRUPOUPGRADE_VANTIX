@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, CreditCard, Briefcase, Mail, Shield, Save, AlertCircle } from 'lucide-react';
+import { X, User, CreditCard, Briefcase, Mail, Shield, Save, AlertCircle, Lock, ShieldAlert } from 'lucide-react';
 
 const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
   const [formData, setFormData] = useState({
@@ -8,6 +8,8 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
     dni: '',
     cargo: 'Asesor de Ventas',
     email_corporativo: '',
+    password: '',
+    is_admin: false,
     activo: true
   });
 
@@ -21,6 +23,8 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
         dni: empleado.dni || '',
         cargo: empleado.cargo || 'Asesor de Ventas',
         email_corporativo: empleado.email_corporativo || '',
+        password: '', // No mostramos el password actual
+        is_admin: empleado.is_admin ?? false,
         activo: empleado.activo ?? true
       });
     } else {
@@ -29,6 +33,8 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
         dni: '',
         cargo: 'Asesor de Ventas',
         email_corporativo: '',
+        password: '',
+        is_admin: false,
         activo: true
       });
     }
@@ -48,8 +54,14 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
     setLoading(true);
     setError(null);
 
+    // Si es edición y el password está vacío, lo eliminamos para no sobreescribirlo
+    const dataToSend = { ...formData };
+    if (empleado && !dataToSend.password) {
+      delete dataToSend.password;
+    }
+
     try {
-      await onSave(formData);
+      await onSave(dataToSend);
       onClose();
     } catch (err) {
       setError(err.message || 'Ocurrió un error al procesar la solicitud.');
@@ -148,11 +160,40 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
                       value={formData.email_corporativo}
                       onChange={handleChange}
                       placeholder="ejemplo@vantix.com"
+                      required
                     />
                   </div>
 
-                  <div className="input-group checkbox-group">
-                    <label className="toggle-label">
+                  <div className="input-group full">
+                    <label><Lock size={14} /> Contraseña {empleado && "(dejar en blanco para no cambiar)"}</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required={!empleado}
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label className="toggle-label mini">
+                      <input
+                        type="checkbox"
+                        name="is_admin"
+                        checked={formData.is_admin}
+                        onChange={handleChange}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="label-text">
+                        <ShieldAlert size={14} />
+                        Administrador
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="input-group">
+                    <label className="toggle-label mini">
                       <input
                         type="checkbox"
                         name="activo"
@@ -345,6 +386,31 @@ const EmpleadoModal = ({ isOpen, onClose, onSave, empleado = null }) => {
               gap: 12px;
               cursor: pointer;
               user-select: none;
+              padding: 0.5rem 0;
+            }
+
+            .toggle-label.mini {
+              gap: 8px;
+            }
+
+            .toggle-label.mini .label-text {
+              font-size: 0.8rem;
+            }
+
+            .toggle-label.mini .toggle-slider {
+              width: 36px;
+              height: 18px;
+            }
+
+            .toggle-label.mini .toggle-slider::before {
+              width: 12px;
+              height: 12px;
+              top: 3px;
+              left: 3px;
+            }
+
+            .toggle-label.mini input:checked + .toggle-slider::before {
+              left: calc(100% - 15px);
             }
 
             .toggle-label input {
