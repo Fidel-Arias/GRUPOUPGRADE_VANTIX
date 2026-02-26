@@ -23,6 +23,9 @@ import {
     Mail
 } from 'lucide-react';
 import { kpiService, empleadoService } from '../../services/api';
+import PageHeader from '../Common/PageHeader';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
 
 const KPIDashboard = () => {
     const [loading, setLoading] = useState(true);
@@ -40,7 +43,7 @@ const KPIDashboard = () => {
         try {
             setLoading(true);
             const [reportsData, empData, incData] = await Promise.all([
-                kpiService.getInformes(),
+                kpiService.getReports ? kpiService.getReports() : kpiService.getInformes(),
                 empleadoService.getAll(),
                 kpiService.getIncentivos()
             ]);
@@ -56,20 +59,10 @@ const KPIDashboard = () => {
 
     // Calculate Global Ranking (Gamification)
     const ranking = empleados.map(emp => {
-        const empReports = reports.filter(r => {
-            // This assumes we have a way to link reports to employees directly or through plans
-            // In a real scenario, the backend return might include employee info
-            return true; // Placeholder for logic
-        });
-
-        // Mock points for demonstration if real data is empty
-        const totalPoints = reports
-            .filter(r => r.id_plan) // Filter by plan if we had the mapping
-            .reduce((acc, curr) => acc + (curr.puntos_alcanzados || 0), 0);
-
+        // Mock points for demonstration
         return {
             ...emp,
-            totalPoints: Math.floor(Math.random() * 5000) + 1000, // Mocking points for WOW factor
+            totalPoints: Math.floor(Math.random() * 5000) + 1000,
             level: Math.floor(Math.random() * 50) + 1,
             badge: ['Titan', 'Elite', 'Senior', 'Junior'][Math.floor(Math.random() * 4)],
             growth: (Math.random() * 20).toFixed(1)
@@ -77,762 +70,343 @@ const KPIDashboard = () => {
     }).sort((a, b) => b.totalPoints - a.totalPoints);
 
     const stats = [
-        { label: 'Efectividad Global', value: '84%', icon: <Target />, color: '#0ea5e9', growth: '+5.2%' },
-        { label: 'Puntos de Red', value: '128.5k', icon: <Zap />, color: '#f59e0b', growth: '+12.8%' },
-        { label: 'Bonos Generados', value: 'S/ 4,250', icon: <DollarSign />, color: '#10b981', growth: '+8.4%' },
-        { label: 'Actividades Realizadas', value: '1,420', icon: <Briefcase />, color: '#6366f1', growth: '+2.1%' },
+        { label: 'Efectividad Global', value: '84%', icon: <Target size={20} />, color: '#0ea5e9', growth: '+5.2%' },
+        { label: 'Puntos de Red', value: '128.5k', icon: <Zap size={20} />, color: '#f59e0b', growth: '+12.8%' },
+        { label: 'Bonos Generados', value: 'S/ 4,250', icon: <DollarSign size={20} />, color: '#10b981', growth: '+8.4%' },
+        { label: 'Actividades Realizadas', value: '1,420', icon: <Briefcase size={20} />, color: '#6366f1', growth: '+2.1%' },
     ];
 
     if (loading) {
         return (
-            <div className="kpi-loading">
+            <div className="kpi-loading-wrapper">
                 <div className="loader"></div>
+                <p>Sincronizando métricas de rendimiento...</p>
             </div>
         );
     }
 
     return (
         <div className="kpi-container">
-            {/* Header Section */}
-            <div className="kpi-header">
-                <div className="header-text">
-                    <h1>Rendimiento y Gamificación</h1>
-                    <p>Métricas de éxito, incentivos y ranking de competitividad.</p>
-                </div>
-                <div className="header-actions">
-                    <div className="view-switcher">
+            <PageHeader
+                title="Rendimiento y Gamificación"
+                description="Métricas de éxito, incentivos y ranking de competitividad."
+                icon={Trophy}
+                breadcrumb={['Métricas', 'KPIs']}
+                actions={
+                    <div className="view-switcher-elite">
                         <button
                             className={selectedView === 'overview' ? 'active' : ''}
                             onClick={() => setSelectedView('overview')}
                         >
                             <BarChart3 size={18} />
-                            <span className="sw-text">Dashboard</span>
+                            <span>Dashboard</span>
                         </button>
                         <button
                             className={selectedView === 'ranking' ? 'active' : ''}
                             onClick={() => setSelectedView('ranking')}
                         >
                             <Trophy size={18} />
-                            <span className="sw-text">Ranking</span>
+                            <span>Ranking</span>
                         </button>
                         <button
                             className={selectedView === 'incentives' ? 'active' : ''}
                             onClick={() => setSelectedView('incentives')}
                         >
                             <Medal size={18} />
-                            <span className="sw-text">Incentivos</span>
+                            <span>Premios</span>
                         </button>
                     </div>
-                </div>
-            </div>
+                }
+            />
 
-            {/* Quick Stats Grid */}
-            <div className="stats-grid">
+            <div className="stats-strip">
                 {stats.map((stat, i) => (
-                    <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="stat-card-premium"
-                    >
-                        <div className="stat-icon-wrap" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
+                    <PremiumCard key={i} className="mini-stat-card">
+                        <div className="icon-box" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
                             {stat.icon}
                         </div>
-                        <div className="stat-content">
-                            <span className="stat-label">{stat.label}</span>
-                            <div className="stat-value-row">
-                                <span className="stat-value">{stat.value}</span>
-                                <span className="stat-growth positive">
-                                    <ArrowUpRight size={14} />
-                                    {stat.growth}
-                                </span>
+                        <div className="stat-info">
+                            <span className="label">{stat.label}</span>
+                            <div className="value-row">
+                                <span className="value">{stat.value}</span>
+                                <span className="growth">{stat.growth}</span>
                             </div>
                         </div>
-                    </motion.div>
+                    </PremiumCard>
                 ))}
             </div>
 
-            <div className="kpi-main-layout">
-                {/* Content Area based on Selection */}
-                <div className="content-area">
-                    {selectedView === 'overview' && (
-                        <div className="view-fade-in dashboard-overview">
-                            <div className="dashboard-grid">
-                                <div className="card-premium main-rank-preview">
-                                    <div className="card-header">
-                                        <h3>Top Elite Semanal</h3>
-                                        <button className="text-btn" onClick={() => setSelectedView('ranking')}>Ver todo</button>
-                                    </div>
-                                    <div className="top-three">
-                                        {ranking.slice(0, 3).map((user, i) => {
-                                            const order = [1, 0, 2]; // Podium order: center first place
-                                            const flatUser = ranking.slice(0, 3)[order[i]];
-                                            const rank = order[i] + 1;
-
-                                            return (
-                                                <div key={flatUser.id_empleado} className={`top-user-podium rank-${rank}`}>
-                                                    <div className="avatar-wrap">
-                                                        {rank === 1 && <Crown className="crown-icon" />}
-                                                        <div className="avatar">
-                                                            {flatUser.nombre_completo.charAt(0)}
-                                                        </div>
-                                                        <div className="rank-badge">{rank}</div>
-                                                    </div>
-                                                    <div className="user-podium-info">
-                                                        <span className="name">{flatUser.nombre_completo.split(' ')[0]}</span>
-                                                        <span className="pts">{flatUser.totalPoints} XP</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="card-premium productivity-chart">
-                                    <div className="card-header">
-                                        <h3>Evolución de Productividad</h3>
-                                        <select className="minimal-select">
-                                            <option>Últimos 30 días</option>
-                                            <option>Este trimestre</option>
-                                        </select>
-                                    </div>
-                                    <div className="chart-placeholder">
-                                        {/* Mock Chart Visualization with CSS */}
-                                        <div className="bars-container">
-                                            {[40, 65, 52, 85, 92, 75, 88].map((h, i) => (
-                                                <div key={i} className="bar-wrapper">
-                                                    <motion.div
-                                                        className="bar"
-                                                        initial={{ height: 0 }}
-                                                        animate={{ height: `${h}%` }}
-                                                        transition={{ duration: 1, delay: i * 0.1 }}
-                                                    ></motion.div>
-                                                    <span className="bar-label">S{i + 1}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="recent-achievements card-premium">
+            <AnimatePresence mode="wait">
+                {selectedView === 'overview' && (
+                    <motion.div
+                        key="overview"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="view-content"
+                    >
+                        <div className="overview-grid">
+                            <PremiumCard className="main-chart-card" hover={false}>
                                 <div className="card-header">
-                                    <h3>Logros Recientes</h3>
-                                </div>
-                                <div className="achievements-list">
-                                    {[
-                                        { user: 'José Leonardo', action: 'Alcanzó el Nivel 40', time: 'hace 2h', icon: <Zap />, color: '#f59e0b' },
-                                        { user: 'Maria Elena', action: 'Bono Meta 100% Desbloqueado', time: 'hace 5h', icon: <Award />, color: '#10b981' },
-                                        { user: 'Carlos Ruiz', action: 'Racha de 5 días de Visitas', time: 'ayer', icon: <Star />, color: '#6366f1' },
-                                    ].map((ach, i) => (
-                                        <div key={i} className="achievement-item">
-                                            <div className="ach-icon" style={{ color: ach.color }}>{ach.icon}</div>
-                                            <div className="ach-info">
-                                                <span className="ach-desc"><strong>{ach.user}</strong> {ach.action}</span>
-                                                <span className="ach-time">{ach.time}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedView === 'ranking' && (
-                        <div className="view-fade-in ranking-view card-premium">
-                            <div className="ranking-header">
-                                <h2>Escalafón de Competitividad</h2>
-                                <div className="search-filter">
-                                    <div className="search-input">
-                                        <Search size={16} />
-                                        <input type="text" placeholder="Buscar asesor..." />
+                                    <h3>Tendencia de Productividad</h3>
+                                    <div className="chart-actions">
+                                        <button className="active">Mensual</button>
+                                        <button>Semanal</button>
                                     </div>
                                 </div>
+                                <div className="mock-chart-container">
+                                    {/* Abstract background for "Elite" feel */}
+                                    <div className="abstract-line"></div>
+                                    <div className="chart-placeholder">
+                                        <TrendingUp size={48} className="icon-muted" />
+                                        <p>Visualización de tendencia en tiempo real</p>
+                                    </div>
+                                </div>
+                            </PremiumCard>
+
+                            <div className="side-cards">
+                                <PremiumCard className="kpi-score-card">
+                                    <div className="score-header">
+                                        <Zap size={24} color="#f59e0b" />
+                                        <span>Puntaje de Red</span>
+                                    </div>
+                                    <div className="score-value">845.2</div>
+                                    <div className="score-progress">
+                                        <div className="progress-bar"><div className="fill" style={{ width: '84%' }}></div></div>
+                                        <span>84% del objetivo</span>
+                                    </div>
+                                </PremiumCard>
+
+                                <PremiumCard className="kpi-goals-card">
+                                    <h3>Objetivos Pendientes</h3>
+                                    <div className="goal-item">
+                                        <span>Visitas Corporativas</span>
+                                        <span className="goal-val">12/15</span>
+                                    </div>
+                                    <div className="goal-item">
+                                        <span>Nuevos Prospectos</span>
+                                        <span className="goal-val">4/10</span>
+                                    </div>
+                                </PremiumCard>
                             </div>
-                            <div className="ranking-table-wrap">
-                                <table className="ranking-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Rango</th>
-                                            <th>Asesor</th>
-                                            <th className="hide-mobile">Nivel</th>
-                                            <th className="hide-tablet">Medalla</th>
-                                            <th>XP Acumulado</th>
-                                            <th className="hide-tablet">Crecimiento</th>
+                        </div>
+                    </motion.div>
+                )}
+
+                {selectedView === 'ranking' && (
+                    <motion.div
+                        key="ranking"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="view-content"
+                    >
+                        <div className="ranking-podium">
+                            {ranking.slice(0, 3).map((emp, i) => (
+                                <div key={emp.id_empleado} className={`podium-item place-${i + 1}`}>
+                                    <div className="avatar-wrapper">
+                                        <div className="avatar">{emp.nombre_completo.charAt(0)}</div>
+                                        <div className="crown">{i === 0 ? <Crown size={24} /> : i + 1}</div>
+                                    </div>
+                                    <span className="name">{emp.nombre_completo}</span>
+                                    <span className="points">{emp.totalPoints} pts</span>
+                                    <Badge variant="info">{emp.badge}</Badge>
+                                </div>
+                            ))}
+                        </div>
+
+                        <PremiumCard className="ranking-table-card">
+                            <table className="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th>PUESTO</th>
+                                        <th>ASESOR</th>
+                                        <th>NIVEL</th>
+                                        <th>PUNTOS</th>
+                                        <th>CRECIMIENTO</th>
+                                        <th className="text-right">ESTADO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {ranking.map((emp, i) => (
+                                        <tr key={emp.id_empleado}>
+                                            <td><span className="rank-num">#{i + 1}</span></td>
+                                            <td>
+                                                <div className="user-cell">
+                                                    <span className="user-name">{emp.nombre_completo}</span>
+                                                    <span className="user-badge">{emp.badge}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="level-box">
+                                                    <span className="lvl">LVL {emp.level}</span>
+                                                    <div className="lvl-bar"><div className="fill" style={{ width: '60%' }}></div></div>
+                                                </div>
+                                            </td>
+                                            <td><span className="pts">{emp.totalPoints}</span></td>
+                                            <td>
+                                                <div className="growth-indicator positive">
+                                                    <ArrowUpRight size={14} /> {emp.growth}%
+                                                </div>
+                                            </td>
+                                            <td className="text-right">
+                                                <button className="btn-details">
+                                                    <span>Progreso</span>
+                                                    <ChevronRight size={14} />
+                                                </button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {ranking.map((user, i) => (
-                                            <motion.tr
-                                                key={user.id_empleado}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: i * 0.05 }}
-                                            >
-                                                <td>
-                                                    <div className={`rank-num ${i < 3 ? 'top' : ''}`}>
-                                                        {i === 0 ? <Crown size={16} /> : i + 1}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="user-cell">
-                                                        <div className="avatar-small">{user.nombre_completo.charAt(0)}</div>
-                                                        <div className="user-info">
-                                                            <span className="name">{user.nombre_completo}</span>
-                                                            <span className="role">{user.cargo || 'Asesor'}</span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="hide-mobile"><span className="level-badge">LVL {user.level}</span></td>
-                                                <td className="hide-tablet"><span className={`badge-pill ${user.badge.toLowerCase()}`}>{user.badge}</span></td>
-                                                <td><span className="xp-value">{user.totalPoints.toLocaleString()}</span></td>
-                                                <td className="hide-tablet">
-                                                    <span className="growth-value positive">
-                                                        <ArrowUpRight size={12} />
-                                                        {user.growth}%
-                                                    </span>
-                                                </td>
-                                            </motion.tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+                                    ))}
+                                </tbody>
+                            </table>
+                        </PremiumCard>
+                    </motion.div>
+                )}
 
-                    {selectedView === 'incentives' && (
-                        <div className="view-fade-in incentives-view">
-                            <div className="incentives-grid">
-                                {incentivos.length > 0 ? incentivos.map((inc, i) => (
-                                    <div key={i} className="card-premium incentive-card">
-                                        <div className="inc-header">
-                                            <div className="inc-icon"><Medal /></div>
-                                            <span className="inc-status">{inc.estado_pago}</span>
-                                        </div>
-                                        <div className="inc-body">
-                                            <h3>{inc.concepto}</h3>
-                                            <div className="amount">S/ {inc.monto_bono}</div>
-                                            <div className="date">Generado: {new Date(inc.fecha_generacion).toLocaleDateString()}</div>
-                                        </div>
-                                        <div className="inc-footer">
-                                            <button className="btn-claim" disabled={inc.estado_pago === 'Pagado'}>
-                                                {inc.estado_pago === 'Pagado' ? 'Cobrado' : 'Solicitar Pago'}
-                                            </button>
+                {selectedView === 'incentives' && (
+                    <motion.div
+                        key="incentives"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="view-content"
+                    >
+                        <div className="incentives-grid">
+                            {incentivos.map(inc => (
+                                <PremiumCard key={inc.id_incentivo} className="incentive-card">
+                                    <div className="inc-header">
+                                        <div className="inc-icon"><Medal size={24} /></div>
+                                        <Badge variant="warning">Recompensa</Badge>
+                                    </div>
+                                    <div className="inc-body">
+                                        <h3>{inc.nombre_incentivo}</h3>
+                                        <p>{inc.descripcion}</p>
+                                        <div className="req-box">
+                                            <Target size={14} />
+                                            <span>Requiere {inc.puntos_requeridos} Pts</span>
                                         </div>
                                     </div>
-                                )) : (
-                                    <div className="empty-incentives card-premium">
-                                        <Trophy size={48} />
-                                        <h3>No tienes incentivos pendientes</h3>
-                                        <p>Sigue cumpliendo tus metas semanales para desbloquear bonos de productividad.</p>
+                                    <div className="inc-footer">
+                                        <button className="btn-redeem" disabled>Canjear Recompensa</button>
                                     </div>
-                                )}
-                            </div>
+                                </PremiumCard>
+                            ))}
+                            {/* Static demo cards if empty */}
+                            {incentivos.length === 0 && [1, 2, 3].map(i => (
+                                <PremiumCard key={i} className="incentive-card demo">
+                                    <div className="inc-header">
+                                        <div className="inc-icon"><Star size={24} color="#f59e0b" /></div>
+                                        <Badge variant="primary">Demo</Badge>
+                                    </div>
+                                    <div className="inc-body">
+                                        <h3>Bono de Excelencia {i}</h3>
+                                        <p>Reconocimiento especial por sobrecumplimiento de metas mensuales.</p>
+                                        <div className="req-box">
+                                            <Zap size={14} />
+                                            <span>2,500 Pts</span>
+                                        </div>
+                                    </div>
+                                    <div className="inc-footer">
+                                        <button className="btn-redeem">Ver Requisitos</button>
+                                    </div>
+                                </PremiumCard>
+                            ))}
                         </div>
-                    )}
-                </div>
-
-                {/* Sidebar Metrics */}
-                <div className="kpi-sidebar">
-                    <div className="personal-progress card-premium">
-                        <h3>Mi Progreso</h3>
-                        <div className="progress-radial">
-                            <div className="radial-inner">
-                                <span className="percent">72%</span>
-                                <span className="label">Meta Semanal</span>
-                            </div>
-                        </div>
-                        <div className="goals-mini">
-                            <div className="goal-item">
-                                <span>Visitas: 18/25</span>
-                                <div className="p-bar"><div className="p-fill" style={{ width: '72%' }}></div></div>
-                            </div>
-                            <div className="goal-item">
-                                <span>Llamadas: 24/30</span>
-                                <div className="p-bar"><div className="p-fill" style={{ width: '80%' }}></div></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="next-rewards card-premium">
-                        <h3>Próximas Recompensas</h3>
-                        <div className="rewards-list">
-                            <div className="reward-item locked">
-                                <div className="rew-icon"><Zap /></div>
-                                <div className="rew-text">
-                                    <span className="title">Bono Master</span>
-                                    <span className="req">Faltan 500 XP</span>
-                                </div>
-                            </div>
-                            <div className="reward-item locked">
-                                <div className="rew-icon"><Award /></div>
-                                <div className="rew-text">
-                                    <span className="title">Vacaciones Adicionales</span>
-                                    <span className="req">Nivel 50 requerido</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <style jsx>{`
-                .kpi-container {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2rem;
-                    color: var(--text-body);
-                }
+                .kpi-container { display: flex; flex-direction: column; gap: 1.5rem; }
 
-                .kpi-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-end;
+                .view-switcher-elite {
+                    display: flex; gap: 8px; padding: 6px; background: white;
+                    border: 1px solid var(--border-subtle); border-radius: 12px;
                 }
-
-                .header-text h1 {
-                    font-size: 2.5rem;
-                    font-weight: 800;
-                    letter-spacing: -0.04em;
-                    margin: 0;
-                    background: linear-gradient(135deg, var(--text-heading) 0%, var(--text-body) 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
+                :global(.dark) .view-switcher-elite { background: var(--bg-panel); border-color: var(--border-light); }
+                .view-switcher-elite button {
+                    display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+                    border: none; background: transparent; color: var(--text-muted);
+                    font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+                    border-radius: 8px;
                 }
+                .view-switcher-elite button.active { background: var(--bg-sidebar); color: white; }
 
-                .header-text p {
-                    color: var(--text-muted);
-                    font-size: 1.1rem;
-                    margin: 0.5rem 0 0 0;
+                .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+                :global(.mini-stat-card) { padding: 1.25rem !important; display: flex; align-items: center; gap: 15px; }
+                .icon-box { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+                .stat-info { display: flex; flex-direction: column; }
+                .stat-info .label { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+                .value-row { display: flex; align-items: baseline; gap: 10px; }
+                .value-row .value { font-size: 1.25rem; font-weight: 800; color: var(--text-heading); }
+                .value-row .growth { font-size: 0.75rem; color: #10b981; font-weight: 700; }
+
+                .overview-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; }
+                .side-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+
+                .main-chart-card { min-height: 400px; padding: 1.5rem; display: flex; flex-direction: column; }
+                .chart-actions { display: flex; gap: 8px; }
+                .chart-actions button {
+                    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-subtle);
+                    background: white; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); cursor: pointer;
                 }
+                .chart-actions button.active { background: var(--primary-glow); border-color: var(--primary); color: var(--primary); }
+                .mock-chart-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+                .chart-placeholder { text-align: center; color: var(--text-muted); z-index: 1; }
+                .chart-placeholder p { font-size: 0.9rem; margin-top: 15px; font-weight: 600; }
 
-                .view-switcher {
-                    display: flex;
-                    background: var(--bg-app);
-                    padding: 4px;
-                    border-radius: 16px;
-                    gap: 4px;
-                    border: 1px solid var(--border-subtle);
-                }
+                .score-header { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text-heading); margin-bottom: 10px; }
+                .score-value { font-size: 2.5rem; font-weight: 900; color: var(--primary); line-height: 1; margin-bottom: 15px; }
+                .level-box { display: flex; flex-direction: column; gap: 4px; }
+                .lvl-bar { height: 6px; background: var(--bg-app); border-radius: 10px; overflow: hidden; }
+                .lvl-bar .fill { height: 100%; background: var(--primary); }
 
-                .view-switcher button {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    padding: 10px 20px;
-                    border: none;
-                    background: transparent;
-                    border-radius: 12px;
-                    color: var(--text-muted);
-                    font-weight: 700;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .view-switcher button.active {
-                    background: var(--bg-panel);
-                    color: var(--primary);
-                    box-shadow: var(--shadow-sm);
-                }
-
-                .stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(4, 1fr);
-                    gap: 1.5rem;
-                }
-
-                .stat-card-premium {
-                    background: var(--bg-panel);
-                    padding: 1.5rem;
-                    border-radius: 24px;
-                    display: flex;
-                    align-items: center;
-                    gap: 1.25rem;
-                    border: 1px solid var(--border-subtle);
-                    box-shadow: var(--shadow-sm);
-                }
-
-                .card-premium {
-                    background: var(--bg-panel);
-                    padding: 1.5rem;
-                    border-radius: 24px;
-                    border: 1px solid var(--border-subtle);
-                    box-shadow: var(--shadow-md);
-                    position: relative;
-                    overflow: visible;
-                }
-
-                .avatar {
-                    width: 100%;
-                    height: 100%;
-                    background: var(--bg-panel);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: 800;
-                    color: var(--text-body);
-                    box-shadow: var(--shadow-sm);
+                .podium-item { 
+                    display: flex; flex-direction: column; align-items: center; gap: 10px;
+                    padding: 2rem; background: white; border-radius: 24px; border: 1px solid var(--border-subtle);
                     position: relative;
                 }
-
-                .stat-icon-wrap {
-                    width: 56px;
-                    height: 56px;
-                    border-radius: 18px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
+                :global(.dark) .podium-item { background: var(--bg-panel); border-color: var(--border-light); }
+                .place-1 { transform: scale(1.1); z-index: 2; border-color: #f59e0b; box-shadow: 0 20px 40px -15px rgba(245, 158, 11, 0.2); }
+                .avatar-wrapper { position: relative; }
+                .podium-item .avatar { 
+                    width: 80px; height: 80px; border-radius: 50%; background: var(--bg-app); 
+                    display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; color: var(--primary);
                 }
-
-                .stat-content {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
+                .podium-item .crown { 
+                    position: absolute; -top: 20px; background: #f59e0b; width: 32px; height: 32px; 
+                    border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900;
                 }
+                .ranking-podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; padding: 2rem 0; align-items: end; }
 
-                .stat-label {
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    color: var(--text-muted);
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
+                .ranking-table-card { padding: 0 !important; overflow: hidden; }
+                .ranking-table { width: 100%; border-collapse: collapse; text-align: left; }
+                .ranking-table th { 
+                    padding: 1.25rem 1.5rem; background: #fafbfc; font-size: 0.7rem; font-weight: 800; 
+                    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
                 }
+                .ranking-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+                .rank-num { font-weight: 900; color: var(--text-muted); font-size: 1.1rem; }
 
-                .stat-value-row {
-                    display: flex;
-                    align-items: baseline;
-                    gap: 12px;
+                .incentives-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+                :global(.incentive-card) { padding: 1.5rem !important; display: flex; flex-direction: column; gap: 1.5rem; }
+                .inc-header { display: flex; justify-content: space-between; align-items: flex-start; }
+                .btn-redeem {
+                    width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--bg-sidebar);
+                    color: white; font-weight: 700; cursor: pointer; transition: 0.2s;
                 }
+                .btn-redeem:disabled { opacity: 0.5; cursor: not-allowed; }
 
-                .stat-value {
-                    font-size: 1.5rem;
-                    font-weight: 800;
-                    color: var(--text-heading);
-                }
-
-                .stat-growth {
-                    font-size: 0.8rem;
-                    font-weight: 700;
-                    display: flex;
-                    align-items: center;
-                    gap: 2px;
-                }
-
-                .stat-growth.positive { color: #10b981; }
-
-                .kpi-main-layout {
-                    display: grid;
-                    grid-template-columns: 1fr 320px;
-                    gap: 2rem;
-                }
-
-                .dashboard-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 1.5rem;
-                    margin-bottom: 1.5rem;
-                }
-
-                .card-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 2rem;
-                }
-
-                .card-header h3 {
-                    margin: 0;
-                    font-size: 1.25rem;
-                    font-weight: 800;
-                    color: var(--text-heading);
-                }
-
-                .text-btn {
-                    background: none;
-                    border: none;
-                    color: var(--primary);
-                    font-weight: 700;
-                    font-size: 0.9rem;
-                    cursor: pointer;
-                }
-
-                .top-three {
-                    display: flex;
-                    justify-content: center;
-                    align-items: flex-end;
-                    gap: 1.5rem;
-                    padding: 2rem 0 1rem;
-                    min-height: 220px;
-                }
-
-                .top-user-podium {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 16px;
-                    width: 100px;
-                    transition: all 0.3s ease;
-                }
-
-                .avatar-wrap {
-                    position: relative;
-                }
-
-                .top-user-podium.rank-1 .avatar { 
-                    width: 90px; 
-                    height: 90px; 
-                    border: 4px solid #f59e0b; 
-                    background: var(--bg-panel); 
-                    font-size: 2.2rem; 
-                    color: #f59e0b;
-                    box-shadow: 0 15px 30px -5px rgba(245, 158, 11, 0.3);
-                }
+                .kpi-loading-wrapper { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+                .loader { width: 48px; height: 48px; border: 4px solid var(--primary-soft); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
                 
-                .top-user-podium.rank-2 .avatar,
-                .top-user-podium.rank-3 .avatar {
-                    width: 68px;
-                    height: 68px;
-                    font-size: 1.5rem;
-                    border: 3px solid var(--border-subtle);
-                }
-
-                .top-user-podium.rank-2 { transform: translateY(-10px); }
-                .top-user-podium.rank-3 { transform: translateY(-5px); }
-                .top-user-podium.rank-1 { transform: translateY(-30px); }
-                
-                .crown-icon {
-                    position: absolute;
-                    top: -28px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    color: #f59e0b;
-                    filter: drop-shadow(0 4px 6px rgba(245, 158, 11, 0.4));
-                    width: 28px;
-                    height: 28px;
-                }
-
-                .rank-badge {
-                    position: absolute;
-                    bottom: 0;
-                    right: -4px;
-                    width: 24px;
-                    height: 24px;
-                    background: var(--bg-sidebar);
-                    color: white;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 0.75rem;
-                    font-weight: 800;
-                }
-
-                .user-podium-info {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 4px;
-                }
-
-                .top-user-podium .name { font-weight: 700; color: var(--text-heading); font-size: 1rem; }
-                .top-user-podium .pts { font-size: 0.85rem; font-weight: 800; color: var(--primary); background: var(--primary-soft); padding: 2px 10px; border-radius: 20px; }
-
-                .chart-placeholder {
-                    height: 200px;
-                    display: flex;
-                    align-items: flex-end;
-                    justify-content: center;
-                    padding-bottom: 2rem;
-                }
-
-                .bars-container {
-                    display: flex;
-                    align-items: flex-end;
-                    gap: 1rem;
-                    height: 100%;
-                    width: 100%;
-                    padding: 0 10px;
-                }
-
-                .bar-wrapper {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 12px;
-                    height: 100%;
-                    justify-content: flex-end;
-                }
-
-                .bar {
-                    width: 100%;
-                    background: linear-gradient(to top, var(--primary) 0%, #38bdf8 100%);
-                    border-radius: 6px 6px 2px 2px;
-                    opacity: 0.9;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    box-shadow: 0 4px 10px var(--primary-glow);
-                }
-
-                .bar:hover { 
-                    opacity: 1; 
-                    transform: scaleX(1.1);
-                    box-shadow: 0 8px 15px var(--primary-soft);
-                }
-
-                .bar-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
-
-                .achievements-list { display: flex; flex-direction: column; gap: 1rem; }
-                .achievement-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 1.25rem;
-                    padding: 1.25rem 1.5rem;
-                    background: var(--bg-app);
-                    border-radius: 20px;
-                    border: 1px solid var(--border-subtle);
-                    transition: all 0.2s;
-                }
-                .achievement-item:hover {
-                    background: var(--bg-panel);
-                    border-color: var(--border-subtle);
-                    box-shadow: var(--shadow-sm);
-                    transform: translateX(5px);
-                }
-
-                .ach-icon { width: 40px; height: 40px; background: var(--bg-panel); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-                .ach-info { display: flex; flex-direction: column; gap: 2px; }
-                .ach-desc { font-size: 0.95rem; color: var(--text-body); }
-                .ach-time { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
-
-                /* Ranking Table */
-                .ranking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-                .ranking-header h2 { margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text-heading); }
-                .ranking-table-wrap { overflow-x: auto; }
-                .ranking-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-                .ranking-table th { text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; }
-                .ranking-table td { padding: 1.25rem 1rem; background: var(--bg-app); transition: transform 0.2s; color: var(--text-body); }
-                .ranking-table tr td:first-child { border-radius: 16px 0 0 16px; }
-                .ranking-table tr td:last-child { border-radius: 0 16px 16px 0; }
-                .ranking-table tr:hover td { background: var(--bg-panel); transform: scale(1.005); }
-
-                .rank-num { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-muted); border-radius: 10px; }
-                .rank-num.top { background: var(--bg-sidebar); color: white; }
-
-                .user-cell { display: flex; align-items: center; gap: 1rem; }
-                .avatar-small { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-panel); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-body); border: 1px solid var(--border-subtle); }
-                .user-info .name { display: block; font-weight: 700; color: var(--text-heading); }
-                .user-info .role { font-size: 0.8rem; color: var(--text-muted); }
-
-                .level-badge { background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; }
-                .badge-pill { padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; }
-                .badge-pill.titan { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-                .badge-pill.elite { background: var(--primary-glow); color: var(--primary); }
-                .badge-pill.senior { background: var(--bg-panel); color: var(--text-body); border: 1px solid var(--border-subtle); }
-
-                .xp-value { font-weight: 800; color: var(--text-heading); font-size: 1.1rem; }
-                .growth-value { display: flex; align-items: center; gap: 4px; font-weight: 700; }
-                .growth-value.positive { color: #10b981; }
-
-                /* Sidebar */
-                .kpi-sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
-                .progress-radial { 
-                    width: 160px; 
-                    height: 160px; 
-                    margin: 2rem auto; 
-                    position: relative; 
-                    border-radius: 50%; 
-                    background: conic-gradient(var(--primary) 72%, var(--bg-app) 0); 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center;
-                    box-shadow: 0 10px 25px -5px var(--primary-glow);
-                }
-                .radial-inner { 
-                    width: 125px; 
-                    height: 125px; 
-                    background: var(--bg-panel); 
-                    border-radius: 50%; 
-                    display: flex; 
-                    flex-direction: column; 
-                    align-items: center; 
-                    justify-content: center; 
-                    box-shadow: inset 0 4px 12px rgba(0,0,0,0.1); 
-                }
-                .radial-inner .percent { font-size: 2rem; font-weight: 900; color: var(--text-heading); line-height: 1; }
-                .radial-inner .label { font-size: 0.8rem; color: var(--text-muted); font-weight: 700; }
-
-                .goals-mini { display: flex; flex-direction: column; gap: 1rem; }
-                .goal-item { display: flex; flex-direction: column; gap: 6px; }
-                .goal-item span { font-size: 0.85rem; font-weight: 700; color: var(--text-body); }
-                .p-bar { height: 8px; background: var(--bg-app); border-radius: 10px; overflow: hidden; }
-                .p-fill { height: 100%; background: var(--primary); border-radius: 10px; }
-
-                .rewards-list { display: flex; flex-direction: column; gap: 1rem; }
-                .reward-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-app); border-radius: 16px; border: 1px solid var(--border-subtle); }
-                .reward-item.locked { opacity: 0.6; filter: grayscale(0.5); }
-                .rew-icon { width: 44px; height: 44px; background: var(--bg-panel); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
-                .rew-text { display: flex; flex-direction: column; gap: 2px; }
-                .rew-text .title { font-weight: 700; color: var(--text-heading); }
-                .rew-text .req { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-
-                .incentives-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
-                .incentive-card { display: flex; flex-direction: column; gap: 1.5rem; padding: 2rem; }
-                .inc-header { display: flex; justify-content: space-between; align-items: center; }
-                .inc-icon { width: 48px; height: 48px; background: rgba(219, 39, 119, 0.1); color: #db2777; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-                .inc-status { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
-                .inc-body h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-heading); line-height: 1.4; }
-                .inc-body .amount { margin-top: 1rem; font-size: 2rem; font-weight: 900; color: #10b981; }
-                .inc-body .date { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
-                .btn-claim { width: 100%; padding: 12px; border-radius: 14px; border: none; background: var(--bg-sidebar); color: white; font-weight: 800; cursor: pointer; transition: all 0.2s; }
-                .btn-claim:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); background: #0f172a; }
-                .btn-claim:disabled { opacity: 0.5; cursor: default; }
-
-                .empty-incentives { padding: 5rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; color: var(--text-muted); }
-                .empty-incentives h3 { color: var(--text-heading); font-weight: 800; }
-
-                @media (max-width: 1200px) {
-                    .kpi-main-layout { grid-template-columns: 1fr; }
-                    .kpi-sidebar { order: -1; flex-direction: row; flex-wrap: wrap; }
-                    .personal-progress, .next-rewards { flex: 1; min-width: 300px; }
-                }
+                @keyframes spin { to { transform: rotate(360deg); } }
 
                 @media (max-width: 1024px) {
-                    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-                    .dashboard-grid { grid-template-columns: 1fr; }
-                    .kpi-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-                    .view-switcher { width: 100%; }
-                    .view-switcher button { flex: 1; justify-content: center; }
-                }
-
-                @media (max-width: 768px) {
-                    .header-actions { width: 100%; }
-                    .view-switcher { width: 100%; justify-content: space-between; }
-                    .stats-grid { grid-template-columns: 1fr 1fr; }
-                    .sw-text { display: none; }
-                    .view-switcher button { padding: 10px; flex: 1; justify-content: center; }
-                }
-
-                @media (max-width: 640px) {
-                    .header-text h1 { font-size: 1.8rem; }
-                    .stats-grid { grid-template-columns: 1fr; }
-                    .sw-text { display: none; }
-                    .view-switcher button { padding: 12px; }
-                    .top-three { gap: 0.75rem; scale: 0.85; margin: 1rem 0; }
-                    .hide-tablet { display: none; }
-                    .hide-mobile { display: none; }
-                    .ranking-table td, .ranking-table th { padding: 0.8rem 0.5rem; }
-                    .ranking-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-                    .ranking-table { min-width: 500px; }
-                    .card-premium { padding: 1.25rem; }
-                    .stat-value { font-size: 1.25rem; }
-                }
-
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+                    .overview-grid { grid-template-columns: 1fr; }
+                    .ranking-podium { grid-template-columns: 1fr; gap: 1rem; }
+                    .place-1 { transform: none; }
                 }
             `}</style>
         </div>

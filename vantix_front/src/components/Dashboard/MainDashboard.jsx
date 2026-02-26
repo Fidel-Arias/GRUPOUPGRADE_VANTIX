@@ -13,7 +13,9 @@ import {
     Briefcase,
     DollarSign,
     Target,
-    CheckCircle2
+    CheckCircle2,
+    LayoutDashboard,
+    Send
 } from 'lucide-react';
 import {
     clienteService,
@@ -22,6 +24,9 @@ import {
     crmService,
     kpiService
 } from '../../services/api';
+import PageHeader from '../Common/PageHeader';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
 
 const MainDashboard = () => {
     const [stats, setStats] = useState({
@@ -77,37 +82,37 @@ const MainDashboard = () => {
                 const activityFeed = [
                     ...visitas.map(v => ({
                         type: 'visita',
-                        user: empleados.find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'Agente',
-                        initials: (empleados.find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'A').charAt(0),
+                        user: (empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'Agente de Ventas',
+                        initials: ((empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'A').charAt(0),
                         action: 'registró visita',
-                        target: v.institucion_visitada,
-                        time: v.fecha_visita,
+                        target: v.institucion_visitada || 'Cliente',
+                        time: v.fecha_hora_checkin || v.fecha_visita || new Date(),
                         icon: <MapPin size={16} />
                     })),
                     ...llamadas.map(l => ({
                         type: 'llamada',
-                        user: empleados.find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'Agente',
-                        initials: (empleados.find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'A').charAt(0),
+                        user: (empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'Agente de Ventas',
+                        initials: ((empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'A').charAt(0),
                         action: 'realizó llamada',
-                        target: l.contacto_nombre,
-                        time: l.fecha_llamada,
+                        target: l.nombre_destinatario || l.contacto_nombre || 'Contacto',
+                        time: l.fecha_hora || l.fecha_llamada || new Date(),
                         icon: <Activity size={16} />
                     })),
                     ...emails.map(e => ({
                         type: 'email',
-                        user: empleados.find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'Agente',
-                        initials: (empleados.find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'A').charAt(0),
+                        user: (empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'Agente de Ventas',
+                        initials: ((empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'A').charAt(0),
                         action: 'envió correo',
-                        target: e.contacto_nombre,
-                        time: e.fecha_email,
-                        icon: <FileText size={16} />
+                        target: e.email_destino || 'Destinatario',
+                        time: e.fecha_hora || e.fecha_email || new Date(),
+                        icon: <Send size={16} />
                     }))
-                ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 6);
+                ].sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0)).slice(0, 10);
 
                 setActividades(activityFeed);
 
             } catch (error) {
-                console.error("Dashboard error:", error);
+                console.error('Error fetching dashboard data:', error);
             } finally {
                 setLoading(false);
             }
@@ -116,357 +121,285 @@ const MainDashboard = () => {
         fetchDashboardData();
     }, []);
 
-    const getTimeAgo = (dateStr) => {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diffInMs = now - date;
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-        if (diffInHours < 1) return 'Hace poco';
-        if (diffInHours < 24) return `Hace ${diffInHours}h`;
-        return date.toLocaleDateString();
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1 }
     };
 
     return (
-        <div className="dashboard-content">
-            {/* Bento Grid */}
-            <div className="bento-container">
-                {/* 1. Hero Metric */}
-                <motion.div
-                    className="bento-card hero-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    <div className="card-glass"></div>
-                    <div className="card-body">
-                        <header>
-                            <span class="label">Puntuación de Red Global</span>
-                            <div className="trend positive">
-                                <TrendingUp size={14} />
-                                <span>Real-time</span>
+        <motion.div
+            className="dashboard-container"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <PageHeader
+                title="Centro de Mando"
+                description="Resumen operativo y métricas de desempeño comercial."
+                icon={LayoutDashboard}
+                breadcrumb={['Vantix', 'Dashboard']}
+                actions={
+                    <div className="dashboard-actions">
+                        <button className="btn-secondary">
+                            <Calendar size={18} />
+                            <span>Hoy: {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+                        </button>
+                        <button className="btn-primary" onClick={() => window.location.href = '/kpi'}>
+                            <TrendingUp size={18} />
+                            <span>Ver Reporte KPI</span>
+                        </button>
+                    </div>
+                }
+            />
+
+            <div className="stats-grid">
+                <StatCard
+                    title="Cartera Total"
+                    value={stats.totalClientes}
+                    subtitle="Puntos de contacto"
+                    icon={<Users size={24} />}
+                    color="#0ea5e9"
+                    delay={0}
+                />
+                <StatCard
+                    title="Visitas Realizadas"
+                    value={stats.totalVisitas}
+                    subtitle="En el periodo"
+                    icon={<MapPin size={24} />}
+                    color="#6366f1"
+                    delay={0.1}
+                />
+                <StatCard
+                    title="Eficiencia Promedio"
+                    value={`${stats.rendimientoMensual}%`}
+                    subtitle="Cumplimiento meta"
+                    icon={<Activity size={24} />}
+                    color="#10b981"
+                    delay={0.2}
+                />
+                <StatCard
+                    title="Total Actividades"
+                    value={stats.actividadesMes}
+                    subtitle="Interacciones CRM"
+                    icon={<Activity size={24} />}
+                    color="#f59e0b"
+                    delay={0.3}
+                />
+            </div>
+
+            <div className="main-grid">
+                <div className="charts-column">
+                    <PremiumCard className="bento-card progress-card" hover={false}>
+                        <div className="card-header">
+                            <div className="header-text">
+                                <h3>Cumplimiento Semanal</h3>
+                                <p>Progreso hacia el objetivo de ventas</p>
                             </div>
-                        </header>
-                        <div className="main-stat">
-                            <h2 className="counter">{loading ? '...' : stats.rendimientoMensual}</h2>
-                            <span className="unit">PTS</span>
+                            <Target className="icon-muted" size={24} />
                         </div>
-                        <div className="goal-track">
-                            <div className="track-header">
-                                <span>Progreso de Meta Equipal</span>
-                                <span>{stats.metaProgreso}%</span>
+                        <div className="progress-content">
+                            <div className="circle-progress">
+                                <svg viewBox="0 0 36 36" className="circular-chart primary">
+                                    <path className="circle-bg"
+                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <path className="circle"
+                                        strokeDasharray={`${stats.metaProgreso}, 100`}
+                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <text x="18" y="20.35" className="percentage">{stats.metaProgreso}%</text>
+                                </svg>
                             </div>
-                            <div className="track-bar">
-                                <motion.div
-                                    className="progress"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${stats.metaProgreso}%` }}
-                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                ></motion.div>
+                            <div className="progress-stats">
+                                <div className="stat-row">
+                                    <span className="label">Meta Total</span>
+                                    <span className="value">S/ 45,000</span>
+                                </div>
+                                <div className="stat-row">
+                                    <span className="label">Alcanzado</span>
+                                    <span className="value primary">S/ 34,250</span>
+                                </div>
+                                <div className="stat-progress-bar">
+                                    <div className="bar-fill" style={{ width: `${stats.metaProgreso}%` }}></div>
+                                </div>
                             </div>
-                            <p className="footer-text">
-                                Basado en el rendimiento de <strong>{stats.totalVisitas}</strong> visitas registradas.
-                            </p>
                         </div>
-                    </div>
-                </motion.div>
+                    </PremiumCard>
 
-                {/* 2. Interactive Quick Actions */}
-                <motion.div
-                    className="bento-card actions-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <h3>Accesos Rápidos</h3>
-                    <div className="actions-grid">
-                        <a href="/empleados" className="action-btn">
-                            <div className="icon-wrap ico-blue"><Users size={20} /></div>
-                            <span>Equipo</span>
-                        </a>
-                        <a href="/visitas" className="action-btn">
-                            <div className="icon-wrap ico-orange"><MapPin size={20} /></div>
-                            <span>Visitas</span>
-                        </a>
-                        <a href="/kpi" className="action-btn">
-                            <div className="icon-wrap ico-purple"><TrendingUp size={20} /></div>
-                            <span>KPIs</span>
-                        </a>
-                        <a href="/finanzas" className="action-btn">
-                            <div className="icon-wrap ico-green"><DollarSign size={20} /></div>
-                            <span>Gastos</span>
-                        </a>
-                    </div>
-                </motion.div>
-
-                {/* 3. Mini Stat: Clients */}
-                <motion.div
-                    className="bento-card mini-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <div className="mini-icon blue"><Users size={22} /></div>
-                    <div className="mini-data">
-                        <h4>{loading ? '...' : stats.totalClientes}</h4>
-                        <p>Clientes Activos</p>
-                        <span className="mini-trend">+ Cartera Total</span>
-                    </div>
-                </motion.div>
-
-                {/* 4. Mini Stat: Activities */}
-                <motion.div
-                    className="bento-card mini-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                >
-                    <div className="mini-icon orange"><Activity size={22} /></div>
-                    <div className="mini-data">
-                        <h4>{loading ? '...' : stats.actividadesMes}</h4>
-                        <p>Actividad Total</p>
-                        <span className="mini-trend">Visitas + CRM</span>
-                    </div>
-                </motion.div>
-
-                {/* 5. Chart Card (Real Projection) */}
-                <motion.div
-                    className="bento-card chart-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                >
-                    <header>
-                        <div className="title">
-                            <Activity size={18} />
-                            <h3>Impacto por Actividad</h3>
+                    <PremiumCard className="bento-card kpi-overview">
+                        <div className="card-header">
+                            <h3>Métricas Críticas</h3>
+                            <CheckCircle2 color="var(--primary)" size={20} />
                         </div>
-                        <div className="legend">
-                            <span className="it actual"><i></i> Real</span>
-                            <span className="it target"><i></i> Promedio</span>
+                        <div className="kpi-list">
+                            <MetricItem label="Retención Clientes" value="94%" trend="+2.4%" />
+                            <MetricItem label="Tiempo Respuesta" value="1.2h" trend="-15%" positive={false} />
+                            <MetricItem label="Cierre Ventas" value="28%" trend="+5.1%" />
                         </div>
-                    </header>
-                    <div className="chart-visual">
-                        <div className="chart-y-axis">
-                            <span>Max</span>
-                            <span>Avg</span>
-                            <span>0</span>
+                    </PremiumCard>
+                </div>
+
+                <div className="feed-column">
+                    <PremiumCard className="activity-feed-card" hover={false}>
+                        <div className="feed-header">
+                            <div className="title">
+                                <h3>Actividad Reciente</h3>
+                                <div className="pulse"></div>
+                            </div>
+                            <button className="view-all" onClick={() => window.location.href = '/crm'}>
+                                Auditoría Completa <ArrowRight size={14} />
+                            </button>
                         </div>
-                        <div className="chart-bars-wrap">
-                            {[65, 80, 45, 90, 70, 85].map((val, i) => (
-                                <div key={i} className="bar-col">
-                                    <div className="bar-container">
-                                        <div className="bar-target" style={{ height: '60%' }}></div>
-                                        <motion.div
-                                            className="bar-actual"
-                                            initial={{ height: 0 }}
-                                            animate={{ height: `${val}%` }}
-                                            transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
-                                        >
-                                            <div className="glow"></div>
-                                        </motion.div>
+                        <div className="feed-content">
+                            {loading ? (
+                                <div className="feed-loading">
+                                    <div className="skeleton-line"></div>
+                                    <div className="skeleton-line"></div>
+                                    <div className="skeleton-line"></div>
+                                </div>
+                            ) : actividades.map((act, i) => (
+                                <div key={i} className="feed-item">
+                                    <div className="item-left">
+                                        <div className="user-avatar">{act.initials}</div>
+                                        <div className="item-text">
+                                            <p><strong>{act.user}</strong> {act.action} en <span>{act.target}</span></p>
+                                            <span className="time">{new Date(act.time).toLocaleTimeString()}</span>
+                                        </div>
                                     </div>
-                                    <span className="day-label">{['V', 'L', 'C', 'G', 'P', 'T'][i]}</span>
+                                    <div className="item-icon">{act.icon}</div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </motion.div>
-
-                {/* 6. Real-time Activity Stream */}
-                <motion.div
-                    className="bento-card feed-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                >
-                    <header>
-                        <h3>Actividad Reciente</h3>
-                        <button className="btn-more"><ArrowRight size={16} /></button>
-                    </header>
-                    <div className="feed-body">
-                        {loading ? (
-                            <div className="loading-feed">Actualizando...</div>
-                        ) : actividades.length > 0 ? (
-                            actividades.map((act, i) => (
-                                <div key={i} className="feed-item">
-                                    <div className={`avatar ${act.type === 'visita' ? 'vis' : act.type === 'llamada' ? 'call' : 'mail'}`}>
-                                        {act.initials}
-                                    </div>
-                                    <div className="info">
-                                        <p><strong>{act.user}</strong> {act.action}</p>
-                                        <span className="meta">
-                                            <Clock size={12} /> {getTimeAgo(act.time)} • {act.target || 'Vantix'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="empty-feed">Sin actividad reciente registrada.</div>
-                        )}
-                    </div>
-                </motion.div>
+                    </PremiumCard>
+                </div>
             </div>
 
             <style jsx>{`
-                .bento-container {
-                    display: grid;
-                    grid-template-columns: repeat(4, 1fr);
-                    grid-template-rows: repeat(2, auto);
-                    gap: 1.5rem;
+                .dashboard-container { display: flex; flex-direction: column; gap: 2.5rem; }
+                
+                .dashboard-actions { display: flex; gap: 12px; }
+                .btn-primary {
+                    background: var(--bg-sidebar); color: white; border: none; padding: 0.8rem 1.5rem;
+                    border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px;
+                    cursor: pointer; transition: all 0.3s; box-shadow: var(--shadow-md);
                 }
-
-                .bento-card {
-                    background: var(--bg-panel);
-                    border-radius: 28px;
-                    border: 1px solid var(--border-subtle);
-                    padding: 1.8rem;
-                    position: relative;
-                    overflow: hidden;
-                    box-shadow: var(--shadow-sm);
+                .btn-secondary {
+                    background: white; color: var(--text-body); border: 1px solid var(--border-subtle);
+                    padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 700; display: flex;
+                    align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;
                 }
+                :global(.dark) .btn-secondary { background: var(--bg-panel); border-color: var(--border-light); color: white; }
 
-                .hero-card {
-                    grid-column: span 2;
-                    background: var(--bg-sidebar);
-                    color: white;
-                    border: none;
+                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+
+                .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; }
+                .charts-column { display: flex; flex-direction: column; gap: 1.5rem; }
+
+                .bento-card { padding: 1.5rem; }
+                .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+                .card-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); margin: 0; }
+                .card-header p { font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0 0; }
+
+                .progress-content { display: flex; align-items: center; gap: 3rem; }
+                .circular-chart { width: 140px; height: 140px; }
+                .circle-bg { fill: none; stroke: var(--bg-app); stroke-width: 3; }
+                .circle { fill: none; stroke-width: 3; stroke-linecap: round; stroke: var(--primary); transition: stroke-dasharray 0.3s ease; }
+                .percentage { fill: var(--text-heading); font-family: 'Outfit'; font-size: 0.5rem; text-anchor: middle; font-weight: 800; }
+
+                .progress-stats { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+                .stat-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.9rem; }
+                .stat-row .primary { color: var(--primary); }
+                .stat-progress-bar { height: 8px; background: var(--bg-app); border-radius: 10px; }
+                .bar-fill { height: 100%; background: var(--primary); border-radius: 10px; }
+
+                .kpi-list { display: flex; flex-direction: column; gap: 1.5rem; }
+
+                .activity-feed-card { padding: 0 !important; overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+                .feed-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); }
+                .feed-header .title { display: flex; align-items: center; gap: 12px; }
+                .feed-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); margin: 0; }
+                .pulse { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); animation: pulse 2s infinite; }
+                
+                .view-all { font-size: 0.75rem; font-weight: 800; color: var(--primary); background: transparent; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+
+                .feed-content { padding: 0.5rem 1.5rem; flex: 1; overflow-y: auto; }
+                .feed-item { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--border-light); }
+                .feed-item:last-child { border: none; }
+                .item-left { display: flex; align-items: center; gap: 12px; }
+                .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-app); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; border: 1px solid var(--border-subtle); }
+                .item-text p { font-size: 0.85rem; margin: 0; color: var(--text-muted); }
+                .item-text strong { color: var(--text-heading); }
+                .item-text span { color: var(--primary); font-weight: 700; }
+                .item-text .time { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+                .item-icon { color: var(--text-muted); opacity: 0.5; }
+
+                @keyframes pulse {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
                 }
-
-                .card-glass {
-                    position: absolute;
-                    inset: 0;
-                    background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.2), transparent 70%);
-                    pointer-events: none;
-                }
-
-                .main-stat {
-                    display: flex;
-                    align-items: baseline;
-                    gap: 12px;
-                    margin: 1.5rem 0 2rem;
-                }
-
-                .main-stat h2 { 
-                    font-size: 4.5rem; 
-                    font-weight: 900; 
-                    margin: 0; 
-                    letter-spacing: -0.04em; 
-                    line-height: 1;
-                }
-
-                .main-stat .unit { color: var(--primary); font-weight: 800; font-size: 1.5rem; }
-
-                .hero-card header { display: flex; justify-content: space-between; align-items: center; }
-                .hero-card .label { font-size: 0.8rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-
-                .trend { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
-
-                .track-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.75rem; }
-                .track-bar { height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 10px; overflow: hidden; }
-                .progress { height: 100%; background: linear-gradient(90deg, var(--primary), #6366f1); border-radius: 10px; }
-
-                .actions-card h3 { font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 800; color: var(--text-heading); }
-                .actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-                .action-btn { 
-                    display: flex; 
-                    flex-direction: column; 
-                    align-items: center; 
-                    gap: 10px; 
-                    padding: 1.25rem 0.75rem; 
-                    background: var(--bg-app); 
-                    border-radius: 24px; 
-                    transition: all 0.3s; 
-                    text-decoration: none; 
-                    border: 1px solid var(--border-subtle); 
-                }
-                .action-btn:hover { 
-                    background: var(--bg-panel); 
-                    transform: translateY(-5px); 
-                    border-color: var(--primary); 
-                    box-shadow: var(--shadow-md); 
-                }
-                .icon-wrap { 
-                    width: 44px; 
-                    height: 44px; 
-                    border-radius: 14px; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    background: var(--bg-panel); 
-                    box-shadow: var(--shadow-sm); 
-                }
-                .action-btn span { font-size: 0.75rem; font-weight: 800; color: var(--text-body); }
-
-                .mini-card { display: flex; align-items: center; gap: 1.25rem; }
-                .mini-icon { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
-                .mini-icon.blue { background: var(--primary-glow); color: var(--primary); }
-                .mini-icon.orange { background: rgba(249, 115, 22, 0.1); color: #f97316; }
-                .mini-data h4 { font-size: 1.75rem; font-weight: 900; color: var(--text-heading); line-height: 1; }
-                .mini-data p { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; margin-top: 4px; }
-                .mini-trend { font-size: 0.7rem; font-weight: 800; color: #10b981; margin-top: 4px; display: block; }
-
-                .chart-card { grid-column: span 3; }
-                .chart-card header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-                .chart-card h3 { color: var(--text-heading); }
-                .legend { display: flex; gap: 15px; }
-                .legend .it { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); }
-                .legend i { width: 8px; height: 8px; border-radius: 50%; }
-                .actual i { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-                .target i { background: var(--border-subtle); }
-
-                .chart-visual { height: 200px; display: flex; gap: 1rem; position: relative; }
-                .chart-y-axis { display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; font-weight: 800; color: var(--text-muted); padding-bottom: 25px; }
-                .chart-bars-wrap { flex: 1; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border-subtle); padding-bottom: 25px; }
-                .bar-col { flex: 1; max-width: 40px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
-                .bar-container { width: 100%; height: 100%; position: relative; background: var(--bg-app); border-radius: 10px; overflow: hidden; }
-                .bar-target { position: absolute; bottom: 0; width: 100%; background: var(--border-light); border-top: 1px dashed var(--text-muted); opacity: 0.3; }
-                .bar-actual { position: absolute; bottom: 0; width: 100%; background: var(--primary); border-radius: 8px; position: relative; }
-                .bar-actual .glow { position: absolute; top: 0; left: 0; width: 100%; height: 15px; background: linear-gradient(to top, transparent, rgba(255,255,255,0.4)); }
-                .day-label { position: absolute; bottom: -25px; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); }
-
-                .feed-card header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-                .feed-card h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); }
-                .feed-body { display: flex; flex-direction: column; gap: 1.2rem; }
-                .feed-item { display: flex; gap: 1rem; align-items: center; }
-                .avatar { 
-                    width: 40px; 
-                    height: 40px; 
-                    border-radius: 50%; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 0.8rem; 
-                    font-weight: 800; 
-                    background: var(--bg-app); 
-                    border: 2px solid var(--border-subtle); 
-                    box-shadow: var(--shadow-sm); 
-                }
-                .avatar.vis { color: #f97316; background: rgba(249, 115, 22, 0.1); }
-                .avatar.call { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-                .avatar.mail { color: #10b981; background: rgba(16, 185, 129, 0.1); }
-                .info p { font-size: 0.85rem; color: var(--text-heading); margin: 0; }
-                .info p strong { color: var(--primary); }
-                .info .meta { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-
-                .title { display: flex; align-items: center; gap: 8px; color: var(--text-heading); }
-                .btn-more { background: none; border: none; color: var(--text-muted); cursor: pointer; }
 
                 @media (max-width: 1200px) {
-                    .bento-container { grid-template-columns: repeat(2, 1fr); }
-                    .chart-card { grid-column: span 2; }
+                    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+                    .main-grid { grid-template-columns: 1fr; }
                 }
-
                 @media (max-width: 768px) {
-                    .bento-container { grid-template-columns: 1fr; gap: 1rem; }
-                    .hero-card, .chart-card { grid-column: span 1; }
-                    .main-stat h2 { font-size: 3rem; }
-                    .actions-grid { grid-template-columns: repeat(2, 1fr); }
-                    .chart-visual { height: 180px; }
-                    .chart-bars-wrap { gap: 0.5rem; }
-                    .day-label { bottom: -20px; font-size: 0.6rem; }
+                    .stats-grid { grid-template-columns: 1fr; }
+                    .progress-content { flex-direction: column; text-align: center; gap: 1.5rem; }
                 }
             `}</style>
-        </div>
+        </motion.div>
     );
 };
+
+const StatCard = ({ title, value, subtitle, icon, color, delay }) => (
+    <motion.div
+        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+        transition={{ delay }}
+    >
+        <PremiumCard className="stat-card" hover={true}>
+            <div className="stat-icon" style={{ backgroundColor: `${color}15`, color: color }}>
+                {icon}
+            </div>
+            <div className="stat-content">
+                <span className="stat-label">{title}</span>
+                <span className="stat-value">{value}</span>
+                <span className="stat-sub">{subtitle}</span>
+            </div>
+            <style jsx>{`
+                :global(.stat-card) { padding: 1.5rem !important; display: flex; align-items: center; gap: 1.25rem; }
+                .stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+                .stat-content { display: flex; flex-direction: column; }
+                .stat-label { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+                .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-heading); line-height: 1.2; }
+                .stat-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+            `}</style>
+        </PremiumCard>
+    </motion.div>
+);
+
+const MetricItem = ({ label, value, trend, positive = true }) => (
+    <div className="metric-item">
+        <span className="label">{label}</span>
+        <div className="value-group">
+            <span className="value">{value}</span>
+            <span className={`trend ${positive ? 'up' : 'down'}`}>{trend}</span>
+        </div>
+        <style jsx>{`
+            .metric-item { display: flex; justify-content: space-between; align-items: center; }
+            .label { font-size: 0.9rem; font-weight: 700; color: var(--text-body); }
+            .value-group { display: flex; align-items: center; gap: 10px; }
+            .value { font-weight: 800; color: var(--text-heading); }
+            .trend { font-size: 0.75rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+            .trend.up { background: #ecfdf5; color: #10b981; }
+            .trend.down { background: #fef2f2; color: #ef4444; }
+        `}</style>
+    </div>
+);
 
 export default MainDashboard;
