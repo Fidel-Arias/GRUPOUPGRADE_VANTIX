@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, Time, Text, ForeignKey, Enum as SQLEnum, text, DateTime
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-from app.models.enums import TipoActividadEnum
+from app.models.enums import TipoActividadEnum, EstadoPlanEnum
 
 class PlanTrabajoSemanal(Base):
     __tablename__ = "plan_trabajo_semanal"
@@ -11,7 +11,7 @@ class PlanTrabajoSemanal(Base):
     
     fecha_inicio_semana = Column(Date, nullable=False)
     fecha_fin_semana = Column(Date, nullable=False)
-    estado = Column(String(20), default='Borrador')
+    estado = Column(SQLEnum(EstadoPlanEnum, name="estado_plan_enum", values_callable=lambda obj: [e.value for e in obj]), default=EstadoPlanEnum.BORRADOR)
     
     observaciones_supervisor = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))

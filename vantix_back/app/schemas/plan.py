@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, time, datetime
-from app.models.enums import TipoActividadEnum, DiaSemanaEnum
+from app.models.enums import TipoActividadEnum, DiaSemanaEnum, EstadoPlanEnum
 from app.schemas.cartera import CarteraResponse
 from app.schemas.kpi import InformeProductividadResponse
 
@@ -38,13 +38,13 @@ class PlanCreate(PlanBase):
     detalles_agenda: List[DetallePlanCreate]
 
 class PlanUpdate(BaseModel):
-    estado: Optional[str] = None # Para pasar de Borrador -> Aprobado -> Cerrado
+    estado: Optional[EstadoPlanEnum] = None # Para pasar de Borrador -> Aprobado -> Cerrado
     observaciones_supervisor: Optional[str] = None
 
 class PlanResponse(PlanBase):
     id_plan: int
     id_empleado: int
-    estado: str
+    estado: EstadoPlanEnum
     created_at: datetime
     
     # Aquí la magia: Al pedir un plan, FastAPI devuelve toda la agenda anidada

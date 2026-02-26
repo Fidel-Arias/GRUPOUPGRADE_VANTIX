@@ -26,3 +26,9 @@ class DiaSemanaEnum(str, enum.Enum):
     JUEVES = 'Jueves'
     VIERNES = 'Viernes'
     SABADO = 'Sabado'
+
+class EstadoPlanEnum(str, enum.Enum):
+    BORRADOR = 'Borrador'
+    ENVIADO = 'Enviado'
+    APROBADO = 'Aprobado'
+    RECHAZADO = 'Rechazado'
