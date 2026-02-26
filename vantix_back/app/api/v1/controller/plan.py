@@ -90,3 +90,36 @@ def delete_plan_trabajo(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan de trabajo no encontrado")
     return crud.plan.remove(db, id=id_plan)
+
+@router.post("/{id_plan}/revisar", response_model=schemas.PlanResponse)
+def revisar_plan_trabajo(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user), # Solo ADMINS aprueban
+    id_plan: int,
+    plan_review: schemas.PlanUpdate
+):
+    """
+    Endpoint para que el Supervisor/Admin APRUEBE o RECHACE un plan.
+    - Requiere rol Admin.
+    - Se recomienda enviar 'observaciones_supervisor' si se rechaza.
+    """
+    plan = crud.plan.get(db, id=id_plan)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan de trabajo no encontrado")
+    
+    # Validamos que el estado enviado sea uno de los finales
+    if plan_review.estado not in [models.enums.EstadoPlanEnum.APROBADO, models.enums.EstadoPlanEnum.RECHAZADO]:
+         raise HTTPException(
+             status_code=400, 
+             detail="El estado de revisión debe ser 'Aprobado' o 'Rechazado'."
+         )
+    
+    # Validamos obligatoriedad de observaciones si se rechaza
+    if plan_review.estado == models.enums.EstadoPlanEnum.RECHAZADO and not plan_review.observaciones_supervisor:
+        raise HTTPException(
+             status_code=400, 
+             detail="Debes incluir observaciones al rechazar un plan."
+         )
+
+    return crud.plan.update(db, db_obj=plan, obj_in=plan_review)
