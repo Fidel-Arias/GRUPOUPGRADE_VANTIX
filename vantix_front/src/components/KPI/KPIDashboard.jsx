@@ -22,7 +22,7 @@ import {
     Phone,
     Mail
 } from 'lucide-react';
-import { kpiService, empleadoService } from '../../services/api';
+import { kpiService, empleadoService, authService } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
@@ -42,14 +42,27 @@ const KPIDashboard = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [reportsData, empData, incData] = await Promise.all([
-                kpiService.getReports ? kpiService.getReports() : kpiService.getInformes(),
-                empleadoService.getAll(),
-                kpiService.getIncentivos()
-            ]);
-            setReports(reportsData);
-            setEmpleados(empData);
-            setIncentivos(incData);
+            const currentUser = authService.getUser();
+
+            // Only admins can see all employees
+            const requests = [
+                kpiService.getInformes(0, 50, currentUser?.is_admin ? null : currentUser?.id_empleado),
+                kpiService.getIncentivos(currentUser?.is_admin ? null : currentUser?.id_empleado)
+            ];
+
+            if (currentUser?.is_admin) {
+                requests.push(empleadoService.getAll());
+            }
+
+            const results = await Promise.allSettled(requests);
+
+            const reportsData = results[0].status === 'fulfilled' ? results[0].value : [];
+            const incentivesData = results[1].status === 'fulfilled' ? results[1].value : [];
+            const empData = (currentUser?.is_admin && results[2]?.status === 'fulfilled') ? results[2].value : [currentUser];
+
+            setReports(reportsData || []);
+            setIncentivos(incentivesData || []);
+            setEmpleados(empData || []);
         } catch (error) {
             console.error('Error fetching KPI data:', error);
         } finally {

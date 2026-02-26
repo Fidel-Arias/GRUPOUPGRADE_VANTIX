@@ -22,13 +22,15 @@ import {
     visitaService,
     empleadoService,
     crmService,
-    kpiService
+    kpiService,
+    authService
 } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
 
 const MainDashboard = () => {
+    const [user, setUser] = useState(null);
     const [stats, setStats] = useState({
         totalClientes: 0,
         totalVisitas: 0,
@@ -40,50 +42,60 @@ const MainDashboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const currentUser = authService.getUser();
+        setUser(currentUser);
+
         const fetchDashboardData = async () => {
+            if (!currentUser) return;
+
             try {
                 setLoading(true);
-                const [
-                    clientes,
-                    visitas,
-                    empleados,
-                    llamadas,
-                    emails,
-                    kpiReports
-                ] = await Promise.all([
-                    clienteService.getAll(0, 500),
-                    visitaService.getAll({ limit: 500 }),
-                    empleadoService.getAll(0, 100),
-                    crmService.getLlamadas(null, 0, 50),
-                    crmService.getEmails(null, 0, 50),
-                    kpiService.getInformes()
+                const empId = currentUser.is_admin ? null : currentUser.id_empleado;
+
+                // 1. Fetches concurrentes (Manejando errores individuales para no romper el dashboard)
+                const fetchResults = await Promise.allSettled([
+                    clienteService.getAll(0, 500, empId),
+                    visitaService.getAll({ limit: 500, id_empleado: empId }),
+                    currentUser.is_admin ? empleadoService.getAll(0, 100) : Promise.resolve([]),
+                    crmService.getLlamadas(null, 0, 50, empId),
+                    crmService.getEmails(null, 0, 50, empId),
+                    kpiService.getInformes(0, 50, empId)
                 ]);
 
-                // 1. Calculate Stats
+                // Descomponer resultados con fallback
+                const clientes = fetchResults[0].status === 'fulfilled' ? fetchResults[0].value : [];
+                const visitas = fetchResults[1].status === 'fulfilled' ? fetchResults[1].value : [];
+                const empleados = fetchResults[2].status === 'fulfilled' ? fetchResults[2].value : [];
+                const llamadas = fetchResults[3].status === 'fulfilled' ? fetchResults[3].value : [];
+                const emails = fetchResults[4].status === 'fulfilled' ? fetchResults[4].value : [];
+                const kpiReports = fetchResults[5].status === 'fulfilled' ? fetchResults[5].value : [];
+
+                // 2. Calcular Estadísticas
                 const totalC = clientes.length || 0;
                 const totalV = visitas.length || 0;
                 const totalL = llamadas.length || 0;
                 const totalE = emails.length || 0;
 
-                // Rendimiento (Mock logic based on real KPI reports if available)
+                // Rendimiento (Lógica segura)
                 const rend = kpiReports.length > 0
                     ? (kpiReports.reduce((acc, curr) => acc + (curr.puntos_alcanzados || 0), 0) / kpiReports.length).toFixed(1)
-                    : 84.5;
+                    : 0;
 
                 setStats({
                     totalClientes: totalC,
                     totalVisitas: totalV,
                     rendimientoMensual: rend,
-                    metaProgreso: 75,
+                    metaProgreso: rend > 100 ? 100 : rend || 0,
                     actividadesMes: totalV + totalL + totalE
                 });
 
-                // 2. Process Activity Feed
+                // 3. Procesar Feed de Actividad
                 const activityFeed = [
                     ...visitas.map(v => ({
                         type: 'visita',
-                        user: (empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'Agente de Ventas',
-                        initials: ((empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'A').charAt(0),
+                        user: (empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo ||
+                            (v.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'Agente'),
+                        initials: (v.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'A').charAt(0),
                         action: 'registró visita',
                         target: v.institucion_visitada || 'Cliente',
                         time: v.fecha_hora_checkin || v.fecha_visita || new Date(),
@@ -91,8 +103,9 @@ const MainDashboard = () => {
                     })),
                     ...llamadas.map(l => ({
                         type: 'llamada',
-                        user: (empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'Agente de Ventas',
-                        initials: ((empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'A').charAt(0),
+                        user: (empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo ||
+                            (l.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'Agente'),
+                        initials: (l.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'A').charAt(0),
                         action: 'realizó llamada',
                         target: l.nombre_destinatario || l.contacto_nombre || 'Contacto',
                         time: l.fecha_hora || l.fecha_llamada || new Date(),
@@ -100,8 +113,9 @@ const MainDashboard = () => {
                     })),
                     ...emails.map(e => ({
                         type: 'email',
-                        user: (empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'Agente de Ventas',
-                        initials: ((empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'A').charAt(0),
+                        user: (empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo ||
+                            (e.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'Agente'),
+                        initials: (e.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'A').charAt(0),
                         action: 'envió correo',
                         target: e.email_destino || 'Destinatario',
                         time: e.fecha_hora || e.fecha_email || new Date(),
@@ -149,9 +163,12 @@ const MainDashboard = () => {
                             <Calendar size={18} />
                             <span>Hoy: {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
                         </button>
-                        <button className="btn-primary" onClick={() => window.location.href = '/kpi'}>
-                            <TrendingUp size={18} />
-                            <span>Ver Reporte KPI</span>
+                        <button
+                            className="btn-primary"
+                            onClick={() => window.location.href = user?.is_admin ? '/kpi' : '/cartera'}
+                        >
+                            {user?.is_admin ? <TrendingUp size={18} /> : <Briefcase size={18} />}
+                            <span>{user?.is_admin ? 'Ver Reporte KPI' : 'Ver Mi Cartera'}</span>
                         </button>
                     </div>
                 }

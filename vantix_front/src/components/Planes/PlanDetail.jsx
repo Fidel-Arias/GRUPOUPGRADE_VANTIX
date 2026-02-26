@@ -16,7 +16,7 @@ import {
     ArrowRight,
     Send
 } from 'lucide-react';
-import { planService, empleadoService, BASE_URL } from '../../services/api';
+import { planService, empleadoService, authService, BASE_URL } from '../../services/api';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -44,13 +44,18 @@ const PlanDetail = ({ planId = null }) => {
     const fetchPlanData = async (id) => {
         try {
             setLoading(true);
+            const currentUser = authService.getUser();
             const data = await planService.getById(id);
             setPlan(data);
 
             if (data?.id_empleado) {
-                const empData = await empleadoService.getAll();
-                const found = empData.find(e => e.id_empleado === data.id_empleado);
-                setEmpleado(found);
+                if (currentUser && !currentUser.is_admin && currentUser.id_empleado === data.id_empleado) {
+                    setEmpleado(currentUser);
+                } else if (currentUser?.is_admin) {
+                    const empData = await empleadoService.getAll();
+                    const found = empData.find(e => e.id_empleado === data.id_empleado);
+                    setEmpleado(found);
+                }
             }
         } catch (error) {
             console.error('Error fetching plan in PlanDetail:', error);

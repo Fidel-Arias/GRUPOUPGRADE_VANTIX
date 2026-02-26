@@ -147,19 +147,32 @@ const Sidebar = () => {
             <div className="nav-group main">
               <span className="group-label">APPS</span>
               <ul>
-                {menuItems.map((item) => (
-                  <li key={item.label}>
-                    <a
-                      href={item.path}
-                      className={`nav-link ${activeLabel === item.label ? 'active' : ''}`}
-                    >
-                      <div className="icon-wrapper" style={{ backgroundColor: item.bg, color: item.color }}>
-                        <item.icon size={20} strokeWidth={2.5} />
-                      </div>
-                      <span className="label">{item.label}</span>
-                    </a>
-                  </li>
-                ))}
+                {menuItems
+                  .filter(item => {
+                    // Solo administradores ven Empleados
+                    if (item.label === 'Empleados' && !user?.is_admin) return false;
+
+                    // El asesor no ve la pestaña de KPI (Rendimiento)
+                    if (item.label === 'Rendimiento (KPI)' && !user?.is_admin) return false;
+
+                    // Habilitamos Cartera para todos (el componente CarteraList maneja el filtrado interno)
+                    if (item.label === 'Cartera Clientes') return true;
+
+                    return true;
+                  })
+                  .map((item) => (
+                    <li key={item.label}>
+                      <a
+                        href={item.path}
+                        className={`nav-link ${activeLabel === item.label ? 'active' : ''}`}
+                      >
+                        <div className="icon-wrapper" style={{ backgroundColor: item.bg, color: item.color }}>
+                          <item.icon size={20} strokeWidth={2.5} />
+                        </div>
+                        <span className="label">{item.label}</span>
+                      </a>
+                    </li>
+                  ))}
               </ul>
             </div>
 

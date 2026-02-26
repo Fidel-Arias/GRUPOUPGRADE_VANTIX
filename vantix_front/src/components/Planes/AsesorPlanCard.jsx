@@ -88,18 +88,26 @@ const AsesorPlanCard = ({ asesor, onClick, idx, getStatusVariant }) => {
             display: flex;
             flex-direction: column;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
             height: 100% !important;
-            background: var(--bg-panel) !important;
-            border: 1px solid var(--border-subtle) !important;
+            background: rgba(255, 255, 255, 0.5) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6) !important;
             border-radius: 20px !important;
+        }
+        :global(.dark) :global(.asesor-plan-card) {
+            background: rgba(30, 30, 30, 0.4) !important;
+            border: 1px solid rgba(60, 60, 60, 0.5) !important;
         }
 
         :global(.asesor-plan-card:hover) {
-            transform: translateY(-6px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.08) !important;
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12) !important;
             border-color: var(--primary) !important;
             background: white !important;
+        }
+        :global(.dark) :global(.asesor-plan-card:hover) {
+            background: rgba(35, 35, 35, 0.6) !important;
         }
 
         .card-inner {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clienteService, empleadoService } from '../../services/api';
+import { clienteService, empleadoService, authService } from '../../services/api';
 import ClienteModal from './ClienteModal';
 import NuevoClienteModal from './NuevoClienteModal';
 import PageHeader from '../Common/PageHeader';
@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 
 const CarteraList = () => {
+  const [user, setUser] = useState(null);
   const [clientes, setClientes] = useState([]);
   const [vendedores, setVendedores] = useState([]);
   const [selectedVendedor, setSelectedVendedor] = useState(null);
@@ -43,33 +44,47 @@ const CarteraList = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    fetchInitialData();
+    const currentUser = authService.getUser();
+    setUser(currentUser);
+    fetchInitialData(currentUser);
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterCategory, selectedVendedor]);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (providedUser = null) => {
+    const currentUser = providedUser || user || authService.getUser();
     try {
       setLoading(true);
-      const [empleadosData, todosClientes] = await Promise.all([
+
+      // If not admin, we skip the advisor selection and go straight to their clients
+      if (currentUser && !currentUser.is_admin) {
+        setSelectedVendedor(currentUser);
+        await fetchClientes(currentUser.id_empleado);
+        return;
+      }
+
+      const results = await Promise.allSettled([
         empleadoService.getAll(),
         clienteService.getAll(0, 1000)
       ]);
 
-      const resumen = empleadosData
+      const empleadosData = results[0].status === 'fulfilled' ? results[0].value : [];
+      const todosClientes = results[1].status === 'fulfilled' ? results[1].value : [];
+
+      const resumen = (empleadosData || [])
         .filter(emp => !emp.is_admin) // Hide administrators
         .map(emp => ({
           id_empleado: emp.id_empleado,
           nombre_completo: emp.nombre_completo,
           cargo: emp.cargo,
-          total_clientes: todosClientes.filter(c => c.id_empleado === emp.id_empleado).length
+          total_clientes: (todosClientes || []).filter(c => c.id_empleado === emp.id_empleado).length
         })).sort((a, b) => b.total_clientes - a.total_clientes);
 
       setVendedores(resumen);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching initial data:', error);
     } finally {
       setLoading(false);
     }
@@ -171,27 +186,31 @@ const CarteraList = () => {
         breadcrumb={selectedVendedor ? ['Apps', 'Cartera', selectedVendedor.nombre_completo.split(' ')[0]] : ['Apps', 'Cartera']}
         actions={
           <div className="action-group">
-            {selectedVendedor && (
+            {selectedVendedor && user?.is_admin && (
               <button className="back-btn-elite" onClick={handleBack}>
                 <ArrowLeft size={18} />
                 <span>Volver</span>
               </button>
             )}
-            <button className="btn-primary" onClick={() => setIsNuevoModalOpen(true)}>
-              <Building2 size={18} />
-              <span className="btn-text">Nuevo Cliente</span>
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              accept=".xlsx, .xls"
-              onChange={handleFileChange}
-            />
-            <button className="btn-secondary" onClick={handleImportClick} disabled={loading}>
-              <Upload size={18} />
-              <span className="btn-text">Importar Excel</span>
-            </button>
+            {user?.is_admin && (
+              <>
+                <button className="btn-primary" onClick={() => setIsNuevoModalOpen(true)}>
+                  <Building2 size={18} />
+                  <span className="btn-text">Nuevo Cliente</span>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept=".xlsx, .xls"
+                  onChange={handleFileChange}
+                />
+                <button className="btn-secondary" onClick={handleImportClick} disabled={loading}>
+                  <Upload size={18} />
+                  <span className="btn-text">Importar Excel</span>
+                </button>
+              </>
+            )}
           </div>
         }
       />
