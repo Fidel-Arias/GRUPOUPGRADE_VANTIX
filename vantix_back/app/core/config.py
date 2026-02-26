@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_PORT: int = 5432
 
+    # Base de Datos Externa (Upgrade)
+    EXTERNAL_DB_HOST: str
+    EXTERNAL_DB_PORT: int
+    EXTERNAL_DB_USER: str
+    EXTERNAL_DB_PASSWORD: str
+    EXTERNAL_DB_NAME: str
+
     # Seguridad
     SECRET_KEY: str
     ALGORITHM: str
