@@ -13,6 +13,7 @@ import AsesorPlanCard from './AsesorPlanCard';
 import {
     Calendar,
     Plus,
+    CalendarCheck,
     ChevronRight,
     ChevronLeft,
     Clock,

@@ -17,9 +17,17 @@ import {
     Building2,
     AlertCircle,
     CheckCircle2,
-    Clock
+    Clock,
+    Wallet
 } from 'lucide-react';
 import { finanzasService, planService } from '../../services/api';
+import PageHeader from '../Common/PageHeader';
+import PremiumCard from '../Common/PremiumCard';
+import Badge from '../Common/Badge';
+import SearchInput from '../Common/SearchInput';
+import LoadingSpinner from '../Common/LoadingSpinner';
+import EmptyState from '../Common/EmptyState';
+import ConfirmModal from '../Common/ConfirmModal';
 
 const GastoList = () => {
     const [gastos, setGastos] = useState([]);
@@ -28,6 +36,7 @@ const GastoList = () => {
     const [idPlanFilter, setIdPlanFilter] = useState('');
     const [planes, setPlanes] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [newGasto, setNewGasto] = useState({
         id_plan: '',
         fecha_gasto: new Date().toISOString().split('T')[0],
@@ -81,14 +90,14 @@ const GastoList = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (confirm('¿Estás seguro de eliminar este registro?')) {
-            try {
-                await finanzasService.delete(id);
-                fetchInitialData();
-            } catch (error) {
-                alert('Error al eliminar: ' + error.message);
-            }
+    const handleDelete = async () => {
+        if (!deleteConfirm) return;
+        try {
+            await finanzasService.delete(deleteConfirm);
+            fetchInitialData();
+            setDeleteConfirm(null);
+        } catch (error) {
+            alert('Error al eliminar: ' + error.message);
         }
     };
 
@@ -100,155 +109,144 @@ const GastoList = () => {
 
     return (
         <div className="finanzas-container">
-            {/* Header Section */}
-            <div className="finanzas-header">
-                <div className="header-info">
-                    <h1>Gestión de Gastos</h1>
-                    <p>Seguimiento detallado de movilidad y reembolsos de la fuerza de ventas.</p>
-                </div>
-                <div className="header-stats">
-                    <div className="stat-card-mini">
-                        <span className="label">Total Acumulado</span>
-                        <span className="value">S/ {totalGastado.toFixed(2)}</span>
-                        <div className="trend positive">
-                            <TrendingUp size={14} />
-                            <span>Presupuesto OK</span>
-                        </div>
+            <PageHeader
+                title="Gestión de Gastos"
+                description="Seguimiento detallado de movilidad y reembolsos."
+                icon={Wallet}
+                breadcrumb={['Apps', 'Finanzas']}
+                actions={
+                    <div className="header-actions-group">
+                        <PremiumCard className="total-badge-card" hover={false}>
+                            <div className="total-content">
+                                <span className="label">Total Acumulado</span>
+                                <span className="value">S/ {totalGastado.toFixed(2)}</span>
+                            </div>
+                            <div className="trend-icon">
+                                <TrendingUp size={20} />
+                            </div>
+                        </PremiumCard>
+                        <button className="btn-primary" onClick={() => setShowModal(true)}>
+                            <Plus size={20} />
+                            <span className="btn-text">Nuevo Registro</span>
+                        </button>
                     </div>
-                </div>
-            </div>
+                }
+            />
 
-            {/* Toolbar Area */}
-            <div className="finanzas-toolbar">
-                <div className="search-box">
-                    <Search size={20} />
-                    <input
-                        type="text"
-                        placeholder="Buscar por institución o destino..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="toolbar-actions">
-                    <button className="btn-filter hide-tablet">
-                        <Filter size={18} />
-                        <span>Filtros Avanzados</span>
-                    </button>
-                    <button className="btn-primary" onClick={() => setShowModal(true)}>
-                        <Plus size={20} />
-                        <span className="btn-text">Nuevo Registro</span>
-                    </button>
-                </div>
-            </div>
+            <PremiumCard className="toolbar-card" hover={false}>
+                <SearchInput
+                    placeholder="Buscar por institución o destino..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </PremiumCard>
 
-            {/* Expenses List */}
             <div className="gastos-grid">
-                <AnimatePresence>
-                    {loading ? (
-                        <div className="loading-state">
-                            <div className="spinner"></div>
-                            <p>Cargando registros financieros...</p>
-                        </div>
-                    ) : filteredGastos.length > 0 ? (
-                        filteredGastos.map((g, i) => (
-                            <motion.div
-                                key={g.id_gasto}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                                className="gasto-card-premium"
-                            >
+                {loading ? (
+                    <div className="loading-wrapper">
+                        <LoadingSpinner message="Obteniendo registros financieros..." />
+                    </div>
+                ) : filteredGastos.length === 0 ? (
+                    <EmptyState
+                        icon={DollarSign}
+                        title="Sin gastos registrados"
+                        message="No se encontraron registros para los criterios de búsqueda."
+                    />
+                ) : (
+                    <AnimatePresence>
+                        {filteredGastos.map((g, i) => (
+                            <PremiumCard key={g.id_gasto} className="gasto-card-elite">
                                 <div className="card-top">
-                                    <div className="date-badge">
+                                    <div className="date-info">
                                         <Calendar size={14} />
                                         <span>{new Date(g.fecha_gasto).toLocaleDateString()}</span>
                                     </div>
-                                    <div className="amount-badge">
+                                    <Badge variant="success">
                                         S/ {parseFloat(g.monto_gastado).toFixed(2)}
+                                    </Badge>
+                                </div>
+
+                                <div className="card-route-elite">
+                                    <div className="point origin">
+                                        <div className="dot"></div>
+                                        <div className="text">
+                                            <span className="lbl">Origen</span>
+                                            <span className="val">{g.lugar_origen || 'S/I'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="connector">
+                                        <ArrowRight size={14} />
+                                    </div>
+                                    <div className="point destination">
+                                        <div className="dot"></div>
+                                        <div className="text">
+                                            <span className="lbl">Destino</span>
+                                            <span className="val">{g.lugar_destino || 'S/I'}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="card-route">
-                                    <div className="route-point">
-                                        <MapPin size={16} className="text-secondary" />
-                                        <div>
-                                            <span className="point-label">Origen</span>
-                                            <span className="point-name">{g.lugar_origen || 'No especificado'}</span>
-                                        </div>
-                                    </div>
-                                    <div className="route-arrow">
-                                        <ArrowRight size={18} />
-                                    </div>
-                                    <div className="route-point">
-                                        <MapPin size={16} className="text-primary" />
-                                        <div>
-                                            <span className="point-label">Destino</span>
-                                            <span className="point-name">{g.lugar_destino || 'No especificado'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="card-details">
-                                    <div className="detail-item">
+                                <div className="card-details-elite">
+                                    <div className="info-row">
                                         <Building2 size={16} />
-                                        <p><strong>Institución:</strong> {g.institucion_visitada}</p>
+                                        <div className="info-text">
+                                            <span className="lbl">Institución</span>
+                                            <span className="val">{g.institucion_visitada}</span>
+                                        </div>
                                     </div>
-                                    <div className="detail-item">
+                                    <div className="info-row">
                                         <FileText size={16} />
-                                        <p><strong>Motivo:</strong> {g.motivo_visita}</p>
+                                        <div className="info-text">
+                                            <span className="lbl">Motivo</span>
+                                            <span className="val">{g.motivo_visita}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="card-footer">
-                                    <div className="plan-id">
-                                        <Briefcase size={14} />
-                                        <span>Plan #{g.id_plan}</span>
+                                <div className="card-footer-elite">
+                                    <div className="meta">
+                                        <Clock size={12} />
+                                        <span>Registrado por Operaciones</span>
                                     </div>
                                     <div className="actions">
-                                        <button className="btn-icon delete" onClick={() => handleDelete(g.id_gasto)}>
-                                            <Trash2 size={18} />
+                                        <button className="del-btn" onClick={() => setDeleteConfirm(g.id_gasto)}>
+                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </div>
-                            </motion.div>
-                        ))
-                    ) : (
-                        <div className="empty-state">
-                            <AlertCircle size={48} />
-                            <h3>No se encontraron registros</h3>
-                            <p>Ajusta tu búsqueda o registra un nuevo gasto para comenzar.</p>
-                        </div>
-                    )}
-                </AnimatePresence>
+                            </PremiumCard>
+                        ))}
+                    </AnimatePresence>
+                )}
             </div>
 
-            {/* Create Modal */}
+            {/* Modal para nuevo gasto */}
             <AnimatePresence>
                 {showModal && (
-                    <div className="modal-overlay">
+                    <div className="modal-overlay-elite">
                         <motion.div
-                            className="modal-container-premium"
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="modal-content-elite"
                         >
                             <div className="modal-header">
-                                <h2>Registrar Movilidad</h2>
-                                <button className="btn-close" onClick={() => setShowModal(false)}>&times;</button>
+                                <h2>Registrar Nuevo Gasto</h2>
+                                <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
                             </div>
-                            <form onSubmit={handleCreateGasto} className="modal-form">
+                            <form onSubmit={handleCreateGasto} className="gasto-form">
                                 <div className="form-grid">
                                     <div className="form-group full">
-                                        <label>Asociar a Plan Semanal</label>
+                                        <label>Plan Semanal Asociado</label>
                                         <select
-                                            required
                                             value={newGasto.id_plan}
                                             onChange={(e) => setNewGasto({ ...newGasto, id_plan: e.target.value })}
+                                            required
                                         >
-                                            <option value="">Selecciona un plan activo</option>
+                                            <option value="">Seleccione un plan...</option>
                                             {planes.map(p => (
                                                 <option key={p.id_plan} value={p.id_plan}>
-                                                    Plan Semanal #{p.id_plan} - {new Date(p.fecha_inicio).toLocaleDateString()}
+                                                    Plan del {new Date(p.fecha_inicio).toLocaleDateString()}
                                                 </option>
                                             ))}
                                         </select>
@@ -257,9 +255,9 @@ const GastoList = () => {
                                         <label>Fecha</label>
                                         <input
                                             type="date"
-                                            required
                                             value={newGasto.fecha_gasto}
                                             onChange={(e) => setNewGasto({ ...newGasto, fecha_gasto: e.target.value })}
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
@@ -267,51 +265,53 @@ const GastoList = () => {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            required
-                                            placeholder="0.00"
                                             value={newGasto.monto_gastado}
                                             onChange={(e) => setNewGasto({ ...newGasto, monto_gastado: e.target.value })}
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Lugar Origen</label>
                                         <input
                                             type="text"
-                                            placeholder="Ej. Oficina Central"
+                                            placeholder="Ej: Oficina Central"
                                             value={newGasto.lugar_origen}
                                             onChange={(e) => setNewGasto({ ...newGasto, lugar_origen: e.target.value })}
+                                            required
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>Lugar Destino</label>
                                         <input
                                             type="text"
-                                            placeholder="Ej. Clínica San Pablo"
+                                            placeholder="Ej: Clínica San Borja"
                                             value={newGasto.lugar_destino}
                                             onChange={(e) => setNewGasto({ ...newGasto, lugar_destino: e.target.value })}
+                                            required
                                         />
                                     </div>
-                                    <div className="form-group full">
+                                    <div className="form-group">
                                         <label>Institución Visitada</label>
                                         <input
                                             type="text"
-                                            required
                                             value={newGasto.institucion_visitada}
                                             onChange={(e) => setNewGasto({ ...newGasto, institucion_visitada: e.target.value })}
+                                            required
                                         />
                                     </div>
-                                    <div className="form-group full">
+                                    <div className="form-group">
                                         <label>Motivo de la Visita</label>
-                                        <textarea
-                                            rows="2"
+                                        <input
+                                            type="text"
                                             value={newGasto.motivo_visita}
                                             onChange={(e) => setNewGasto({ ...newGasto, motivo_visita: e.target.value })}
-                                        ></textarea>
+                                            required
+                                        />
                                     </div>
                                 </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                                    <button type="submit" className="btn-primary">Guardar Registro</button>
+                                <div className="form-actions">
+                                    <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
+                                    <button type="submit" className="btn-submit">Guardar Registro</button>
                                 </div>
                             </form>
                         </motion.div>
@@ -319,472 +319,113 @@ const GastoList = () => {
                 )}
             </AnimatePresence>
 
+            <ConfirmModal
+                isOpen={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={handleDelete}
+                title="¿Eliminar gasto?"
+                message="Esta acción no se puede deshacer y afectará los reportes financieros."
+            />
+
             <style jsx>{`
-                .finanzas-container {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2rem;
-                    padding-bottom: 2rem;
+                .finanzas-container { display: flex; flex-direction: column; gap: 1.5rem; }
+
+                .header-actions-group { display: flex; align-items: center; gap: 15px; }
+
+                :global(.total-badge-card) { 
+                    padding: 0.5rem 1.25rem !important; 
+                    display: flex !important; 
+                    align-items: center !important; 
+                    gap: 15px !important;
+                    background: var(--primary-glow) !important;
+                    border-color: var(--primary) !important;
                 }
-
-                .finanzas-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                }
-
-                .header-info h1 {
-                    font-size: 2.25rem;
-                    font-weight: 800;
-                    letter-spacing: -0.04em;
-                    color: #0f172a;
-                    margin: 0;
-                }
-
-                .header-info p {
-                    color: #64748b;
-                    margin-top: 0.5rem;
-                    font-size: 1.1rem;
-                }
-
-                .stat-card-mini {
-                    background: #1e293b;
-                    padding: 1.5rem 2rem;
-                    border-radius: 20px;
-                    color: white;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.4);
-                }
-
-                .stat-card-mini .label {
-                    font-size: 0.8rem;
-                    font-weight: 700;
-                    color: #94a3b8;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-
-                .stat-card-mini .value {
-                    font-size: 1.75rem;
-                    font-weight: 800;
-                }
-
-                .trend {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                }
-
-                .trend.positive { color: #4ade80; }
-
-                .finanzas-toolbar {
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 1.5rem;
-                    background: white;
-                    padding: 1rem;
-                    border-radius: 20px;
-                    border: 1px solid #f1f5f9;
-                }
-
-                .search-box {
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    background: #f8fafc;
-                    padding: 0 1.25rem;
-                    border-radius: 14px;
-                    border: 1px solid #e2e8f0;
-                    color: #64748b;
-                }
-
-                .search-box input {
-                    width: 100%;
-                    background: transparent;
-                    border: none;
-                    padding: 12px 0;
-                    outline: none;
-                    font-size: 0.95rem;
-                    color: #1e293b;
-                }
-
-                .toolbar-actions {
-                    display: flex;
-                    gap: 10px;
-                }
-
-                .btn-filter {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    background: white;
-                    color: #475569;
-                    border: 1px solid #e2e8f0;
-                    padding: 0 20px;
-                    border-radius: 14px;
-                    font-weight: 700;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .btn-filter:hover { background: #f8fafc; }
+                .total-content { display: flex; flex-direction: column; }
+                .total-content .label { font-size: 0.65rem; font-weight: 800; color: var(--primary); text-transform: uppercase; }
+                .total-content .value { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); }
+                .trend-icon { color: var(--primary); opacity: 0.8; }
 
                 .btn-primary {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    background: #0ea5e9;
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 14px;
-                    font-weight: 800;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+                    background: var(--bg-sidebar); color: white; border: none; padding: 0.8rem 1.5rem;
+                    border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px;
+                    cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-md);
                 }
+                .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
 
-                .btn-primary:hover { 
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 16px rgba(14, 165, 233, 0.4);
+                .toolbar-card { padding: 0.75rem 1.25rem !important; }
+
+                .gastos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+
+                :global(.gasto-card-elite) { padding: 1.5rem !important; display: flex; flex-direction: column; gap: 1.25rem; }
+                
+                .card-top { display: flex; justify-content: space-between; align-items: center; }
+                .date-info { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+                .card-route-elite {
+                    display: flex; align-items: center; gap: 10px; padding: 12px;
+                    background: var(--bg-app); border-radius: 12px; border: 1px solid var(--border-subtle);
                 }
+                .point { flex: 1; display: flex; gap: 10px; align-items: center; }
+                .point .dot { width: 8px; height: 8px; border-radius: 50%; }
+                .origin .dot { background: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+                .destination .dot { background: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); }
+                .point .text { display: flex; flex-direction: column; }
+                .point .lbl { font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+                .point .val { font-size: 0.85rem; font-weight: 700; color: var(--text-heading); }
+                .connector { color: var(--text-muted); opacity: 0.5; }
 
-                .gastos-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-                    gap: 1.5rem;
+                .card-details-elite { display: flex; flex-direction: column; gap: 12px; }
+                .info-row { display: flex; gap: 12px; align-items: flex-start; }
+                .info-row :global(svg) { color: var(--primary); opacity: 0.8; margin-top: 2px; }
+                .info-text { display: flex; flex-direction: column; }
+                .info-text .lbl { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+                .info-text .val { font-size: 0.9rem; font-weight: 700; color: var(--text-heading); }
+
+                .card-footer-elite {
+                    display: flex; justify-content: space-between; align-items: center;
+                    padding-top: 1.25rem; border-top: 1px solid var(--border-light);
                 }
-
-                .gasto-card-premium {
-                    background: white;
-                    border-radius: 24px;
-                    padding: 1.5rem;
-                    border: 1px solid #f1f5f9;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.5rem;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-                    transition: all 0.3s ease;
+                .card-footer-elite .meta { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+                .del-btn {
+                    width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff1f2;
+                    color: #ef4444; display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; transition: 0.2s;
                 }
+                .del-btn:hover { background: #fee2e2; }
 
-                .gasto-card-premium:hover {
-                    transform: translateY(-5px);
-                    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05);
-                    border-color: #e2e8f0;
-                }
-
-                .card-top {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .date-badge {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    background: #f1f5f9;
-                    color: #64748b;
-                    padding: 6px 14px;
-                    border-radius: 20px;
-                    font-size: 0.8rem;
-                    font-weight: 700;
-                }
-
-                .amount-badge {
-                    font-size: 1.25rem;
-                    font-weight: 800;
-                    color: #0f172a;
-                }
-
-                .card-route {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 1.25rem;
-                    background: #f8fafc;
-                    border-radius: 20px;
-                    position: relative;
-                }
-
-                .route-point {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    flex: 1;
-                }
-
-                .point-label {
-                    display: block;
-                    font-size: 0.65rem;
-                    color: #94a3b8;
-                    text-transform: uppercase;
-                    font-weight: 800;
-                    letter-spacing: 0.05em;
-                }
-
-                .point-name {
-                    display: block;
-                    font-size: 0.9rem;
-                    font-weight: 700;
-                    color: #1e293b;
-                }
-
-                .route-arrow {
-                    padding: 0 1rem;
-                    color: #cbd5e1;
-                }
-
-                .card-details {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                }
-
-                .detail-item {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                    color: #64748b;
-                    font-size: 0.9rem;
-                }
-
-                .detail-item strong { color: #1e293b; }
-
-                .card-footer {
-                    margin-top: auto;
-                    padding-top: 1rem;
-                    border-top: 1px solid #f1f5f9;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .plan-id {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: #94a3b8;
-                    font-size: 0.8rem;
-                    font-weight: 600;
-                }
-
-                .actions {
-                    display: flex;
-                    gap: 8px;
-                }
-
-                .btn-icon {
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border: none;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-
-                .btn-icon.delete {
-                    background: #fef2f2;
-                    color: #ef4444;
-                }
-
-                .btn-icon.delete:hover {
-                    background: #ef4444;
-                    color: white;
-                }
+                .loading-wrapper { grid-column: 1 / -1; padding: 5rem; display: flex; justify-content: center; }
 
                 /* Modal Styles */
-                .modal-overlay {
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(0,0,0,0.5);
-                    backdrop-filter: blur(8px);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 2000;
-                    padding: 1.5rem;
+                .modal-overlay-elite {
+                    position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+                    display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
                 }
-
-                .modal-container-premium {
-                    background: white;
-                    width: 100%;
-                    max-width: 650px;
-                    border-radius: 28px;
-                    overflow: hidden;
-                    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+                .modal-content-elite {
+                    background: white; width: 100%; max-width: 600px; border-radius: 20px;
+                    overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
                 }
-
-                .modal-header {
-                    padding: 2rem;
-                    background: #f8fafc;
-                    border-bottom: 1px solid #e2e8f0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                :global(.dark) .modal-content-elite { background: var(--bg-panel); }
+                .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; }
+                .modal-header h2 { font-size: 1.25rem; font-weight: 800; color: var(--text-heading); margin: 0; }
+                .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; }
+                
+                .gasto-form { padding: 1.5rem; }
+                .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+                .form-group.full { grid-column: span 2; }
+                .form-group label { display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+                .form-group input, .form-group select {
+                    width: 100%; padding: 10px 15px; border-radius: 10px; border: 1px solid var(--border-subtle);
+                    background: var(--bg-app); color: var(--text-heading); font-weight: 600;
                 }
-
-                .modal-header h2 {
-                    margin: 0;
-                    font-size: 1.5rem;
-                    font-weight: 800;
-                }
-
-                .btn-close {
-                    background: none;
-                    border: none;
-                    font-size: 2rem;
-                    color: #94a3b8;
-                    cursor: pointer;
-                }
-
-                .modal-form {
-                    padding: 2rem;
-                }
-
-                .form-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 1.5rem;
-                }
-
-                .form-group.full {
-                    grid-column: span 2;
-                }
-
-                .form-group label {
-                    display: block;
-                    font-size: 0.85rem;
-                    font-weight: 700;
-                    color: #475569;
-                    margin-bottom: 8px;
-                }
-
-                .form-group input, 
-                .form-group select, 
-                .form-group textarea {
-                    width: 100%;
-                    padding: 12px 1rem;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                    background: #f8fafc;
-                    font-size: 0.95rem;
-                    outline: none;
-                    transition: all 0.2s;
-                }
-
-                .form-group input:focus, 
-                .form-group select:focus {
-                    border-color: #0ea5e9;
-                    background: white;
-                    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
-                }
-
-                .modal-footer {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
-                    margin-top: 2rem;
-                }
-
-                .btn-secondary {
-                    padding: 12px 24px;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                    background: white;
-                    font-weight: 700;
-                    cursor: pointer;
-                }
-
-                .loading-state {
-                    grid-column: 1 / -1;
-                    padding: 5rem;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 1rem;
-                    color: #64748b;
-                }
-
-                .empty-state {
-                    grid-column: 1 / -1;
-                    padding: 5rem;
-                    text-align: center;
-                    color: #94a3b8;
-                }
-
-                .spinner {
-                    width: 40px;
-                    height: 40px;
-                    border: 4px solid #f1f5f9;
-                    border-top-color: #0ea5e9;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-
-                @media (max-width: 1024px) {
-                    .finanzas-header {
-                        flex-direction: column;
-                        gap: 1.5rem;
-                    }
-                    .header-stats {
-                        width: 100%;
-                    }
-                    .stat-card-mini {
-                        padding: 1.25rem;
-                    }
-                    .finanzas-toolbar {
-                        flex-direction: column;
-                        gap: 1rem;
-                    }
-                    .toolbar-actions {
-                        width: 100%;
-                    }
-                    .toolbar-actions button {
-                        flex: 1;
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .gastos-grid { grid-template-columns: 1fr; }
-                    .form-grid { grid-template-columns: 1fr; }
-                    .form-group.full { grid-column: auto; }
-                    .hide-tablet { display: none; }
-                }
+                .form-actions { margin-top: 2rem; display: flex; justify-content: flex-end; gap: 12px; }
+                .btn-cancel { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-subtle); background: white; font-weight: 700; cursor: pointer; }
+                .btn-submit { padding: 10px 25px; border-radius: 10px; border: none; background: var(--bg-sidebar); color: white; font-weight: 700; cursor: pointer; }
 
                 @media (max-width: 640px) {
-                    .header-info h1 { font-size: 1.8rem; }
-                    .header-info p { font-size: 1rem; }
+                    .form-grid { grid-template-columns: 1fr; }
+                    .form-group.full { grid-column: span 1; }
+                    .header-actions-group { flex-direction: column; align-items: stretch; }
                     .btn-text { display: none; }
-                    .btn-primary {
-                        position: fixed;
-                        bottom: 1.5rem;
-                        right: 1.5rem;
-                        width: 56px;
-                        height: 56px;
-                        border-radius: 50%;
-                        padding: 0;
-                        justify-content: center;
-                        z-index: 100;
-                        box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4);
-                    }
-                    .gasto-card-premium { padding: 1.25rem; }
-                    .card-route { padding: 1rem; flex-direction: column; gap: 1rem; align-items: flex-start; }
-                    .route-arrow { transform: rotate(90deg); align-self: center; padding: 0.5rem 0; }
-                    .modal-container-premium { border-radius: 0; height: 100%; max-width: 100%; }
-                    .modal-form { padding: 1.5rem; }
                 }
             `}</style>
         </div>
