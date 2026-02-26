@@ -14,6 +14,7 @@ class Empleado(Base):
     is_admin = Column(Boolean, default=False)
     fecha_ingreso = Column(Date, server_default=text("CURRENT_DATE"))
     activo = Column(Boolean, default=True)
+    id_vendedor_externo = Column(Integer, nullable=True) # ID vinculado a UpgradeDB (tcros.personas)
 
     # Relación: Un empleado tiene MUCHOS planes de trabajo
     planes = relationship("PlanTrabajoSemanal", back_populates="empleado")

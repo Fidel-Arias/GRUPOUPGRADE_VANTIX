@@ -10,6 +10,7 @@ class EmpleadoBase(BaseModel):
     email_corporativo: Optional[EmailStr] = None
     is_admin: Optional[bool] = False
     activo: Optional[bool] = True
+    id_vendedor_externo: Optional[int] = None
 
 # Create: Campos para crear un nuevo empleado
 class EmpleadoCreate(EmpleadoBase):
@@ -25,6 +26,7 @@ class EmpleadoUpdate(BaseModel):
     password: Optional[str] = None
     is_admin: Optional[bool] = None
     activo: Optional[bool] = None
+    id_vendedor_externo: Optional[int] = None
 
 # Response: Lo que devuelve la API
 class EmpleadoResponse(EmpleadoBase):
