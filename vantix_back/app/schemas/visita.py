@@ -25,6 +25,21 @@ class VisitaCreate(VisitaBase):
     pass
     # No pedimos file paths aqui, porque se manejan en el controller multipart
 
+class VisitaUpdate(BaseModel):
+    id_plan: Optional[int] = None
+    id_cliente: Optional[int] = None
+    direccion_actual: Optional[str] = None
+    nombre_contacto: Optional[str] = None
+    telefono_contacto: Optional[str] = None
+    email_contacto: Optional[str] = None
+    nombre_tecnico: Optional[str] = None
+    observaciones: Optional[str] = None
+    resultado: Optional[ResultadoEstadoEnum] = None
+    geolocalizacion_lat: Optional[float] = None
+    geolocalizacion_lon: Optional[float] = None
+    url_foto_lugar: Optional[str] = None
+    url_foto_sello: Optional[str] = None
+
 class VisitaResponse(VisitaBase):
     id_visita: int
     fecha_hora_checkin: datetime

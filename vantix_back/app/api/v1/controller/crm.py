@@ -143,3 +143,65 @@ def listar_emails(
     if id_plan:
         return crud.email.get_multi_by_plan(db, id_plan=id_plan, skip=skip, limit=limit)
     return crud.email.get_multi(db, skip=skip, limit=limit)
+
+# --- EDITAR Y ELIMINAR ---
+
+@router.put("/llamadas/{id_llamada}", response_model=schemas.crm.LlamadaResponse)
+def actualizar_llamada(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
+    id_llamada: int,
+    llamada_in: schemas.crm.LlamadaUpdate
+):
+    llamada = crud.llamada.get(db, id=id_llamada)
+    if not llamada:
+        raise HTTPException(status_code=404, detail="Registro de llamada no encontrado")
+    return crud.llamada.update(db, db_obj=llamada, obj_in=llamada_in)
+
+@router.delete("/llamadas/{id_llamada}", response_model=schemas.crm.LlamadaResponse)
+def eliminar_llamada(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
+    id_llamada: int
+):
+    llamada = crud.llamada.get(db, id=id_llamada)
+    if not llamada:
+        raise HTTPException(status_code=404, detail="Registro de llamada no encontrado")
+    
+    # Borrar foto si existe
+    if llamada.url_foto_prueba:
+        FileManager.delete_file(llamada.url_foto_prueba)
+        
+    return crud.llamada.remove(db, id=id_llamada)
+
+@router.put("/emails/{id_email}", response_model=schemas.crm.EmailResponse)
+def actualizar_email(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
+    id_email: int,
+    email_in: schemas.crm.EmailUpdate
+):
+    email = crud.email.get(db, id=id_email)
+    if not email:
+        raise HTTPException(status_code=404, detail="Registro de email no encontrado")
+    return crud.email.update(db, db_obj=email, obj_in=email_in)
+
+@router.delete("/emails/{id_email}", response_model=schemas.crm.EmailResponse)
+def eliminar_email(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user),
+    id_email: int
+):
+    email = crud.email.get(db, id=id_email)
+    if not email:
+        raise HTTPException(status_code=404, detail="Registro de email no encontrado")
+    
+    # Borrar foto si existe
+    if email.url_foto_prueba:
+        FileManager.delete_file(email.url_foto_prueba)
+        
+    return crud.email.remove(db, id=id_email)

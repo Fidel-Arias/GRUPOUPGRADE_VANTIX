@@ -108,6 +108,23 @@ def listar_visitas(
 
     return crud.visita.get_multi(db, skip=skip, limit=limit)
 
+@router.put("/{id_visita}", response_model=schemas.VisitaResponse)
+def actualizar_visita(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
+    id_visita: int,
+    visita_in: schemas.visita.VisitaUpdate
+):
+    """
+    Actualizar datos de una visita.
+    """
+    visita = crud.visita.get(db, id=id_visita)
+    if not visita:
+        raise HTTPException(status_code=404, detail="Visita no encontrada")
+    
+    return crud.visita.update(db, db_obj=visita, obj_in=visita_in)
+
 @router.delete("/{id_visita}", response_model=schemas.VisitaResponse)
 def eliminar_visita(
     *,
