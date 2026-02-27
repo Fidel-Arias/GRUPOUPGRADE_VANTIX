@@ -90,8 +90,8 @@ class FileManager:
             return
             
         if path_url.startswith("http"):
-            # Lógica para borrar remotamente podría ir aquí
-            return
+            # Intentar borrar remotamente si es una URL
+            return RemoteStorageService.delete_file(path_url)
 
         # Limpiar el path por si viene con / inicial
         clean_path = path_url.lstrip("/")
