@@ -36,6 +36,11 @@ def obtener_informe_por_plan(
     Obtiene el informe detallado de un plan de trabajo específico.
     """
     informe = crud.kpi.get_by_plan(db, id_plan=id_plan)
+    if not informe:
+        raise HTTPException(status_code=404, detail="Informe de productividad no encontrado para este plan")
+    return informe
+
+
 @router.put("/informes/actualizar", response_model=schemas.kpi.InformeProductividadResponse)
 def actualizar_informe_flexible(
     obj_in: schemas.kpi.KpiUpdate,

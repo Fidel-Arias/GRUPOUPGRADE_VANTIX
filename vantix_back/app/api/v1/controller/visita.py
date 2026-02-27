@@ -40,8 +40,21 @@ async def registrar_visita(
         raise HTTPException(status_code=404, detail="Plan de trabajo no encontrado")
 
     # 2. Guardar Fotos usando el servicio FileManager
-    path_lugar = await FileManager.save_upload_file(foto_lugar, subdirectory="visitas", prefix="lugar")
-    path_sello = await FileManager.save_upload_file(foto_sello, subdirectory="visitas", prefix="sello")
+    # Se pasan los datos del empleado para la estructura de carpetas remota
+    path_lugar = await FileManager.save_upload_file(
+        foto_lugar, 
+        subdirectory="visitas", 
+        prefix="lugar",
+        employee_name=current_user.nombre_completo,
+        activity_type="Visita"
+    )
+    path_sello = await FileManager.save_upload_file(
+        foto_sello, 
+        subdirectory="visitas", 
+        prefix="sello",
+        employee_name=current_user.nombre_completo,
+        activity_type="Visita"
+    )
 
     # 3. Crear Objeto Visita
     visita_data = {

@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import PostgresDsn, computed_field
-from typing import Any
+from typing import Any, Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str
@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    # Servidor de Imágenes Remoto
+    REMOTE_STORAGE_HOST: Optional[str] = None
+    REMOTE_STORAGE_USER: Optional[str] = None
+    REMOTE_STORAGE_PASSWORD: Optional[str] = None
+    REMOTE_STORAGE_PORT: int = 22
+    REMOTE_STORAGE_BASE_PATH: str
+    REMOTE_STORAGE_BASE_URL: str
 
     @computed_field
     @property

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
+from app.models.enums import ResultadoEstadoEnum, ResultadoLlamadaEnum
 from app.services.gamificacion.kpi_service import kpi_service
 from app.services.common.file_manager import FileManager
 
@@ -17,7 +18,7 @@ async def registrar_llamada(
     current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int = Form(...),
     numero_destino: str = Form(...),
-    resultado: str = Form(...),
+    resultado: ResultadoLlamadaEnum = Form(...),
     nombre_destinatario: Optional[str] = Form(None),
     duracion_segundos: int = Form(0),
     notas_llamada: Optional[str] = Form(None),
@@ -35,7 +36,13 @@ async def registrar_llamada(
     # 2. Gestionar Foto si existe
     url_foto = None
     if foto_prueba:
-        url_foto = await FileManager.save_upload_file(foto_prueba, subdirectory="crm/llamadas", prefix="call")
+        url_foto = await FileManager.save_upload_file(
+            foto_prueba, 
+            subdirectory="crm/llamadas", 
+            prefix="call",
+            employee_name=current_user.nombre_completo,
+            activity_type="Llamada"
+        )
 
     # 3. Preparar data
     llamada_in = schemas.crm.LlamadaCreate(
@@ -97,7 +104,13 @@ async def registrar_email(
     
     url_foto = None
     if foto_prueba:
-        url_foto = await FileManager.save_upload_file(foto_prueba, subdirectory="crm/emails", prefix="email")
+        url_foto = await FileManager.save_upload_file(
+            foto_prueba, 
+            subdirectory="crm/emails", 
+            prefix="email",
+            employee_name=current_user.nombre_completo,
+            activity_type="Correo"
+        )
 
     email_in = schemas.crm.EmailCreate(
         id_plan=id_plan,

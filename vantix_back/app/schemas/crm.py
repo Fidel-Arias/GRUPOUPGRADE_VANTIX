@@ -2,13 +2,15 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 
+from app.models.enums import ResultadoEstadoEnum, ResultadoLlamadaEnum
+
 # --- SCHEMAS LLAMADAS ---
 class LlamadaCreate(BaseModel):
     id_plan: int
     numero_destino: str
     nombre_destinatario: Optional[str] = None
     duracion_segundos: int = 0
-    resultado: str
+    resultado: ResultadoLlamadaEnum
     url_foto_prueba: Optional[str] = None
     notas_llamada: Optional[str] = None
 

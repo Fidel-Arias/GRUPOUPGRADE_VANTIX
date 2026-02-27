@@ -14,6 +14,14 @@ class ResultadoEstadoEnum(str, enum.Enum):
     VENTA_CERRADA = 'Venta cerrada'
     NO_INTERESADO = 'No interesado'
 
+class ResultadoLlamadaEnum(str, enum.Enum):
+    CONTESTO = 'Contestó'
+    NO_CONTESTO = 'No Contestó'
+    BUZON = 'Buzón'
+    VENTA_CERRADA = 'Venta Cerrada'
+    INTERESADO = 'Interesado'
+    RECHAZADO = 'Rechazado'
+
 class CategoriaClienteEnum(str, enum.Enum):
     CORPORATIVO = 'Corporativo'
     GOBIERNO = 'Gobierno'
