@@ -7,8 +7,10 @@ from app.core.config import settings
 engine = create_engine(
     str(settings.SQLALCHEMY_DATABASE_URL),
     pool_pre_ping=True,  # Verifica que la conexión esté viva antes de usarla
-    pool_size=10,        # Número de conexiones en el pool
-    echo=False           # Muestra las consultas SQL (útil para desarrollo)
+    pool_size=20,        # Aumentamos de 10 a 20
+    max_overflow=10,     # Permite hasta 10 conexiones extra si el pool está lleno
+    pool_recycle=3600,   # Recicla conexiones cada hora para evitar conexiones "fantasma"
+    echo=False
 )
 
 # 2. Crear la Fábrica de Sesiones
