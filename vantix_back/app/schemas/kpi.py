@@ -14,6 +14,15 @@ class InformeProductividadBase(BaseModel):
     meta_cotizaciones: int = 0
     puntaje_objetivo: int = 205
 
+class InformeMetasCreate(BaseModel):
+    id_plan: int
+    meta_visitas: int
+    meta_llamadas: int
+    meta_emails: int
+    meta_cotizaciones: int
+    puntaje_objetivo: int
+    meta_visitas_asistidas: Optional[int] = 0
+
 class InformeProductividadUpdate(BaseModel):
     # Campos que se pueden actualizar (Metas o Reales)
     meta_visitas: Optional[int] = None
@@ -32,9 +41,24 @@ class InformeProductividadUpdate(BaseModel):
     real_cotizaciones: Optional[int] = None
     
     puntos_alcanzados: Optional[int] = None
+    puntaje_objetivo: Optional[int] = None
 
 # Alias para compatibilidad con código existente
 KpiUpdate = InformeProductividadUpdate
+
+class InformeMetasResponse(BaseModel):
+    id_informe: int
+    id_plan: int
+    meta_visitas: int
+    meta_visitas_asistidas: int
+    meta_llamadas: int
+    meta_emails: int
+    meta_cotizaciones: int
+    puntaje_objetivo: int
+    fecha_evaluacion: Optional[date] = None
+
+    class Config:
+        from_attributes = True
 
 class InformeProductividadResponse(InformeProductividadBase):
     id_informe: int

@@ -4,6 +4,7 @@ from app.models.kpi import InformeProductividad, IncentivoPago
 from app.models.plan import PlanTrabajoSemanal
 from decimal import Decimal
 from typing import List, Optional
+from app.services.external.upgrade_db import ExternalDBService
 
 class KPIService:
     @staticmethod
@@ -74,5 +75,63 @@ class KPIService:
         ).filter(
             PlanTrabajoSemanal.id_empleado == id_empleado
         ).order_by(InformeProductividad.fecha_evaluacion.desc()).all()
+
+    @staticmethod
+    def sync_real_time_metrics(db: Session, *, id_informe: int) -> Optional[InformeProductividad]:
+        """
+        Sincroniza los valores 'reales' del informe consultando las tablas del sistema
+        y la base de datos externa UpgradeDB.
+        """
+        informe = crud.kpi.get(db, id=id_informe)
+        if not informe:
+            return None
+        
+        plan = crud.plan.get(db, id=informe.id_plan)
+        if not plan:
+            return None
+
+        # 1. Contar Visitas Reales (Local)
+        informe.real_visitas = db.query(models.visita.RegistroVisita).filter(
+            models.visita.RegistroVisita.id_plan == plan.id_plan
+        ).count()
+
+        # 2. Contar Llamadas (Local)
+        informe.real_llamadas = db.query(models.crm.RegistroLlamada).filter(
+            models.crm.RegistroLlamada.id_plan == plan.id_plan
+        ).count()
+
+        # 3. Contar Emails (Local)
+        informe.real_emails = db.query(models.crm.RegistroEmail).filter(
+            models.crm.RegistroEmail.id_plan == plan.id_plan
+        ).count()
+
+        # 4. Sincronizar Cotizaciones (UpgradeDB)
+        empleado = plan.empleado
+        if empleado and empleado.id_vendedor_externo:
+            informe.real_cotizaciones = ExternalDBService.count_cotizaciones(
+                vendedor_id_externo=empleado.id_vendedor_externo,
+                fecha_inicio=plan.fecha_inicio_semana,
+                fecha_fin=plan.fecha_fin_semana
+            )
+
+        # 5. Calcular Puntos Alcanzados (Reglas de negocio)
+        # Visita = 10 pts, Llamada = 2 pts, Email = 1 pt, Cotización = 25 pts
+        puntos = (informe.real_visitas * 10) + \
+                 (informe.real_visitas_asistidas * 20) + \
+                 (informe.real_llamadas * 2) + \
+                 (informe.real_emails * 1) + \
+                 (informe.real_cotizaciones * 25)
+        
+        informe.puntos_alcanzados = puntos
+        
+        db.add(informe)
+        db.commit()
+        db.refresh(informe)
+        
+        # 6. Verificar bono
+        if informe.porcentaje_alcance and informe.porcentaje_alcance >= 100:
+            KPIService.check_and_generate_bonus(db, informe=informe)
+
+        return informe
 
 kpi_service = KPIService()
