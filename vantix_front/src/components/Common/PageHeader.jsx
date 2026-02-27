@@ -13,19 +13,7 @@ const PageHeader = ({
         <div className="page-header-elite">
             <div className="header-main-content">
                 <div className="header-info-group">
-                    {/* Breadcrumb / Context */}
-                    <div className="header-context">
-                        <span className="context-root">VANTIX</span>
-                        <ChevronRight size={12} className="context-sep" />
-                        {breadcrumb.map((item, index) => (
-                            <React.Fragment key={index}>
-                                <span className="context-item">{item}</span>
-                                {index < breadcrumb.length - 1 && (
-                                    <ChevronRight size={12} className="context-sep" />
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
+                    {/* Breadcrumbs removed by user request */}
 
                     <div className="header-title-row">
                         {Icon && (
@@ -66,24 +54,7 @@ const PageHeader = ({
                     gap: 0.75rem;
                 }
 
-                .header-context {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: var(--text-muted);
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    letter-spacing: 0.05em;
-                    text-transform: uppercase;
-                }
 
-                .context-root {
-                    color: var(--primary);
-                }
-
-                .context-sep {
-                    opacity: 0.5;
-                }
 
                 .header-title-row {
                     display: flex;

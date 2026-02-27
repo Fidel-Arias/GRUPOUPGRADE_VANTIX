@@ -3,7 +3,8 @@ const API_URL = `${BASE_URL}/api/v1`;
 
 // Helper para peticiones autenticadas
 const authFetch = async (endpoint, options = {}) => {
-    const token = localStorage.getItem('token');
+    const isBrowser = typeof window !== 'undefined';
+    const token = isBrowser ? localStorage.getItem('token') : null;
     const headers = {
         ...options.headers,
     };
@@ -17,7 +18,7 @@ const authFetch = async (endpoint, options = {}) => {
         headers,
     });
 
-    if (response.status === 401 || response.status === 403) {
+    if (isBrowser && (response.status === 401 || response.status === 403)) {
         // Si el token expiró o es inválido, limpiamos y redirigimos
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -47,30 +48,40 @@ export const authService = {
         }
 
         const data = await response.json();
-        localStorage.setItem('token', data.access_token);
+        const isBrowser = typeof window !== 'undefined';
+
+        if (isBrowser) {
+            localStorage.setItem('token', data.access_token);
+        }
 
         // Obtenemos info del usuario actual
         const userResponse = await authFetch('/empleados/me');
         if (userResponse.ok) {
             const userData = await userResponse.json();
-            localStorage.setItem('user', JSON.stringify(userData));
+            if (isBrowser) {
+                localStorage.setItem('user', JSON.stringify(userData));
+            }
         }
 
         return data;
     },
 
     logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
     },
 
     getUser() {
+        if (typeof window === 'undefined') return null;
         const user = localStorage.getItem('user');
         return user ? JSON.parse(user) : null;
     },
 
     isLoggedIn() {
+        if (typeof window === 'undefined') return false;
         return !!localStorage.getItem('token');
     }
 };
@@ -227,6 +238,19 @@ export const planService = {
         });
         if (!response.ok) throw new Error('Error al eliminar plan de trabajo');
         return response.json();
+    },
+
+    async revisar(id, reviewData) {
+        const response = await authFetch(`/planes/${id}/revisar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reviewData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al revisar el plan');
+        }
+        return response.json();
     }
 };
 
@@ -314,9 +338,9 @@ export const crmService = {
 };
 
 export const kpiService = {
-    async getInformes(idEmpleado = null) {
-        let url = '/kpi/informes/';
-        if (idEmpleado) url += `?id_empleado=${idEmpleado}`;
+    async getInformes(skip = 0, limit = 100, idEmpleado = null) {
+        let url = `/kpi/informes/?skip=${skip}&limit=${limit}`;
+        if (idEmpleado) url += `&id_empleado=${idEmpleado}`;
         const response = await authFetch(url);
         if (!response.ok) throw new Error('Error al obtener informes de KPI');
         return response.json();
@@ -398,3 +422,19 @@ export const finanzasService = {
         return response.json();
     }
 };
+
+export const syncExternaService = {
+    async getCotizaciones(idEmpleado = null) {
+        let url = '/sync-externa/cotizaciones-detalladas';
+        const params = new URLSearchParams();
+        if (idEmpleado) params.append('id_empleado', idEmpleado);
+
+        const response = await authFetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al obtener cotizaciones');
+        }
+        return response.json();
+    }
+};
+

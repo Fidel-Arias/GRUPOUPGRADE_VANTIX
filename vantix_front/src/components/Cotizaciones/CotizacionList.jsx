@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Wallet,
-    Calendar,
-    Search,
-    RefreshCw,
-    TrendingUp,
-    MapPin,
-    ArrowRight,
-    Building2,
     FileText,
-    Clock,
     Activity,
-    CreditCard
+    DollarSign,
+    Calendar,
+    RefreshCw,
+    Tag,
+    Clock,
+    Users
 } from 'lucide-react';
-import { finanzasService, planService, authService, empleadoService } from '../../services/api';
+import { syncExternaService, authService, empleadoService, planService } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import PremiumCard from '../Common/PremiumCard';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -22,9 +18,9 @@ import EmptyState from '../Common/EmptyState';
 import Badge from '../Common/Badge';
 import WeekPicker from '../Common/WeekPicker';
 
-const GastoList = () => {
+const CotizacionList = () => {
     const [user, setUser] = useState(null);
-    const [gastos, setGastos] = useState([]);
+    const [cotizaciones, setCotizaciones] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Team & Planning Management
@@ -56,11 +52,7 @@ const GastoList = () => {
             setAdvisors(data);
 
             if (currentUser.id_empleado) {
-                setSelectedAdvisorId(currentUser.id_empleado);
                 fetchInitialData(currentUser.id_empleado);
-            } else if (data.length > 0) {
-                setSelectedAdvisorId(data[0].id_empleado);
-                fetchInitialData(data[0].id_empleado);
             }
         } catch (error) {
             console.error('Error fetching advisors:', error);
@@ -72,13 +64,16 @@ const GastoList = () => {
     const fetchInitialData = async (empId) => {
         try {
             setLoading(true);
-            setGastos([]);
+            setCotizaciones([]);
             setPlans([]);
             setSelectedPlanId('');
 
             // Obtenemos los planes del asesor para el selector de semanas
             const planesData = await planService.getAll(0, 50, empId);
             setPlans(planesData || []);
+
+            // Obtenemos las cotizaciones (todas las del asesor, luego filtramos por semana)
+            await fetchCotizaciones(empId);
 
             if (planesData && planesData.length > 0) {
                 const now = new Date();
@@ -89,10 +84,12 @@ const GastoList = () => {
                 const mondayStr = monday.toISOString().split('T')[0];
 
                 const currentPlan = planesData.find(p => p.fecha_inicio_semana.startsWith(mondayStr));
-                const defaultPlanId = currentPlan ? currentPlan.id_plan : planesData[0].id_plan;
 
-                setSelectedPlanId(defaultPlanId);
-                await fetchGastos(defaultPlanId);
+                if (currentPlan) {
+                    setSelectedPlanId(currentPlan.id_plan);
+                } else {
+                    setSelectedPlanId(planesData[0].id_plan);
+                }
             }
         } catch (error) {
             console.error('Error fetching initial data:', error);
@@ -101,17 +98,13 @@ const GastoList = () => {
         }
     };
 
-    const fetchGastos = async (planId) => {
-        if (!planId) return;
+    const fetchCotizaciones = async (empId) => {
         try {
-            setLoading(true);
-            const data = await finanzasService.getAll(planId);
-            setGastos(data || []);
+            const data = await syncExternaService.getCotizaciones(empId);
+            setCotizaciones(data || []);
         } catch (error) {
-            console.error('Error fetching gastos:', error);
-            setGastos([]);
-        } finally {
-            setLoading(false);
+            console.error('Error fetching cotizaciones:', error);
+            setCotizaciones([]);
         }
     };
 
@@ -125,23 +118,60 @@ const GastoList = () => {
 
     const handlePlanChange = (planId) => {
         setSelectedPlanId(planId);
-        fetchGastos(planId);
     };
 
-    const totalGastado = gastos.reduce((acc, curr) => acc + parseFloat(curr.monto_gastado), 0);
+    const formatDate = (dateString) => {
+        if (!dateString) return 'S/N';
+        return new Date(dateString).toLocaleDateString('es-ES', {
+            day: '2-digit', month: 'short', year: 'numeric'
+        });
+    };
+
+    const formatCurrency = (amount, symbolStr = 'S/') => {
+        const symbol = symbolStr === '$' ? '$' : 'S/';
+        return `${symbol} ${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // Lógica de filtrado por semana (Cliente-side)
+    const getFilteredData = () => {
+        if (!selectedPlanId || plans.length === 0) return [];
+
+        const selectedPlan = plans.find(p => p.id_plan === parseInt(selectedPlanId));
+        if (!selectedPlan) return [];
+
+        const start = new Date(selectedPlan.fecha_inicio_semana);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+
+        return cotizaciones.filter(c => {
+            const itemDate = new Date(c.fecha);
+            return itemDate >= start && itemDate <= end;
+        });
+    };
+
+    const filteredCotizaciones = getFilteredData();
+
+    const stats = {
+        total: filteredCotizaciones.length,
+        totalAmount: filteredCotizaciones.reduce((acc, curr) => acc + (curr.total_linea || 0), 0),
+        uniqueClients: new Set(filteredCotizaciones.map(c => c.nombre_cliente)).size
+    };
 
     return (
-        <div className="finanzas-premium-view">
+        <div className="cotizaciones-premium-view">
             {/* Background Ornaments */}
             <div className="c-bg-blob blob-1" />
             <div className="c-bg-blob blob-2" />
             <div className="c-noise-overlay" />
 
             <PageHeader
-                title="Gestión de Gastos"
-                description="Seguimiento detallado de movilidad y reembolsos basados en el plan semanal."
-                icon={Wallet}
-                breadcrumb={['Apps', 'Finanzas']}
+                title="Reporte de Cotizaciones"
+                description="Visualización detallada de cotizaciones generadas en el sistema Upgrade."
+                icon={FileText}
+                breadcrumb={['Apps', 'Cotizaciones']}
                 actions={
                     <div className="c-master-controls">
                         {user?.is_admin && (
@@ -176,8 +206,8 @@ const GastoList = () => {
                         </div>
                         <button
                             className="refresh-btn-glass"
-                            onClick={() => fetchGastos(selectedPlanId)}
-                            disabled={loading || !selectedPlanId}
+                            onClick={() => fetchInitialData(selectedAdvisorId)}
+                            disabled={loading}
                         >
                             <RefreshCw size={18} className={loading ? 'spin' : ''} />
                         </button>
@@ -189,12 +219,13 @@ const GastoList = () => {
             <div className="stats-hero-grid">
                 <PremiumCard className="hero-stat-card" hover={false}>
                     <div className="stat-icon-box main">
-                        <CreditCard size={24} />
+                        <FileText size={24} />
                     </div>
                     <div className="stat-content">
-                        <label>Gastos de la Semana</label>
+                        <label>Cotizaciones Semanales</label>
                         <div className="value-row">
-                            <span className="value">S/ {totalGastado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="value">{stats.total}</span>
+                            <span className="unit">REGISTROS</span>
                         </div>
                     </div>
                     <div className="stat-visual-glow" />
@@ -202,13 +233,12 @@ const GastoList = () => {
 
                 <PremiumCard className="hero-stat-card success" hover={false}>
                     <div className="stat-icon-box green">
-                        <TrendingUp size={24} />
+                        <DollarSign size={24} />
                     </div>
                     <div className="stat-content">
-                        <label>Registros Totales</label>
+                        <label>Monto de la Semana</label>
                         <div className="value-row">
-                            <span className="value">{gastos.length}</span>
-                            <span className="unit">MOVIMIENTOS</span>
+                            <span className="value">{formatCurrency(stats.totalAmount)}</span>
                         </div>
                     </div>
                     <div className="stat-visual-glow green" />
@@ -216,13 +246,13 @@ const GastoList = () => {
 
                 <PremiumCard className="hero-stat-card info" hover={false}>
                     <div className="stat-icon-box blue">
-                        <MapPin size={24} />
+                        <Users size={24} />
                     </div>
                     <div className="stat-content">
-                        <label>Instituciones Visitadas</label>
+                        <label>Clientes Atendidos</label>
                         <div className="value-row">
-                            <span className="value">{new Set(gastos.map(g => g.institucion_visitada)).size}</span>
-                            <span className="unit">LOCALES</span>
+                            <span className="value">{stats.uniqueClients}</span>
+                            <span className="unit">UNICOS</span>
                         </div>
                     </div>
                     <div className="stat-visual-glow blue" />
@@ -232,99 +262,84 @@ const GastoList = () => {
             <div className="data-layout">
                 {loading ? (
                     <div className="loading-wrapper">
-                        <LoadingSpinner message="Consultando reportes financieros..." />
+                        <LoadingSpinner message="Sincronizando con base de datos Upgrade..." />
                     </div>
-                ) : !selectedPlanId ? (
+                ) : filteredCotizaciones.length === 0 ? (
                     <EmptyState
-                        icon={Calendar}
-                        title="Selecciona una semana"
-                        message="Para visualizar los gastos de movilidad, debes seleccionar una semana con plan de trabajo activo."
-                    />
-                ) : gastos.length === 0 ? (
-                    <EmptyState
-                        icon={Wallet}
-                        title="Sin gastos detectados"
-                        message="No se han registrado movimientos de movilidad para la semana seleccionada."
+                        icon={FileText}
+                        title="Sin cotizaciones detectadas"
+                        message="No se han encontrado registros para la semana seleccionada o el asesor no tiene actividad vinculada."
                     />
                 ) : (
                     <motion.div
-                        className="gastos-grid"
+                        className="table-container-lux"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <AnimatePresence mode="popLayout">
-                            {gastos.map((g, idx) => (
-                                <motion.div
-                                    key={g.id_gasto}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                >
-                                    <PremiumCard className="gasto-lux-card">
-                                        <div className="card-top">
-                                            <div className="date-badge">
-                                                <Calendar size={14} />
-                                                <span>{new Date(g.fecha_gasto).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
-                                            </div>
-                                            <Badge variant="teal">S/ {parseFloat(g.monto_gastado).toFixed(2)}</Badge>
-                                        </div>
-
-                                        <div className="route-viz">
-                                            <div className="point-item">
-                                                <div className="node start"></div>
-                                                <div className="point-info">
-                                                    <span className="node-lbl">Origen</span>
-                                                    <span className="node-val">{g.lugar_origen}</span>
-                                                </div>
-                                            </div>
-                                            <div className="path">
-                                                <ArrowRight size={14} />
-                                            </div>
-                                            <div className="point-item">
-                                                <div className="node end"></div>
-                                                <div className="point-info">
-                                                    <span className="node-lbl">Destino</span>
-                                                    <span className="node-val">{g.lugar_destino}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="details-box">
-                                            <div className="detail-item">
-                                                <Building2 size={16} className="d-icon" />
-                                                <div className="d-text">
-                                                    <span className="d-lbl">Institución</span>
-                                                    <span className="d-val">{g.institucion_visitada}</span>
-                                                </div>
-                                            </div>
-                                            <div className="detail-item">
-                                                <FileText size={16} className="d-icon" />
-                                                <div className="d-text">
-                                                    <span className="d-lbl">Motivo</span>
-                                                    <span className="d-val">{g.motivo_visita}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="card-foot">
-                                            <div className="meta-audit">
-                                                <Clock size={12} />
-                                                <span>Auditado por Sistema</span>
-                                            </div>
-                                            <div className="plan-tag">
-                                                <Badge variant="info">PLAN #{g.id_plan}</Badge>
-                                            </div>
-                                        </div>
-                                    </PremiumCard>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                        <div className="table-responsive">
+                            <table className="lux-table">
+                                <thead>
+                                    <tr>
+                                        <th>Doc. N°</th>
+                                        <th>Fecha</th>
+                                        <th>Cliente</th>
+                                        <th>Producto / Marca</th>
+                                        <th className="text-center">Cant.</th>
+                                        <th className="text-right">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <AnimatePresence mode="popLayout">
+                                        {filteredCotizaciones.map((c, idx) => (
+                                            <motion.tr
+                                                key={`${c.numero_cotizacion}-${idx}`}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: idx * 0.02 }}
+                                            >
+                                                <td>
+                                                    <div className="doc-cell">
+                                                        <span className="doc-num">#{c.numero_cotizacion}</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="date-cell">
+                                                        <Clock size={14} className="ico-muted" />
+                                                        <span>{formatDate(c.fecha)}</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="client-cell">
+                                                        <div className="client-avatar">
+                                                            {c.nombre_cliente?.charAt(0) || 'C'}
+                                                        </div>
+                                                        <span className="client-name">{c.nombre_cliente}</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="product-cell">
+                                                        <span className="prod-name">{c.producto}</span>
+                                                        <span className="prod-brand"><Tag size={10} /> {c.marca}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="text-center">
+                                                    <Badge variant="info">{c.cantidad}</Badge>
+                                                </td>
+                                                <td className="text-right">
+                                                    <span className="total-val">{formatCurrency(c.total_linea, c.moneda_simbolo)}</span>
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
+                                </tbody>
+                            </table>
+                        </div>
                     </motion.div>
                 )}
             </div>
 
             <style jsx>{`
-                .finanzas-premium-view {
+                .cotizaciones-premium-view {
                     position: relative;
                     display: flex;
                     flex-direction: column;
@@ -341,7 +356,7 @@ const GastoList = () => {
                     opacity: 0.1;
                     border-radius: 50%;
                 }
-                .blob-1 { top: -10%; right: -5%; width: 600px; height: 600px; background: #6366f1; }
+                .blob-1 { top: -10%; right: -5%; width: 600px; height: 600px; background: var(--primary); }
                 .blob-2 { bottom: -5%; left: -5%; width: 500px; height: 500px; background: #14b8a6; }
                 
                 .c-noise-overlay {
@@ -447,89 +462,63 @@ const GastoList = () => {
 
                 .stat-visual-glow {
                     position: absolute; right: -20px; top: -20px; width: 120px; height: 120px;
-                    background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+                    background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
                     pointer-events: none;
                 }
                 .stat-visual-glow.green { background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%); }
                 .stat-visual-glow.blue { background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%); }
 
-                /* Gastos Grid */
-                .gastos-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-                    gap: 1.5rem;
-                }
-
-                :global(.gasto-lux-card) {
-                    padding: 1.75rem !important;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.5rem;
-                    border-radius: 28px !important;
-                }
-
-                .card-top {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .date-badge {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    font-size: 0.8rem;
-                    font-weight: 850;
-                    color: var(--text-muted);
-                    background: var(--bg-app);
-                    padding: 6px 12px;
-                    border-radius: 12px;
-                }
-
-                .route-viz {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    background: #f8fafc;
-                    padding: 16px;
-                    border-radius: 20px;
+                /* Table Lux */
+                .table-container-lux {
+                    background: white;
+                    border-radius: 32px;
                     border: 1px solid var(--border-subtle);
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.04);
                 }
-                :global(.dark) .route-viz { background: rgba(255,255,255,0.03); }
-                
-                .point-item { flex: 1; display: flex; align-items: flex-start; gap: 10px; }
-                .node { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-                .node.start { background: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); }
-                .node.end { background: #14b8a6; box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15); }
-                
-                .point-info { display: flex; flex-direction: column; gap: 2px; }
-                .node-lbl { font-size: 0.65rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; }
-                .node-val { font-size: 0.85rem; font-weight: 700; color: var(--text-heading); line-height: 1.2; }
-                .path { color: var(--text-muted); opacity: 0.4; }
+                :global(.dark) .table-container-lux { background: var(--bg-panel); border-color: var(--border-light); }
 
-                .details-box { display: flex; flex-direction: column; gap: 12px; }
-                .detail-item { display: flex; gap: 12px; align-items: flex-start; }
-                .d-icon { color: var(--primary); opacity: 0.7; margin-top: 3px; }
-                .d-text { display: flex; flex-direction: column; }
-                .d-lbl { font-size: 0.7rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; }
-                .d-val { font-size: 0.9rem; font-weight: 700; color: var(--text-heading); }
-
-                .card-foot {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding-top: 1.25rem;
-                    border-top: 1px dashed var(--border-light);
-                }
-                .meta-audit {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-size: 0.7rem;
-                    font-weight: 850;
+                .table-responsive { width: 100%; overflow-x: auto; }
+                .lux-table { width: 100%; border-collapse: collapse; text-align: left; }
+                .lux-table th {
+                    padding: 1.5rem 2rem;
+                    background: #f8fafc;
+                    font-size: 0.75rem;
+                    font-weight: 900;
                     color: var(--text-muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                    border-bottom: 1px solid var(--border-subtle);
+                }
+                :global(.dark) .lux-table th { background: rgba(255,255,255,0.02); }
+                .lux-table td { padding: 1.5rem 2rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+                :global(.dark) .lux-table td { border-color: rgba(255,255,255,0.05); }
+
+                .doc-num { font-family: monospace; font-weight: 950; font-size: 1rem; color: var(--primary); }
+                .date-cell { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700; color: var(--text-body); }
+                .ico-muted { color: var(--text-muted); opacity: 0.6; }
+                
+                .client-cell { display: flex; align-items: center; gap: 12px; }
+                .client-avatar {
+                    width: 36px; height: 36px; border-radius: 12px;
+                    background: #f1f5f9; color: var(--text-muted);
+                    display: flex; align-items: center; justify-content: center;
+                    font-weight: 850; font-size: 0.85rem; border: 1px solid var(--border-subtle);
+                }
+                .client-name { font-weight: 800; color: var(--text-heading); font-size: 0.95rem; }
+
+                .product-cell { display: flex; flex-direction: column; gap: 4px; }
+                .prod-name { font-weight: 700; color: var(--text-heading); font-size: 0.9rem; line-height: 1.3; }
+                .prod-brand { 
+                    font-size: 0.75rem; font-weight: 850; color: #14b8a6; 
+                    display: flex; align-items: center; gap: 4px; text-transform: uppercase;
                 }
 
-                .loading-wrapper { grid-column: 1 / -1; padding: 10rem; display: flex; justify-content: center; width: 100%; }
+                .total-val { font-size: 1rem; font-weight: 950; color: var(--text-heading); }
+                .text-right { text-align: right; }
+                .text-center { text-align: center; }
+
+                .loading-wrapper { padding: 10rem; display: flex; justify-content: center; width: 100%; }
 
                 @media (max-width: 1200px) {
                     .stats-hero-grid { grid-template-columns: repeat(2, 1fr); }
@@ -546,4 +535,4 @@ const GastoList = () => {
     );
 };
 
-export default GastoList;
+export default CotizacionList;

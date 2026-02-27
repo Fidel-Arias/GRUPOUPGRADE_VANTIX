@@ -16,18 +16,26 @@ import {
     ArrowRight,
     Send
 } from 'lucide-react';
-import { planService, empleadoService, BASE_URL } from '../../services/api';
+import { planService, empleadoService, authService, BASE_URL } from '../../services/api';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import EmptyState from '../Common/EmptyState';
+import AlertModal from '../Common/AlertModal';
 
 const PlanDetail = ({ planId = null }) => {
     const [plan, setPlan] = useState(null);
     const [empleado, setEmpleado] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null);
+    const [reviewMode, setReviewMode] = useState(false);
+    const [observations, setObservations] = useState('');
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
 
     useEffect(() => {
+        const currentUser = authService.getUser();
+        setUser(currentUser);
+
         let activeId = planId;
         if (!activeId && typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -44,16 +52,81 @@ const PlanDetail = ({ planId = null }) => {
     const fetchPlanData = async (id) => {
         try {
             setLoading(true);
+            const currentUser = authService.getUser();
             const data = await planService.getById(id);
             setPlan(data);
 
             if (data?.id_empleado) {
-                const empData = await empleadoService.getAll();
-                const found = empData.find(e => e.id_empleado === data.id_empleado);
-                setEmpleado(found);
+                if (currentUser && !currentUser.is_admin && currentUser.id_empleado === data.id_empleado) {
+                    setEmpleado(currentUser);
+                } else if (currentUser?.is_admin) {
+                    const empData = await empleadoService.getAll();
+                    const found = empData.find(e => e.id_empleado === data.id_empleado);
+                    setEmpleado(found);
+                }
             }
         } catch (error) {
             console.error('Error fetching plan in PlanDetail:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReview = async (newStatus) => {
+        if (newStatus === 'Rechazado' && !observations.trim()) {
+            setModal({
+                isOpen: true,
+                title: 'Observación requerida',
+                message: 'Por favor, indica un motivo para el rechazo en las observaciones.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await planService.revisar(plan.id_plan, {
+                estado: newStatus,
+                observaciones_supervisor: observations
+            });
+            await fetchPlanData(plan.id_plan);
+            setReviewMode(false);
+            setModal({
+                isOpen: true,
+                title: newStatus === 'Aprobado' ? 'Plan Aprobado' : 'Plan Rechazado',
+                message: `El plan ha sido actualizado a estado ${newStatus.toLowerCase()} exitosamente.`,
+                type: 'success'
+            });
+        } catch (error) {
+            setModal({
+                isOpen: true,
+                title: 'Error de actualización',
+                message: 'Ocurrió un problema al actualizar el plan: ' + error.message,
+                type: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSendForReview = async () => {
+        try {
+            setLoading(true);
+            await planService.update(plan.id_plan, { estado: 'Enviado' });
+            await fetchPlanData(plan.id_plan);
+            setModal({
+                isOpen: true,
+                title: 'Plan Enviado',
+                message: 'El plan ha sido enviado a revisión correctamente.',
+                type: 'success'
+            });
+        } catch (error) {
+            setModal({
+                isOpen: true,
+                title: 'Error al enviar',
+                message: 'No se pudo enviar el plan a revisión: ' + error.message,
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -121,8 +194,8 @@ const PlanDetail = ({ planId = null }) => {
                     <button className="btn-glass-icon" title="Descargar Reporte">
                         <Download size={20} />
                     </button>
-                    {plan.estado === 'Borrador' && (
-                        <button className="btn-action-premium">
+                    {plan.estado === 'Borrador' && user?.id_empleado === plan.id_empleado && (
+                        <button className="btn-action-premium" onClick={handleSendForReview}>
                             <Send size={18} />
                             <span>Enviar a revisión</span>
                         </button>
@@ -250,18 +323,43 @@ const PlanDetail = ({ planId = null }) => {
                 <aside className="plan-sidebar">
                     {/* Card de Metas */}
 
-                    {/* Card de Indicaciones */}
-                    <PremiumCard className="sidebar-card directive-card" hover={false}>
-                        <h3>Dirección Comercial</h3>
-                        <div className="message-box">
-                            <span className="quote">“</span>
-                            <p>Mantener el enfoque en la calidad de las visitas más que en la cantidad. Buscamos cierres de alta fidelidad para cerrar el trimestre con fuerza.</p>
-                            <div className="author">
-                                <div className="author-dot"></div>
-                                <span>Sales Director</span>
-                            </div>
-                        </div>
-                    </PremiumCard>
+                    {/* Card de Indicaciones / Revisión */}
+                    {(((plan.estado === 'Borrador' || plan.estado === 'Enviado') && user?.is_admin) || plan.observaciones_supervisor) && (
+                        <PremiumCard className="sidebar-card directive-card" hover={false}>
+                            <h3>Dirección Comercial</h3>
+
+                            {(plan.estado === 'Borrador' || plan.estado === 'Enviado') && user?.is_admin ? (
+                                <div className="review-form">
+                                    <label className="review-label">Observaciones de Supervisor</label>
+                                    <textarea
+                                        className="review-textarea"
+                                        placeholder="Escribe aquí tus indicaciones o el motivo del rechazo..."
+                                        value={observations}
+                                        onChange={(e) => setObservations(e.target.value)}
+                                    />
+                                    <div className="review-actions">
+                                        <button
+                                            className="btn-reject"
+                                            onClick={() => handleReview('Rechazado')}
+                                        >
+                                            Rechazar Plan
+                                        </button>
+                                        <button
+                                            className="btn-approve"
+                                            onClick={() => handleReview('Aprobado')}
+                                        >
+                                            Aprobar Plan
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : plan.observaciones_supervisor ? (
+                                <div className="message-box">
+                                    <span className="quote">“</span>
+                                    <p>{plan.observaciones_supervisor}</p>
+                                </div>
+                            ) : null}
+                        </PremiumCard>
+                    )}
 
                     {/* Distribución Sidebar */}
                     <PremiumCard className="sidebar-card distribution-card" hover={false}>
@@ -304,6 +402,14 @@ const PlanDetail = ({ planId = null }) => {
                     </PremiumCard>
                 </aside>
             </div>
+
+            <AlertModal
+                isOpen={modal.isOpen}
+                onClose={() => setModal({ ...modal, isOpen: false })}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+            />
 
             <style jsx>{`
                 .plan-view-container { max-width: 1400px; margin: 0 auto; color: var(--text-body); animation: fadeIn 0.6s ease-out; }
@@ -452,6 +558,29 @@ const PlanDetail = ({ planId = null }) => {
                 .author span { font-size: 0.75rem; font-weight: 800; color: #b45309; text-transform: uppercase; }
 
                 .distribution-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 2rem; color: var(--text-heading); }
+                
+                .review-form { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+                .review-label { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+                .review-textarea { 
+                    width: 100%; min-height: 120px; padding: 12px; border-radius: 12px;
+                    border: 1px solid var(--border-subtle); background: white; font-size: 0.9rem;
+                    font-family: inherit; resize: vertical; outline: none; transition: 0.2s;
+                }
+                .review-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
+                .review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                .btn-approve { 
+                    padding: 10px; border-radius: 10px; border: none; background: #22c55e;
+                    color: white; font-weight: 800; cursor: pointer; transition: 0.2s;
+                }
+                .btn-approve:hover { filter: brightness(1.1); transform: translateY(-2px); }
+                .btn-reject { 
+                    padding: 10px; border-radius: 10px; border: 1.5px solid #ef4444; background: transparent;
+                    color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s;
+                }
+                .btn-reject:hover { background: #fff1f2; transform: translateY(-2px); }
+
+                :global(.dark) .review-textarea { background: var(--bg-app); border-color: var(--border-light); color: white; }
+
                 .dist-bars { display: flex; flex-direction: column; gap: 1.5rem; }
                 .dist-info { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
                 .dist-info span { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
