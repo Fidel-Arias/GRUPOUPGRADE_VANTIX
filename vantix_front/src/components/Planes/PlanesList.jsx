@@ -201,6 +201,13 @@ const PlanesList = () => {
     };
 
     const handleAsesorSelect = (asesor) => {
+        // Si el asesor ya tiene un plan en la semana seleccionada, vamos directo al detalle
+        if (asesor.tiene_plan_actual && asesor.plan_actual?.id_plan) {
+            window.location.href = `/planes/detalle?id=${asesor.plan_actual.id_plan}`;
+            return;
+        }
+
+        // Si no, mostramos el historial del asesor (comportamiento original)
         setSelectedAsesor(asesor);
     };
 

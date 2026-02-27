@@ -238,6 +238,19 @@ export const planService = {
         });
         if (!response.ok) throw new Error('Error al eliminar plan de trabajo');
         return response.json();
+    },
+
+    async revisar(id, reviewData) {
+        const response = await authFetch(`/planes/${id}/revisar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reviewData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al revisar el plan');
+        }
+        return response.json();
     }
 };
 
@@ -409,3 +422,19 @@ export const finanzasService = {
         return response.json();
     }
 };
+
+export const syncExternaService = {
+    async getCotizaciones(idEmpleado = null) {
+        let url = '/sync-externa/cotizaciones-detalladas';
+        const params = new URLSearchParams();
+        if (idEmpleado) params.append('id_empleado', idEmpleado);
+
+        const response = await authFetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al obtener cotizaciones');
+        }
+        return response.json();
+    }
+};
+

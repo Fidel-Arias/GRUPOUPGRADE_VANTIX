@@ -23,7 +23,8 @@ import {
     empleadoService,
     crmService,
     kpiService,
-    authService
+    authService,
+    syncExternaService
 } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import PremiumCard from '../Common/PremiumCard';
@@ -35,8 +36,13 @@ const MainDashboard = () => {
         totalClientes: 0,
         totalVisitas: 0,
         rendimientoMensual: 0,
-        metaProgreso: 78, // Default fallback
-        actividadesMes: 0
+        actividadesMes: 0,
+        volumenVentasPEN: 0,
+        volumenVentasUSD: 0,
+        volumenVentasSemanaPEN: 0,
+        volumenVentasSemanaUSD: 0,
+        dailySalesTrend: [],
+        coberturaCartera: 0
     });
     const [actividades, setActividades] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -50,16 +56,17 @@ const MainDashboard = () => {
 
             try {
                 setLoading(true);
-                const empId = currentUser.is_admin ? null : currentUser.id_empleado;
+                const empId = currentUser.is_admin === true ? null : currentUser.id_empleado;
+                const fetchLimit = currentUser.is_admin === true ? 1000 : 500;
 
                 // 1. Fetches concurrentes (Manejando errores individuales para no romper el dashboard)
                 const fetchResults = await Promise.allSettled([
-                    clienteService.getAll(0, 500, empId),
-                    visitaService.getAll({ limit: 500, id_empleado: empId }),
+                    clienteService.getAll(0, fetchLimit, empId),
+                    visitaService.getAll({ limit: fetchLimit, id_empleado: empId }),
                     currentUser.is_admin ? empleadoService.getAll(0, 100) : Promise.resolve([]),
-                    crmService.getLlamadas(null, 0, 50, empId),
-                    crmService.getEmails(null, 0, 50, empId),
-                    kpiService.getInformes(0, 50, empId)
+                    crmService.getLlamadas(null, 0, fetchLimit, empId),
+                    crmService.getEmails(null, 0, fetchLimit, empId),
+                    kpiService.getInformes(0, fetchLimit, empId)
                 ]);
 
                 // Descomponer resultados con fallback
@@ -69,6 +76,9 @@ const MainDashboard = () => {
                 const llamadas = fetchResults[3].status === 'fulfilled' ? fetchResults[3].value : [];
                 const emails = fetchResults[4].status === 'fulfilled' ? fetchResults[4].value : [];
                 const kpiReports = fetchResults[5].status === 'fulfilled' ? fetchResults[5].value : [];
+
+                // --- FETCH COTIZACIONES (Data de Upgrade DB) ---
+                const cotizaciones = await syncExternaService.getCotizaciones(empId).catch(() => []);
 
                 // 2. Calcular Estadísticas
                 const totalC = clientes.length || 0;
@@ -81,12 +91,82 @@ const MainDashboard = () => {
                     ? (kpiReports.reduce((acc, curr) => acc + (curr.puntos_alcanzados || 0), 0) / kpiReports.length).toFixed(1)
                     : 0;
 
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const getNormalizedDateStr = (dateObj) => {
+                    const d = new Date(dateObj);
+                    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+                };
+                const todayStr = getNormalizedDateStr(today);
+
+                const cotizacionesToday = cotizaciones.filter(c => {
+                    return getNormalizedDateStr(c.fecha) === todayStr;
+                });
+
+                // Cálculo de Volumen de Ventas Real (Solo hoy) - Separado por moneda
+                const salesToday = cotizacionesToday.reduce((acc, c) => {
+                    const val = parseFloat(c.total_linea) || 0;
+                    if (c.moneda_simbolo?.includes('$')) acc.usd += val;
+                    else acc.pen += val;
+                    return acc;
+                }, { pen: 0, usd: 0 });
+
+                const metaVentas = 10000;
+                const progresoVentas = metaVentas > 0 ? (salesToday.pen / metaVentas) * 100 : 0;
+
+                // --- FILTRO DE VENTAS DE LA SEMANA ---
+                const startOfWeek = new Date();
+                const dayOfWeek = startOfWeek.getDay();
+                const diffToMonday = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                startOfWeek.setDate(diffToMonday);
+                startOfWeek.setHours(0, 0, 0, 0);
+
+                const cotizacionesSemana = cotizaciones.filter(c => {
+                    const fechaCot = new Date(c.fecha);
+                    return fechaCot >= startOfWeek;
+                });
+
+                const salesSemana = cotizacionesSemana.reduce((acc, c) => {
+                    const val = parseFloat(c.total_linea) || 0;
+                    if (c.moneda_simbolo?.includes('$')) acc.usd += val;
+                    else acc.pen += val;
+                    return acc;
+                }, { pen: 0, usd: 0 });
+
+                // --- TENDENCIA DE LOS ÚLTIMOS 7 DÍAS ---
+                const last7Days = [...Array(7)].map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    d.setHours(0, 0, 0, 0);
+
+                    const dayStr = getNormalizedDateStr(d);
+                    const dailyTotal = cotizaciones.filter(c => {
+                        return getNormalizedDateStr(c.fecha) === dayStr;
+                    }).reduce((acc, c) => acc + (parseFloat(c.total_linea) || 0), 0);
+
+                    return {
+                        day: d.toLocaleDateString('es-ES', { weekday: 'short' }),
+                        val: dailyTotal,
+                        date: d
+                    };
+                }).reverse();
+
+                // 2.2 Cobertura: Clientes visitados vs Total Cartera
+                const clientesVisitadosIds = new Set(visitas.map(v => v.id_cliente));
+                const cobertura = totalC > 0 ? (clientesVisitadosIds.size / totalC) * 100 : 0;
+
                 setStats({
                     totalClientes: totalC,
                     totalVisitas: totalV,
                     rendimientoMensual: rend,
-                    metaProgreso: rend > 100 ? 100 : rend || 0,
-                    actividadesMes: totalV + totalL + totalE
+                    actividadesMes: totalV + totalL + totalE,
+                    volumenVentasPEN: salesToday.pen,
+                    volumenVentasUSD: salesToday.usd,
+                    volumenVentasSemanaPEN: salesSemana.pen,
+                    volumenVentasSemanaUSD: salesSemana.usd,
+                    dailySalesTrend: last7Days,
+                    coberturaCartera: cobertura.toFixed(1)
                 });
 
                 // 3. Procesar Feed de Actividad
@@ -210,53 +290,71 @@ const MainDashboard = () => {
             </div>
 
             <div className="main-grid">
-                <div className="charts-column">
-                    <PremiumCard className="bento-card progress-card" hover={false}>
-                        <div className="card-header">
-                            <div className="header-text">
-                                <h3>Cumplimiento Semanal</h3>
-                                <p>Progreso hacia el objetivo de ventas</p>
+                <div className="analytics-column">
+                    <div className="sales-overview-cards">
+                        <PremiumCard className="executive-card day-card" hover={true}>
+                            <div className="label-group">
+                                <DollarSign size={16} />
+                                <span>Ventas Hoy</span>
                             </div>
-                            <Target className="icon-muted" size={24} />
-                        </div>
-                        <div className="progress-content">
-                            <div className="circle-progress">
-                                <svg viewBox="0 0 36 36" className="circular-chart primary">
-                                    <path className="circle-bg"
-                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                    />
-                                    <path className="circle"
-                                        strokeDasharray={`${stats.metaProgreso}, 100`}
-                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                    />
-                                    <text x="18" y="20.35" className="percentage">{stats.metaProgreso}%</text>
-                                </svg>
-                            </div>
-                            <div className="progress-stats">
-                                <div className="stat-row">
-                                    <span className="label">Meta Total</span>
-                                    <span className="value">S/ 45,000</span>
+                            <div className="value-group">
+                                <div className="curr-val">
+                                    <span className="sym">S/</span>
+                                    {stats.volumenVentasPEN.toLocaleString()}
                                 </div>
-                                <div className="stat-row">
-                                    <span className="label">Alcanzado</span>
-                                    <span className="value primary">S/ 34,250</span>
-                                </div>
-                                <div className="stat-progress-bar">
-                                    <div className="bar-fill" style={{ width: `${stats.metaProgreso}%` }}></div>
+                                <div className="curr-val usd">
+                                    <span className="sym">$</span>
+                                    {stats.volumenVentasUSD.toLocaleString()}
                                 </div>
                             </div>
-                        </div>
-                    </PremiumCard>
+                        </PremiumCard>
 
-                    <PremiumCard className="bento-card kpi-overview">
-                        <div className="card-header">
-                            <h3>Métricas Críticas</h3>
-                            <CheckCircle2 color="var(--primary)" size={20} />
+                        <PremiumCard className="executive-card week-card" hover={true}>
+                            <div className="label-group">
+                                <Activity size={16} />
+                                <span>Total Semana</span>
+                            </div>
+                            <div className="value-group">
+                                <div className="curr-val">
+                                    <span className="sym">S/</span>
+                                    {stats.volumenVentasSemanaPEN.toLocaleString()}
+                                </div>
+                                <div className="curr-val usd">
+                                    <span className="sym">$</span>
+                                    {stats.volumenVentasSemanaUSD.toLocaleString()}
+                                </div>
+                            </div>
+                        </PremiumCard>
+                    </div>
+
+                    <PremiumCard className="chart-card">
+                        <div className="chart-header">
+                            <div>
+                                <h3>Rendimiento de Ventas (7D)</h3>
+                                <p>Soles facturados por día</p>
+                            </div>
+                            <TrendingUp size={20} className="icon-muted" />
                         </div>
-                        <div className="kpi-list">
-                            <MetricItem label="Retención Clientes" value="94%" trend="+2.4%" />
-                            <MetricItem label="Tiempo Respuesta" value="1.2h" trend="-15%" positive={false} />
-                            <MetricItem label="Cierre Ventas" value="28%" trend="+5.1%" />
+                        <div className="custom-bar-chart">
+                            {stats.dailySalesTrend.map((d, i) => {
+                                const max = Math.max(...stats.dailySalesTrend.map(x => x.val), 1);
+                                const h = (d.val / max) * 100;
+                                return (
+                                    <div key={i} className="chart-bar-container">
+                                        <div className="bar-wrapper">
+                                            <motion.div
+                                                className="bar"
+                                                initial={{ height: 0 }}
+                                                animate={{ height: `${h}%` }}
+                                                transition={{ delay: i * 0.05, duration: 1, ease: "circOut" }}
+                                            >
+                                                {d.val > 0 && <span className="tooltip">S/ {Math.round(d.val)}</span>}
+                                            </motion.div>
+                                        </div>
+                                        <span className="bar-label">{d.day}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </PremiumCard>
                 </div>
@@ -297,7 +395,7 @@ const MainDashboard = () => {
             </div>
 
             <style jsx>{`
-                .dashboard-container { display: flex; flex-direction: column; gap: 2.5rem; }
+                .dashboard-container { display: flex; flex-direction: column; gap: 2rem; }
                 
                 .dashboard-actions { display: flex; gap: 12px; }
                 .btn-primary {
@@ -315,28 +413,39 @@ const MainDashboard = () => {
                 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
                 .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; }
-                .charts-column { display: flex; flex-direction: column; gap: 1.5rem; }
+                .analytics-column { display: flex; flex-direction: column; gap: 1.5rem; }
+                
+                .sales-overview-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+                
+                :global(.executive-card) { padding: 1.5rem !important; border: 1px solid var(--border-light); position: relative; overflow: hidden; }
+                .label-group { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; }
+                .value-group { display: flex; flex-direction: column; gap: 4px; }
+                .curr-val { font-size: 2rem; font-weight: 800; color: var(--text-heading); letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 6px; }
+                .curr-val .sym { font-size: 1rem; color: var(--text-muted); }
+                .curr-val.usd { font-size: 1.4rem; color: #10b981; }
+                
+                .chart-card { padding: 2rem; }
+                .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; }
+                .chart-header h3 { font-size: 1.1rem; font-weight: 800; margin: 0; }
+                .chart-header p { font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0 0; }
 
-                .bento-card { padding: 1.5rem; }
-                .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-                .card-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); margin: 0; }
-                .card-header p { font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0 0; }
+                .custom-bar-chart { height: 260px; display: flex; align-items: flex-end; gap: 12px; padding: 0 10px; }
+                .chart-bar-container { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; height: 100%; }
+                .bar-wrapper { flex: 1; width: 100%; background: var(--bg-app); border-radius: 8px; position: relative; display: flex; align-items: flex-end; overflow: visible; }
+                .bar { width: 100%; height: 0; background: linear-gradient(to top, var(--primary), #a855f7); border-radius: 6px; position: relative; cursor: pointer; transition: filter 0.2s; }
+                .bar:hover { filter: brightness(1.1); }
+                .bar-label { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+                
+                .tooltip { 
+                    position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+                    background: var(--bg-sidebar); color: white; padding: 4px 8px; border-radius: 6px;
+                    font-size: 0.7rem; font-weight: 800; white-space: nowrap; pointer-events: none;
+                    opacity: 0; transition: opacity 0.2s; box-shadow: var(--shadow-md);
+                }
+                .bar:hover .tooltip { opacity: 1; }
 
-                .progress-content { display: flex; align-items: center; gap: 3rem; }
-                .circular-chart { width: 140px; height: 140px; }
-                .circle-bg { fill: none; stroke: var(--bg-app); stroke-width: 3; }
-                .circle { fill: none; stroke-width: 3; stroke-linecap: round; stroke: var(--primary); transition: stroke-dasharray 0.3s ease; }
-                .percentage { fill: var(--text-heading); font-family: 'Outfit'; font-size: 0.5rem; text-anchor: middle; font-weight: 800; }
-
-                .progress-stats { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-                .stat-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.9rem; }
-                .stat-row .primary { color: var(--primary); }
-                .stat-progress-bar { height: 8px; background: var(--bg-app); border-radius: 10px; }
-                .bar-fill { height: 100%; background: var(--primary); border-radius: 10px; }
-
-                .kpi-list { display: flex; flex-direction: column; gap: 1.5rem; }
-
-                .activity-feed-card { padding: 0 !important; overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+                .feed-column { display: flex; flex-direction: column; gap: 1.5rem; }
+                .activity-feed-card { padding: 0 !important; overflow: hidden; height: 600px; display: flex; flex-direction: column; }
                 .feed-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); }
                 .feed-header .title { display: flex; align-items: center; gap: 12px; }
                 .feed-header h3 { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); margin: 0; }
