@@ -1,8 +1,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// Change this to your backend URL
-const BASE_URL = 'http://10.125.99.136:8000'; // Placeholder, user will need to change this to their IP
+// Use environment variable for the backend URL
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const apiClient = axios.create({
     baseURL: BASE_URL,
