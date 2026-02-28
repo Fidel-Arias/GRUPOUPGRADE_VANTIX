@@ -74,7 +74,7 @@ El proyecto utiliza variables de entorno para la configuración sensible (creden
     ```ini
     # Ejemplo de configuración en .env
     PROJECT_NAME="Vantix"
-    API_V1_STR="/api/v1"
+    API_V1_STR="/v1"
 
     # Credenciales de PostgreSQL
     POSTGRES_SERVER=localhost
