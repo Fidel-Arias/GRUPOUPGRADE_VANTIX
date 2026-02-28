@@ -42,11 +42,11 @@ POSTGRES_DB=vantix
 
 #### Base de Datos Externa (UpgradeDB)
 ```ini
-EXTERNAL_DB_HOST=179.43.97.177
-EXTERNAL_DB_PORT=9090
-EXTERNAL_DB_USER=postgres
+EXTERNAL_DB_HOST=ip_del_servidor
+EXTERNAL_DB_PORT=puerto_del_servidor
+EXTERNAL_DB_USER=usuario_del_servidor
 EXTERNAL_DB_PASSWORD=tu_password_externo
-EXTERNAL_DB_NAME=upgradedb
+EXTERNAL_DB_NAME=nombre_base_de_datos
 ```
 
 #### Almacenamiento Remoto (FTP)
