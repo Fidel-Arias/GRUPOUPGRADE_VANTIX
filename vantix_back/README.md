@@ -1,117 +1,99 @@
-# Vantix Backend
+# Vantix Backend - Sistema de Fuerza de Ventas y Gamificación
 
-Este repositorio contiene el backend para el proyecto Vantix, desarrollado con **FastAPI**.
+Este repositorio contiene el backend robusto para el proyecto **Vantix**, desarrollado con **FastAPI**. El sistema está diseñado para gestionar fuerzas de ventas, automatizar el seguimiento de KPIs y motivar a los empleados mediante gamificación.
 
-## Requisitos Previos
+## 🚀 Características Principales
 
-Asegúrate de tener instalado lo siguiente en tu sistema:
+- **Gestión de Fuerza de Ventas**: Registro de visitas, llamadas, correos y cotizaciones en tiempo real.
+- **Gamificación e Incentivos**: Sistema automático de puntos por actividades y generación de bonos semanales basados en cumplimiento de metas.
+- **Rendimiento (KPI)**: Informes de productividad semanales sincronizados con bases de datos externas.
+- **Almacenamiento Remoto Inteligente**: Soporte para subir imágenes de evidencia a servidores externos vía FTP con organización jerárquica automática (`Empleado/Actividad/Archivo`).
+- **Seguridad Avanzada**: Autenticación JWT, gestión de roles (Administrador/Empleado) y control de visibilidad de documentación en producción.
+- **Sincronización Externa**: Integración con bases de datos legadas (UpgradeDB) para importación de cotizaciones y métricas reales.
+
+## 🛠️ Requisitos Previos
 
 - **Python 3.10+**
 - **pip** (gestor de paquetes de Python)
-- **PostgreSQL** (Base de datos)
-- **Git**
+- **PostgreSQL 14+**
+- **Servidor FTP/Web Hosting** (Opcional, para almacenamiento de imágenes)
 
-## Configuración del Entorno de Desarrollo
+## ⚙️ Configuración del Entorno
 
-Sigue estos pasos para configurar el proyecto en tu máquina local.
-
-### 1. Clonar el repositorio
-
+### 1. Clonar e Instalar
 ```bash
 git clone <URL_DEL_REPOSITORIO>
 cd vantix_back
-```
-
-### 2. Crear un Entorno Virtual
-
-Es recomendable utilizar un entorno virtual para aislar las dependencias del proyecto.
-
-```bash
-# Crear el entorno virtual llamado 'venv'
 python3 -m venv venv
-```
-
-### 3. Activar el Entorno Virtual
-
-- **En Linux/macOS:**
-
-    ```bash
-    source venv/bin/activate
-    ```
-
-- **En Windows (PowerShell):**
-
-    ```powershell
-    venv\Scripts\Activate.ps1
-    ```
-
-- **En Windows (CMD):**
-
-    ```cmd
-    venv\Scripts\activate.bat
-    ```
-
-### 4. Instalar Dependencias
-
-Una vez activado el entorno virtual, instala las librerías necesarias listadas en `requirements.txt`:
-
-```bash
+source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 5. Configurar Variables de Entorno
+### 2. Variables de Entorno (.env)
+Copia el archivo `.env.example` a `.env` y configura las siguientes secciones críticas:
 
-El proyecto utiliza variables de entorno para la configuración sensible (credenciales de base de datos, claves secretas, etc.).
+#### Base de Datos (PostgreSQL)
+```ini
+POSTGRES_SERVER=tu_vps_ip
+POSTGRES_USER=sistemas
+POSTGRES_PASSWORD=tu_password
+POSTGRES_DB=vantix
+```
 
-1.  Copia el archivo de ejemplo `.env.example` y renómbralo a `.env`:
+#### Base de Datos Externa (UpgradeDB)
+```ini
+EXTERNAL_DB_HOST=179.43.97.177
+EXTERNAL_DB_PORT=9090
+EXTERNAL_DB_USER=postgres
+EXTERNAL_DB_PASSWORD=tu_password_externo
+EXTERNAL_DB_NAME=upgradedb
+```
 
-    ```bash
-    cp .env.example .env
-    ```
+#### Almacenamiento Remoto (FTP)
+```ini
+REMOTE_STORAGE_HOST=tu_hosting_ip
+REMOTE_STORAGE_USER=usuario@dominio.com
+REMOTE_STORAGE_PASSWORD=tu_password_ftp
+REMOTE_STORAGE_BASE_PATH=.
+REMOTE_STORAGE_BASE_URL=https://tu-dominio-imagenes.com
+```
 
-2.  Abre el archivo `.env` y actualiza los valores con tu configuración local, especialmente las credenciales de la base de datos PostgreSQL:
+#### Seguridad y Producción
+```ini
+SECRET_KEY="tu_clave_secreta"
+SHOW_DOCS=False # Desactiva Swagger/ReDoc en producción
+```
 
-    ```ini
-    # Ejemplo de configuración en .env
-    PROJECT_NAME="Vantix"
-    API_V1_STR="/api/v1"
-
-    # Credenciales de PostgreSQL
-    POSTGRES_SERVER=localhost
-    POSTGRES_USER=postgres
-    POSTGRES_PASSWORD=tu_contraseña_real
-    POSTGRES_DB=vantix
-    POSTGRES_PORT=5432
-
-    # Configuraciones de la autenticación
-    SECRET_KEY="tu_clave_secreta_segura"
-    ALGORITHM=HS256
-    ACCESS_TOKEN_EXPIRE_MINUTES=10080
-    ```
-
-> **Nota:** El archivo `.env` está ignorado en git para proteger tus secretos. Nunca subas este archivo al repositorio.
-
-### 6. Ejecutar Migraciones (Base de Datos)
-
-Si el proyecto utiliza **Alembic** para las migraciones de base de datos, ejecuta el siguiente comando para aplicar los cambios a tu base de datos local:
-
+### 3. Base de Datos y Ejecución
 ```bash
+# Aplicar migraciones
 alembic upgrade head
+
+# Iniciar servidor
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 7. Ejecutar el Servidor de Desarrollo
+## 📂 Estructura del Proyecto
 
-Para iniciar el servidor localmente con recarga automática (hot-reload):
+- `app/api/v1/controller/`: Endpoints de la API organizados por módulos (CRM, Visitas, KPI, Almacenamiento).
+- `app/crud/`: Lógica de acceso a datos (Create, Read, Update, Delete).
+- `app/models/`: Definición de tablas de base de datos (SQLAlchemy).
+- `app/schemas/`: Modelos de validación de datos (Pydantic).
+- `app/services/`: Lógica de negocio avanzada (Gamificación, Sincronización Externa, Gestión de Archivos).
+- `app/core/`: Configuraciones centrales y seguridad.
 
-```bash
-uvicorn app.main:app --reload
-```
+## 📝 Documentación Interactiva
 
-El servidor debería iniciar en `http://127.0.0.1:8000`.
+Si `SHOW_DOCS` está en `True`, puedes acceder a:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
-## Documentación de la API
+## 🛡️ Seguridad en Producción
 
-Una vez que el servidor esté corriendo, puedes acceder a la documentación interactiva de la API en:
+Para despliegues en VPS:
+1. Asegúrate de que `SHOW_DOCS=False` en el `.env`.
+2. Configura el firewall para permitir solo el tráfico necesario (Puerto 8000).
+3. Usa un servidor ASGI como `gunicorn -k uvicorn.workers.UvicornWorker` para mayor estabilidad.
 
-- **Swagger UI:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+---
+**Desarrollado para Grupo Upgrade - Vantix**
