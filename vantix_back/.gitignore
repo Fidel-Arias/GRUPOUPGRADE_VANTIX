@@ -20,3 +20,9 @@ Thumbs.db
 # Ignorar archivos de logs
 logs/
 *.log
+
+# Archivos de Gunicorn y procesos
+*.ctl
+*.sock
+*.pid
+*.log
