@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     REMOTE_STORAGE_BASE_PATH: str
     REMOTE_STORAGE_BASE_URL: str
 
+    SHOW_DOCS: bool = True  # Por defecto True para desarrollo
+
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> PostgresDsn:
