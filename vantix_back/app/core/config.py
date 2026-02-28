@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     REMOTE_STORAGE_BASE_URL: str
 
     SHOW_DOCS: bool = True  # Por defecto True para desarrollo
+    
+    # Esto leerá automáticamente la variable FRONTEND_URL del .env
+    FRONTEND_URL: str = "http://localhost:4200" # Valor por defecto
+
 
     @computed_field
     @property
