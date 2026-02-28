@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str
-    API_V1_STR: str = "/v1"
+    API_V1_STR: str = "/api/v1"
 
     # Base de datos
     POSTGRES_SERVER: str
