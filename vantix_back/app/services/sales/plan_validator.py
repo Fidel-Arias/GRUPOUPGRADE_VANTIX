@@ -3,14 +3,22 @@ from datetime import date
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.plan import PlanTrabajoSemanal, DetallePlanTrabajo
-from app.models.kpi import InformeProductividad
+from app.models.kpi import InformeProductividad, MaestroMetas
 from app.models.enums import TipoActividadEnum
 from app.schemas.plan import PlanCreate
 
 class PlanValidatorService:
     @staticmethod
     def create_weekly_plan(db: Session, plan_in: PlanCreate, id_empleado: int) -> PlanTrabajoSemanal:
-        # 1. Validar si ya existe un plan para esa fecha y ese empleado
+        # 1. VALIDACIÓN CRÍTICA: Debe existir al menos un maestro de metas activo
+        maestro_activo = db.query(MaestroMetas).filter(MaestroMetas.is_active == 1).first()
+        if not maestro_activo:
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede crear el plan: No hay un Maestro de Metas activo configurado por el administrador."
+            )
+
+        # 2. Validar si ya existe un plan para esa fecha y ese empleado
         existing_plan = db.query(PlanTrabajoSemanal).filter(
             PlanTrabajoSemanal.id_empleado == id_empleado,
             PlanTrabajoSemanal.fecha_inicio_semana == plan_in.fecha_inicio_semana
@@ -22,12 +30,6 @@ class PlanValidatorService:
                 detail=f"Ya existe un plan de trabajo para la semana del {plan_in.fecha_inicio_semana}"
             )
 
-        # 2. Calcular estadisticas iniciales en base a la agenda propuesta
-        visitas_programadas_count = 0
-        for detalle in plan_in.detalles_agenda:
-            if detalle.tipo_actividad == TipoActividadEnum.VISITA:
-                visitas_programadas_count += 1
-        
         # 3. Crear Cabecera del Plan
         db_plan = PlanTrabajoSemanal(
             id_empleado=id_empleado,
@@ -51,31 +53,26 @@ class PlanValidatorService:
             )
             db.add(db_detalle)
             
-        # 5. CREAR AUTOMÁTICAMENTE EL INFORME DE PRODUCTIVIDAD (Dashboard)
-        # 5.1 Obtener metas globales actuales de la base de datos
-        metas_globales = crud.kpi.config_meta.get_all_as_dict(db)
-        
+        # 5. CREAR AUTOMÁTICAMENTE EL INFORME DE PRODUCTIVIDAD vinculado al Maestro Activo
         informe = InformeProductividad(
             id_plan=db_plan.id_plan,
-            meta_visitas=metas_globales.get("meta_visitas", 25),
-            meta_llamadas=metas_globales.get("meta_llamadas", 30),
-            meta_emails=metas_globales.get("meta_emails", 100),
-            meta_visitas_asistidas=metas_globales.get("meta_visitas_asistidas", 0),
-            meta_cotizaciones=metas_globales.get("meta_cotizaciones", 0),
-            puntaje_objetivo=metas_globales.get("puntaje_objetivo", 205),
+            id_maestro_meta=maestro_activo.id_maestro,
+            real_visitas=0,
+            real_llamadas=0,
+            real_emails=0,
+            real_visitas_asistidas=0,
+            real_cotizaciones=0,
+            puntos_alcanzados=0
         )
         db.add(informe)
         
         db.commit()
-        db.refresh(db_plan) # Esto refrescará la relación informe_kpi
+        db.refresh(db_plan)
         return db_plan
 
     @staticmethod
     def get_day_name(target_date: date) -> str:
-        """
-        Mapea el día de la semana de Python al Enum del sistema.
-        Python: 0=Lunes, 1=Martes, ..., 5=Sábado, 6=Domingo
-        """
+        """Mapea el día de la semana de Python al Enum del sistema."""
         from app.models.enums import DiaSemanaEnum
         days_mapping = {
             0: DiaSemanaEnum.LUNES,
@@ -90,21 +87,16 @@ class PlanValidatorService:
 
     @staticmethod
     def validate_plan_exists_for_activity(db: Session, id_empleado: int, id_plan: Optional[int] = None):
-        """
-        Valida que el empleado tenga un plan aprobado para la semana actual
-        y que existan actividades programadas para el día de hoy.
-        """
+        """Valida que el empleado tenga un plan aprobado para la semana actual."""
         from app import crud
         today = date.today()
         day_name = PlanValidatorService.get_day_name(today)
         
-        # 1. Buscar plan aprobado que cubra hoy
         if id_plan:
             active_plan = crud.plan.get(db, id=id_plan)
             if not active_plan or active_plan.id_empleado != id_empleado:
                 raise HTTPException(status_code=404, detail="El plan especificado no existe o no te pertenece.")
             
-            # Validar que el plan esté aprobado y cubra la fecha
             from app.models.enums import EstadoPlanEnum
             if active_plan.estado != EstadoPlanEnum.APROBADO:
                 raise HTTPException(status_code=403, detail="El plan de trabajo debe estar APROBADO para registrar actividades.")
@@ -115,22 +107,10 @@ class PlanValidatorService:
             active_plan = crud.plan.get_active_plan_for_date(db, id_empleado=id_empleado, date_to_check=today)
         
         if not active_plan:
-            raise HTTPException(
-                status_code=403, 
-                detail="No puedes registrar actividades sin un plan semanal aprobado para esta fecha."
-            )
+            raise HTTPException(status_code=403, detail="No puedes registrar actividades sin un plan semanal aprobado.")
             
-        # 2. Verificar que el plan tenga algo programado para hoy
-        has_today_agenda = crud.detalle_plan.has_activity_for_day(
-            db, 
-            id_plan=active_plan.id_plan, 
-            dia_semana=day_name
-        )
-        
+        has_today_agenda = crud.detalle_plan.has_activity_for_day(db, id_plan=active_plan.id_plan, dia_semana=day_name)
         if not has_today_agenda:
-            raise HTTPException(
-                status_code=403, 
-                detail=f"No tienes actividades programadas en tu plan para el día de hoy ({day_name})."
-            )
+            raise HTTPException(status_code=403, detail=f"No tienes actividades programadas para hoy ({day_name}).")
             
         return active_plan

@@ -1,84 +1,86 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from decimal import Decimal
 
-# --- INFORME DE PRODUCTIVIDAD ---
+# --- MAESTRO DE METAS (GENERAL) ---
 
-class InformeProductividadBase(BaseModel):
-    # Metas (Se pueden configurar por defecto o ajustar)
+class MaestroMetasBase(BaseModel):
+    nombre_meta: str
     meta_visitas: int = 25
     meta_visitas_asistidas: int = 0
     meta_llamadas: int = 30
     meta_emails: int = 100
     meta_cotizaciones: int = 0
+    
+    puntos_visita: int = 10
+    puntos_visita_asistida: int = 5
+    puntos_llamada: int = 1
+    puntos_email: int = 1
+    puntos_cotizacion: int = 0
+    
     puntaje_objetivo: int = 205
+    is_active: int = 1
 
-class InformeMetasCreate(BaseModel):
-    id_plan: int
-    meta_visitas: int
-    meta_llamadas: int
-    meta_emails: int
-    meta_cotizaciones: int
-    puntaje_objetivo: int
-    meta_visitas_asistidas: Optional[int] = 0
+class MaestroMetasCreate(MaestroMetasBase):
+    pass
 
-class InformeProductividadUpdate(BaseModel):
-    # Campos que se pueden actualizar (Metas o Reales)
+class MaestroMetasUpdate(BaseModel):
+    nombre_meta: Optional[str] = None
     meta_visitas: Optional[int] = None
-    real_visitas: Optional[int] = None
-    
     meta_visitas_asistidas: Optional[int] = None
-    real_visitas_asistidas: Optional[int] = None
-    
     meta_llamadas: Optional[int] = None
-    real_llamadas: Optional[int] = None
-    
     meta_emails: Optional[int] = None
-    real_emails: Optional[int] = None
-    
     meta_cotizaciones: Optional[int] = None
-    real_cotizaciones: Optional[int] = None
-    
-    puntos_alcanzados: Optional[int] = None
+    puntos_visita: Optional[int] = None
+    puntos_visita_asistida: Optional[int] = None
+    puntos_llamada: Optional[int] = None
+    puntos_email: Optional[int] = None
+    puntos_cotizacion: Optional[int] = None
     puntaje_objetivo: Optional[int] = None
+    is_active: Optional[int] = None
 
-# Alias para compatibilidad con código existente
-KpiUpdate = InformeProductividadUpdate
-
-class InformeMetasResponse(BaseModel):
-    id_informe: int
-    id_plan: int
-    meta_visitas: int
-    meta_visitas_asistidas: int
-    meta_llamadas: int
-    meta_emails: int
-    meta_cotizaciones: int
-    puntaje_objetivo: int
-    fecha_evaluacion: Optional[date] = None
+class MaestroMetasResponse(MaestroMetasBase):
+    id_maestro: int
+    fecha_creacion: date
 
     class Config:
         from_attributes = True
 
-class InformeProductividadResponse(InformeProductividadBase):
+# --- INFORME DE PRODUCTIVIDAD ---
+
+class InformeProductividadUpdate(BaseModel):
+    # Solo valores reales
+    real_visitas: Optional[int] = None
+    real_visitas_asistidas: Optional[int] = None
+    real_llamadas: Optional[int] = None
+    real_emails: Optional[int] = None
+    real_cotizaciones: Optional[int] = None
+    puntos_alcanzados: Optional[int] = None
+
+class InformeProductividadResponse(BaseModel):
     id_informe: int
     id_plan: int
+    id_maestro_meta: Optional[int] = None
     
-    # Reales (Se actualizan conforme trabajan)
+    # Valores reales
     real_visitas: int
     real_visitas_asistidas: int
     real_llamadas: int
     real_emails: int
     real_cotizaciones: int
-    
-    # Gamificación
     puntos_alcanzados: int
-    porcentaje_alcance: Optional[Decimal] = None # Puede ser null si puntaje_objetivo es 0
+    
+    # Relación al maestro para ver las metas asociadas
+    maestro: Optional[MaestroMetasResponse] = None
     
     fecha_evaluacion: Optional[date]
 
     class Config:
         from_attributes = True
+
+# Alias para compatibilidad
+KpiUpdate = InformeProductividadUpdate
 
 # --- INCENTIVOS Y PAGOS ---
 
@@ -100,30 +102,6 @@ class IncentivoPagoUpdate(BaseModel):
 class IncentivoPagoResponse(IncentivoPagoBase):
     id_incentivo: int
     fecha_generacion: date
-
-    class Config:
-        from_attributes = True
-
-# --- CONFIGURACIÓN DE METAS GLOBALES ---
-
-class ConfiguracionMetaBase(BaseModel):
-    clave: str
-    valor: int
-    puntos_por_unidad: int = 0
-    descripcion: Optional[str] = None
-    editable_por_supervisor: int = 1
-
-class ConfiguracionMetaCreate(ConfiguracionMetaBase):
-    pass
-
-class ConfiguracionMetaUpdate(BaseModel):
-    valor: Optional[int] = None
-    puntos_por_unidad: Optional[int] = None
-    descripcion: Optional[str] = None
-    editable_por_supervisor: Optional[int] = None
-
-class ConfiguracionMetaResponse(ConfiguracionMetaBase):
-    id_meta: int
 
     class Config:
         from_attributes = True

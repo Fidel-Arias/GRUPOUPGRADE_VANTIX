@@ -8,42 +8,24 @@ class InformeProductividad(Base):
     id_informe = Column(Integer, primary_key=True, index=True)
     id_plan = Column(Integer, ForeignKey("plan_trabajo_semanal.id_plan", ondelete="CASCADE"), unique=True)
     
-    # 1. VISITAS NORMALES
-    meta_visitas = Column(Integer, default=25)
+    # 1. Relación al Maestro de Metas (Nuevo)
+    id_maestro_meta = Column(Integer, ForeignKey("maestro_metas.id_maestro"))
+    
+    # 2. VALORES REALES (Lo avanzado por el empleado)
     real_visitas = Column(Integer, default=0)
-    
-    # 2. VISITAS ASISTIDAS
-    meta_visitas_asistidas = Column(Integer, default=0)
     real_visitas_asistidas = Column(Integer, default=0)
-    
-    # 3. LLAMADAS
-    meta_llamadas = Column(Integer, default=30)
     real_llamadas = Column(Integer, default=0)
-    
-    # 4. EMAILS
-    meta_emails = Column(Integer, default=100)
     real_emails = Column(Integer, default=0)
-    
-    # 5. COTIZACIONES
-    meta_cotizaciones = Column(Integer, default=0)
     real_cotizaciones = Column(Integer, default=0)
     
-    # 6. PUNTOS Y GAMIFICACIÓN
+    # 3. RESULTADO DE GAMIFICACIÓN
     puntos_alcanzados = Column(Integer, default=0)
-    puntaje_objetivo = Column(Integer, default=205) # Lo que diga tu Excel/Reglas
     
-    # 7. ALCANCE (La columna calculada automáticamente por Postgres)
-    # SQLAlchemy le dice a Python que no intente enviar este dato, que la BD lo calcula.
-    porcentaje_alcance = Column(
-        DECIMAL(5, 2), 
-        Computed("(puntos_alcanzados::numeric / NULLIF(puntaje_objetivo, 0)) * 100")
-    )
-
     fecha_evaluacion = Column(Date, server_default=text("CURRENT_DATE"))
 
-    # Relación con el Plan maestro
+    # Relaciones
     plan = relationship("PlanTrabajoSemanal", back_populates="informe_kpi")
-
+    maestro = relationship("MaestroMetas")
 
 # 2. Tabla de Incentivos y Pagos
 class IncentivoPago(Base):
@@ -58,21 +40,33 @@ class IncentivoPago(Base):
     fecha_generacion = Column(Date, server_default=text("CURRENT_DATE"))
     estado_pago = Column(String(20), default='Pendiente')
 
-    # --- RELACIONES AGREGADAS ---
-    # 1. Saber quién ganó el bono
+    # Relaciones
     empleado = relationship("Empleado", back_populates="incentivos")
-    
-    # 2. Saber gracias a qué plan se ganó el bono (Unidireccional por ahora es suficiente)
     plan_origen = relationship("PlanTrabajoSemanal")
 
+# 3. TABLA MAESTRA DE METAS (DEFINICIÓN GENERAL)
+class MaestroMetas(Base):
+    __tablename__ = "maestro_metas"
 
-# 3. TABLA MAESTRA DE CONFIGURACIÓN (Lo que propusimos)
-class ConfiguracionMeta(Base):
-    __tablename__ = "configuracion_metas_globales"
-
-    id_meta = Column(Integer, primary_key=True, index=True)
-    clave = Column(String(50), unique=True, nullable=False) # e.g. 'meta_visitas'
-    valor = Column(Integer, default=0, nullable=False)
-    puntos_por_unidad = Column(Integer, default=0) # Puntos que otorga cada unidad (ej: 5 puntos por visita)
-    descripcion = Column(String(100))
-    editable_por_supervisor = Column(Integer, default=1) # 1=Si, 0=No
+    id_maestro = Column(Integer, primary_key=True, index=True)
+    nombre_meta = Column(String(100), nullable=False) # e.g. 'Semana Estándar'
+    
+    # Metas (Objetivos)
+    meta_visitas = Column(Integer, default=25)
+    meta_visitas_asistidas = Column(Integer, default=0)
+    meta_llamadas = Column(Integer, default=30)
+    meta_emails = Column(Integer, default=100)
+    meta_cotizaciones = Column(Integer, default=0)
+    
+    # Pesos (Puntos por unidad)
+    puntos_visita = Column(Integer, default=10)
+    puntos_visita_asistida = Column(Integer, default=5)
+    puntos_llamada = Column(Integer, default=1)
+    puntos_email = Column(Integer, default=1)
+    puntos_cotizacion = Column(Integer, default=0)
+    
+    # Objetivo Final
+    puntaje_objetivo = Column(Integer, default=205)
+    
+    is_active = Column(Integer, default=1) # 1: Activa, 0: Inactiva
+    fecha_creacion = Column(Date, server_default=text("CURRENT_DATE"))
