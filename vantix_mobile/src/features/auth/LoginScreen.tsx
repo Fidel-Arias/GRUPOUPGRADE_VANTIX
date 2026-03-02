@@ -4,6 +4,7 @@ import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
     Alert, Dimensions,
+    Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -55,8 +56,12 @@ export const LoginScreen = () => {
                         style={styles.headerGradient}
                     >
                         <View style={styles.logoContainer}>
-                            <View style={styles.logoPlaceholder}>
-                                <Text style={styles.logoText}>VX</Text>
+                            <View style={styles.logoWrapper}>
+                                <Image
+                                    source={require('../../../assets/images/icon.png')}
+                                    style={styles.logoImage}
+                                    resizeMode="contain"
+                                />
                             </View>
                             <Text style={styles.appName}>VANTIX</Text>
                             <Text style={styles.appTagline}>Gestión de Ventas Inteligente</Text>
@@ -134,21 +139,15 @@ const styles = StyleSheet.create({
     logoContainer: {
         alignItems: 'center',
     },
-    logoPlaceholder: {
-        width: 80,
-        height: 80,
-        borderRadius: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        justifyContent: 'center',
-        alignItems: 'center',
+    logoWrapper: {
+        width: 110,
+        height: 110,
         marginBottom: Spacing.md,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.4)',
     },
-    logoText: {
-        fontSize: 32,
-        fontWeight: '900',
-        color: Colors.text.inverse,
+    logoImage: {
+        width: 110,
+        height: 110,
+        borderRadius: 28,
     },
     appName: {
         fontSize: 28,
