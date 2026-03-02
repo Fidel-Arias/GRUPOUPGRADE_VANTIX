@@ -6,6 +6,7 @@ from app.api import deps
 from app.models.enums import ResultadoEstadoEnum, ResultadoLlamadaEnum
 from app.services.gamificacion.kpi_service import kpi_service
 from app.services.common.file_manager import FileManager
+from app.services.sales.plan_validator import PlanValidatorService
 
 router = APIRouter()
 
@@ -28,10 +29,8 @@ async def registrar_llamada(
     Registra una llamada realizada y suma 1 punto al KPI.
     Permite subir una foto opcional como prueba.
     """
-    # 1. Validar Plan
-    plan = crud.plan.get(db, id=id_plan)
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    # 1. Validar Plan (Debe ser para esta semana, hoy y estar Aprobado)
+    plan = PlanValidatorService.validate_plan_exists_for_activity(db, id_empleado=current_user.id_empleado, id_plan=id_plan)
     
     # 2. Gestionar Foto si existe
     url_foto = None
@@ -98,9 +97,8 @@ async def registrar_email(
     Registra un email enviado y suma 1 punto al KPI.
     Permite subir una foto opcional (captura de pantalla) como prueba.
     """
-    plan = crud.plan.get(db, id=id_plan)
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    # 1. Validar Plan (Debe ser para esta semana, hoy y estar Aprobado)
+    plan = PlanValidatorService.validate_plan_exists_for_activity(db, id_empleado=current_user.id_empleado, id_plan=id_plan)
     
     url_foto = None
     if foto_prueba:

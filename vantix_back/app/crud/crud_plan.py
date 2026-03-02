@@ -25,6 +25,22 @@ class CRUDPlan(CRUDBase[PlanTrabajoSemanal, PlanCreate, PlanUpdate]):
     def get_multi_by_owner(self, db: Session, *, id_empleado: int, skip: int = 0, limit: int = 100) -> List[PlanTrabajoSemanal]:
         return db.query(PlanTrabajoSemanal).filter(PlanTrabajoSemanal.id_empleado == id_empleado).offset(skip).limit(limit).all()
 
+    def get_active_plan_for_date(self, db: Session, *, id_empleado: int, date_to_check) -> PlanTrabajoSemanal:
+        """
+        Busca un plan que cubra la fecha indicada para el empleado.
+        """
+        from app.models.enums import EstadoPlanEnum
+        return (
+            db.query(PlanTrabajoSemanal)
+            .filter(
+                PlanTrabajoSemanal.id_empleado == id_empleado,
+                PlanTrabajoSemanal.fecha_inicio_semana <= date_to_check,
+                PlanTrabajoSemanal.fecha_fin_semana >= date_to_check,
+                PlanTrabajoSemanal.estado == EstadoPlanEnum.APROBADO
+            )
+            .first()
+        )
+
 
 # 2. CRUD DEL DETALLE
 class CRUDDetallePlan(CRUDBase[DetallePlanTrabajo, DetallePlanCreate, DetallePlanUpdate]):
@@ -49,6 +65,15 @@ class CRUDDetallePlan(CRUDBase[DetallePlanTrabajo, DetallePlanCreate, DetallePla
     # Obtener la agenda de un plan específico
     def get_by_plan(self, db: Session, *, id_plan: int) -> List[DetallePlanTrabajo]:
         return db.query(DetallePlanTrabajo).filter(DetallePlanTrabajo.id_plan == id_plan).all()
+
+    def has_activity_for_day(self, db: Session, *, id_plan: int, dia_semana: str) -> bool:
+        """
+        Verifica si el plan tiene alguna actividad registrada para el día de la semana indicado.
+        """
+        return db.query(DetallePlanTrabajo).filter(
+            DetallePlanTrabajo.id_plan == id_plan,
+            DetallePlanTrabajo.dia_semana == dia_semana
+        ).first() is not None
 
 # Instanciamos ambos
 plan = CRUDPlan(PlanTrabajoSemanal)

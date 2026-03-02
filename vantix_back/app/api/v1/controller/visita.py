@@ -9,6 +9,7 @@ from app.services.common.file_manager import FileManager
 from decimal import Decimal
 from datetime import datetime
 from app.services.gamificacion.kpi_service import kpi_service
+from app.services.sales.plan_validator import PlanValidatorService
 
 router = APIRouter()
 
@@ -34,10 +35,8 @@ async def registrar_visita(
     Registrar una visita realizada, subiendo 2 fotos OBLIGATORIAS (Lugar y Sello).
     Usa el servicio FileManager para gestionar el guardado de archivos.
     """
-    # 1. Validar Plan
-    plan = crud.plan.get(db, id=id_plan)
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan de trabajo no encontrado")
+    # 1. Validar Plan (Debe ser para esta semana, hoy y estar Aprobado)
+    plan = PlanValidatorService.validate_plan_exists_for_activity(db, id_empleado=current_user.id_empleado, id_plan=id_plan)
 
     # 2. Guardar Fotos usando el servicio FileManager
     # Se pasan los datos del empleado para la estructura de carpetas remota
