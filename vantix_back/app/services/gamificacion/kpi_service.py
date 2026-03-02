@@ -87,7 +87,8 @@ class KPIService:
     @staticmethod
     def sync_real_time_metrics(db: Session, *, id_informe: int) -> Optional[InformeProductividad]:
         """Sincroniza los valores reales consultando las tablas de actividad."""
-        from app.models.kpi import RegistroVisita, RegistroLlamada, RegistroEmail
+        from app.models.visita import RegistroVisita
+        from app.models.crm import RegistroLlamada, RegistroEmail
         
         informe = crud.kpi.get(db, id=id_informe)
         if not informe or not informe.id_maestro_meta:
