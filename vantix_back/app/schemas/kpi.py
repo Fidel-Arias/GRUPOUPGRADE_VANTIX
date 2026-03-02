@@ -111,3 +111,9 @@ class IncentivoPagoResponse(IncentivoPagoBase):
 
     class Config:
         from_attributes = True
+
+class ResumenVentasEmpleado(BaseModel):
+    id_vendedor_externo: int
+    nombre_empleado: str
+    total_ventas: Decimal
+    periodo: str

@@ -17,10 +17,10 @@ class ExternalCotizacionDetalleResponse(BaseModel):
     vendedor_id_externo: int
 class ExternalVentaDetalleResponse(BaseModel):
     numero_orden: int
+    almacen_id: int
     vendedor_nombre: str
-    producto: str
-    cantidad: float
-    precio_unitario: float
-    moneda_simbolo: str
-    total_linea: float
+    cliente_nombre: str
+    producto: str  # Aquí irá la lista de productos resumida
+    total: float
     fecha: date
+    moneda_simbolo: str

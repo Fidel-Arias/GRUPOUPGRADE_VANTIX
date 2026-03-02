@@ -29,7 +29,7 @@ def crear_meta_maestra(
             a.is_active = 0
             db.add(a)
 
-    return crud.kpi.maestro_metas.create(db, obj_in=obj_in)
+    return crud.maestro_metas.create(db, obj_in=obj_in)
 
 @router.get("/{id_maestro}", response_model=schemas.kpi.MaestroMetasResponse)
 def obtener_meta_maestra(

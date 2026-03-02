@@ -5,5 +5,5 @@ from .crud_maestro import maestro
 from .crud_cartera import cartera
 from .crud_crm import llamada, email
 from .crud_finanzas import gasto
-from .crud_kpi import kpi, incentivo
+from .crud_kpi import kpi, incentivo, maestro_metas
 from .crud_geo import departamento, provincia, distrito

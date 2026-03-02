@@ -5,6 +5,7 @@ from app.models.plan import PlanTrabajoSemanal
 from decimal import Decimal
 from typing import List, Optional
 from app.services.external.upgrade_db import ExternalDBService
+from datetime import date
 
 class KPIService:
 
@@ -161,5 +162,84 @@ class KPIService:
             KPIService.check_and_generate_bonus(db, informe=informe)
 
         return informe
+
+    @staticmethod
+    def sync_all_weekly_sales(db: Session, fecha_fin_sabado: date) -> int:
+        """
+        Sincroniza masivamente las ventas de todos los empleados para la semana
+        que termina en la fecha indicada.
+        """
+        # 1. Buscar planes que terminen en esa fecha
+        planes = db.query(PlanTrabajoSemanal).filter(
+            PlanTrabajoSemanal.fecha_fin_semana == fecha_fin_sabado
+        ).all()
+
+        if not planes:
+            return 0
+
+        # Determinamos el rango basado en el primer plan 
+        # (Asumimos que todos los planes que terminan el mismo sábado empezaron el mismo lunes)
+        f_inicio = planes[0].fecha_inicio_semana
+        f_fin = planes[0].fecha_fin_semana
+
+        # 2. Traer todos los totales de Upgrade de una vez
+        ventas_upgrade = ExternalDBService.fetch_resumen_ventas_vendedores(f_inicio, f_fin)
+
+        actualizados = 0
+        for plan in planes:
+            # Solo si el empleado tiene ID externo
+            if plan.empleado and plan.empleado.id_vendedor_externo:
+                id_ext = plan.empleado.id_vendedor_externo
+                monto_real = ventas_upgrade.get(id_ext, Decimal("0.00"))
+                
+                # Actualizar el informe asociado
+                if plan.informe_kpi:
+                    informe = plan.informe_kpi
+                    informe.real_ventas_monto = monto_real
+                    
+                    # Forzamos una sincronización completa para recalcular puntos y verificar bonos
+                    # usando la lógica ya existente en sync_real_time_metrics
+                    KPIService.sync_real_time_metrics(db, id_informe=informe.id_informe)
+                    actualizados += 1
+        
+        return actualizados
+
+    @staticmethod
+    def get_weekly_sales_report(db: Session, fecha_inicio: date, fecha_fin: date, id_empleado: Optional[int] = None):
+        """
+        Obtiene el resumen de ventas realizado por CADA empleado locallmente vinculado o uno específico.
+        """
+        if id_empleado:
+            empleado = db.query(models.empleado.Empleado).filter(models.empleado.Empleado.id_empleado == id_empleado).first()
+            if not empleado or not empleado.id_vendedor_externo:
+                return []
+            
+            monto = ExternalDBService.sum_ventas_monto(
+                vendedor_id_externo=empleado.id_vendedor_externo,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin
+            )
+            return [{
+                "id_vendedor_externo": empleado.id_vendedor_externo,
+                "nombre_empleado": empleado.nombre_completo,
+                "total_ventas": monto,
+                "periodo": f"{fecha_inicio} al {fecha_fin}"
+            }]
+
+        # Lógica para todos (ya existente)
+        ventas_upgrade = ExternalDBService.fetch_resumen_ventas_vendedores(fecha_inicio, fecha_fin)
+        reporte = []
+        for id_ext, monto in ventas_upgrade.items():
+            emp = db.query(models.empleado.Empleado).filter(
+                models.empleado.Empleado.id_vendedor_externo == id_ext
+            ).first()
+            
+            reporte.append({
+                "id_vendedor_externo": id_ext,
+                "nombre_empleado": emp.nombre_completo if emp else f"Vendedor Externo ID: {id_ext}",
+                "total_ventas": monto,
+                "periodo": f"{fecha_inicio} al {fecha_fin}"
+            })
+        return reporte
 
 kpi_service = KPIService()

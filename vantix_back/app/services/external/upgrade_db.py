@@ -110,7 +110,8 @@ class ExternalDBService:
         limit: int = 100
     ):
         """
-        Trae el detalle de ventas (productos) para un vendedor en un periodo.
+        Trae el resumen de Notas de Pedido (Cabecera) para un vendedor. 
+        Evita duplicados por productos usando agregación.
         """
         conn = ExternalDBService.get_connection()
         try:
@@ -118,19 +119,21 @@ class ExternalDBService:
                 query = """
                     SELECT 
                         c.numero as numero_orden,
+                        c.almacen_id,
                         v.nombre as vendedor_nombre,
-                        p.nombre as producto,
-                        d.cantidad,
-                        d.precio_unitario_venta as precio_unitario,
-                        mon.simbolo as moneda_simbolo,
-                        d.total as total_linea,
-                        c.fecha
-                    FROM cmrlz.ventas_det d
-                    INNER JOIN cmrlz.ventas_cab c ON d.venta_id = c.id
-                    INNER JOIN extcs.productos p ON d.producto_id = p.id
-                    INNER JOIN public.monedas mon ON c.moneda_id = mon.id
+                        cl.nombre as cliente_nombre,
+                        string_agg(p.nombre, ', ') as producto,
+                        c.total,
+                        c.fecha,
+                        mon.simbolo as moneda_simbolo
+                    FROM cmrlz.notas_pedido_cab c
                     INNER JOIN tcros.personas v ON c.vendedor_id = v.id
-                    WHERE c.anulada = false
+                    INNER JOIN tcros.direcciones dir ON c.direccion_cliente_id = dir.id
+                    INNER JOIN tcros.personas cl ON dir.persona_id = cl.id
+                    INNER JOIN public.monedas mon ON c.moneda_id = mon.id
+                    LEFT JOIN cmrlz.notas_pedido_det d ON d.nota_pedido_id = c.id
+                    LEFT JOIN extcs.productos p ON d.producto_id = p.id
+                    WHERE c.anulada = false AND c.aprobada = true
                 """
                 params = []
                 if vendedor_id_externo:
@@ -145,7 +148,11 @@ class ExternalDBService:
                     query += " AND c.fecha <= %s"
                     params.append(fecha_fin)
                 
-                query += " ORDER BY c.fecha DESC, c.numero DESC LIMIT %s"
+                query += """ 
+                    GROUP BY c.id, c.numero, c.almacen_id, v.nombre, cl.nombre, c.total, c.fecha, mon.simbolo 
+                    ORDER BY c.fecha DESC, c.numero DESC 
+                    LIMIT %s
+                """
                 params.append(limit)
                 
                 cur.execute(query, params)
@@ -154,22 +161,45 @@ class ExternalDBService:
             conn.close()
 
     @staticmethod
-    def sum_ventas_monto(vendedor_id_externo: int, fecha_inicio, fecha_fin) -> Decimal:
+    def sum_ventas_monto(vendedor_id_externo: int, fecha_inicio: date, fecha_fin: date) -> Decimal:
         """
-        Obtiene el monto total de ventas (Suma de columna total) para un vendedor en un periodo.
+        Obtiene el monto total de notas de pedido (Suma de columna total) para un vendedor en un periodo.
         """
         conn = ExternalDBService.get_connection()
         try:
             with conn.cursor() as cur:
                 query = """
                     SELECT SUM(total) 
-                    FROM cmrlz.ventas_cab 
+                    FROM cmrlz.notas_pedido_cab 
                     WHERE vendedor_id = %s 
                     AND fecha BETWEEN %s AND %s
-                    AND anulada = false
+                    AND anulada = false 
+                    AND aprobada = true
                 """
                 cur.execute(query, (vendedor_id_externo, fecha_inicio, fecha_fin))
                 result = cur.fetchone()
                 return result[0] if result and result[0] else Decimal("0.00")
+        finally:
+            conn.close()
+
+    @staticmethod
+    def fetch_resumen_ventas_vendedores(fecha_inicio: date, fecha_fin: date):
+        """
+        Trae el total vendido por CADA vendedor en un rango de fechas usando Notas de Pedido Aprobadas.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor() as cur:
+                query = """
+                    SELECT vendedor_id, SUM(total) 
+                    FROM cmrlz.notas_pedido_cab 
+                    WHERE fecha BETWEEN %s AND %s
+                    AND anulada = false 
+                    AND aprobada = true
+                    GROUP BY vendedor_id
+                """
+                cur.execute(query, (fecha_inicio, fecha_fin))
+                result = cur.fetchall()
+                return {row[0]: Decimal(str(row[1] or 0)) for row in result}
         finally:
             conn.close()
