@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { planService, empleadoService, authService } from '../../services/api';
-// import PlanWizard from './PlanWizard'; // Removed as it is now a page
+import { planService, empleadoService, authService, maestroMetasService } from '../../services/api';
+import MaestroMetasModal from './MaestroMetasModal';
 import PageHeader from '../Common/PageHeader';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
@@ -13,6 +13,7 @@ import AsesorPlanCard from './AsesorPlanCard';
 import {
     Calendar,
     Plus,
+    Target,
     CalendarCheck,
     ChevronRight,
     ChevronLeft,
@@ -41,6 +42,8 @@ const PlanesList = () => {
     const [selectedMonday, setSelectedMonday] = useState(null);
     // const [isWizardOpen, setIsWizardOpen] = useState(false); // Removed as it is now a page
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, planId: null });
+    const [activeMeta, setActiveMeta] = useState(null);
+    const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
 
     useEffect(() => {
         const monday = getMonday(new Date());
@@ -86,17 +89,23 @@ const PlanesList = () => {
         try {
             setLoading(true);
             let planesData;
-            let currentEmpleados = empleados;
 
             if (u.is_admin) {
-                const [pData, eData] = await Promise.all([
+                const [pData, eData, amData] = await Promise.all([
                     planService.getAll(0, 1000),
-                    empleadoService.getAll()
+                    empleadoService.getAll(),
+                    maestroMetasService.getActive()
                 ]);
                 planesData = pData;
                 setEmpleados(eData.filter(e => !e.is_admin));
+                setActiveMeta(amData);
             } else {
-                planesData = await planService.getAll(0, 500, u.id_empleado);
+                const [pData, amData] = await Promise.all([
+                    planService.getAll(0, 500, u.id_empleado),
+                    maestroMetasService.getActive()
+                ]);
+                planesData = pData;
+                setActiveMeta(amData);
                 setEmpleados([u]);
                 setSelectedAsesor(u);
             }
@@ -296,6 +305,25 @@ const PlanesList = () => {
                             </div>
                         )}
 
+                        {user?.is_admin && !selectedAsesor && (
+                            <div className="meta-config-wrapper">
+                                <button
+                                    className={`btn-meta-config glass ${activeMeta ? 'disabled' : ''}`}
+                                    onClick={() => !activeMeta && setIsMetaModalOpen(true)}
+                                    title={activeMeta ? "Las metas ya fueron creadas para este periodo" : "Configurar metas globales"}
+                                >
+                                    <Target size={18} />
+                                    <span>{activeMeta ? 'Metas Configuradas' : 'Configurar Metas'}</span>
+                                </button>
+                                {activeMeta && (
+                                    <div className="meta-status-mini">
+                                        <CheckCircle2 size={12} />
+                                        <span>Activas</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <button className="btn-primary-glow" onClick={() => window.location.href = '/planes/nuevo'}>
                             <Plus size={20} />
                             <span className="btn-text">Nuevo Plan</span>
@@ -480,12 +508,12 @@ const PlanesList = () => {
                 </>
             )}
 
-            {/* PlanWizard is now a separate page */}
-            {/* <PlanWizard
-                isOpen={isWizardOpen}
-                onClose={() => setIsWizardOpen(false)}
-                onSuccess={fetchInitialData}
-            /> */}
+            <MaestroMetasModal
+                isOpen={isMetaModalOpen}
+                onClose={() => setIsMetaModalOpen(false)}
+                onSave={() => fetchInitialData()}
+                existingMeta={activeMeta}
+            />
 
             <ConfirmModal
                 isOpen={deleteModal.isOpen}
@@ -643,6 +671,41 @@ const PlanesList = () => {
                     height: 48px;
                 }
                 .btn-primary-glow:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(0, 10, 30, 0.3); }
+
+                /* Meta Config Button */
+                .btn-meta-config {
+                    display: flex; align-items: center; gap: 8px;
+                    padding: 0 1.25rem; border-radius: 16px;
+                    font-weight: 800; font-size: 0.85rem; cursor: pointer;
+                    transition: all 0.2s; height: 48px; border: 1px solid rgba(255,255,255,0.5);
+                    color: var(--text-heading);
+                }
+                .btn-meta-config:hover:not(.disabled) { 
+                    background: rgba(255,255,255,0.6); 
+                    transform: translateY(-2px); 
+                    color: #3b82f6; 
+                    border-color: #3b82f6;
+                }
+                .btn-meta-config.disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                    background: rgba(241, 245, 249, 0.5);
+                    color: #64748b;
+                    border-style: dashed;
+                }
+                :global(.dark) .btn-meta-config { color: white; }
+
+                .meta-config-wrapper { position: relative; display: flex; align-items: center; }
+                .meta-status-mini {
+                    position: absolute; top: -8px; right: -8px;
+                    background: #10b981; color: white;
+                    padding: 2px 8px; border-radius: 50px;
+                    font-size: 0.6rem; font-weight: 800;
+                    display: flex; align-items: center; gap: 4px;
+                    border: 2px solid white;
+                    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+                    z-index: 10;
+                }
 
                 /* Stats Hero */
                 .p-hero-stats {
