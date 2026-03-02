@@ -12,7 +12,7 @@ import {
     Map,
     Plus
 } from 'lucide-react';
-import { maestroService, geoService } from '../../services/api';
+import { maestroService, geoService, authService, empleadoService } from '../../services/api';
 
 const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
@@ -31,17 +31,39 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
         sector: 'Comercial',
         grupo: '',
         id_distrito: '',
+        id_empleado: '',
         activo: true
     });
 
+    const [empleados, setEmpleados] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
+
     useEffect(() => {
         if (isOpen) {
+            const user = authService.getUser();
+            setCurrentUser(user);
             fetchDepartamentos();
-            resetForm();
+
+            if (user?.is_admin) {
+                fetchEmpleados();
+            } else if (user?.id_empleado) {
+                setFormData(prev => ({ ...prev, id_empleado: user.id_empleado }));
+            }
+
+            resetForm(user);
         }
     }, [isOpen]);
 
-    const resetForm = () => {
+    const fetchEmpleados = async () => {
+        try {
+            const data = await empleadoService.getAll(0, 500);
+            setEmpleados(data);
+        } catch (err) {
+            console.error('Error fetching employees:', err);
+        }
+    };
+
+    const resetForm = (user = currentUser) => {
         setFormData({
             ruc: '',
             nombre_entidad: '',
@@ -49,6 +71,7 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
             sector: 'Comercial',
             grupo: '',
             id_distrito: '',
+            id_empleado: user?.id_empleado || '',
             activo: true
         });
         setSelectedDpto('');
@@ -111,9 +134,18 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.id_empleado) {
+            alert('Debe asignar un asesor a este cliente.');
+            return;
+        }
         setLoading(true);
         try {
-            const result = await maestroService.create(formData);
+            const payload = {
+                ...formData,
+                id_empleado: parseInt(formData.id_empleado),
+                id_distrito: parseInt(formData.id_distrito)
+            };
+            const result = await maestroService.create(payload);
             if (onSave) onSave(result);
             onClose();
         } catch (err) {
@@ -207,6 +239,27 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
                                         </select>
                                     </div>
                                 </div>
+
+                                {currentUser?.is_admin && (
+                                    <div className="form-group">
+                                        <label>Asignar Asesor <span className="req">*</span></label>
+                                        <div className="input-with-icon-premium">
+                                            <Search size={18} />
+                                            <select
+                                                value={formData.id_empleado}
+                                                onChange={(e) => setFormData({ ...formData, id_empleado: e.target.value })}
+                                                required
+                                            >
+                                                <option value="">Seleccione Asesor...</option>
+                                                {empleados.map(emp => (
+                                                    <option key={emp.id_empleado} value={emp.id_empleado}>
+                                                        {emp.nombre_completo}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="form-section-divider">
                                     <div className="divider-line"></div>
