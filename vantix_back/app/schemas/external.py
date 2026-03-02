@@ -15,3 +15,12 @@ class ExternalCotizacionDetalleResponse(BaseModel):
     moneda_simbolo: str
     creado: datetime
     vendedor_id_externo: int
+class ExternalVentaDetalleResponse(BaseModel):
+    numero_orden: int
+    vendedor_nombre: str
+    producto: str
+    cantidad: float
+    precio_unitario: float
+    moneda_simbolo: str
+    total_linea: float
+    fecha: date

@@ -17,6 +17,7 @@ class InformeProductividad(Base):
     real_llamadas = Column(Integer, default=0)
     real_emails = Column(Integer, default=0)
     real_cotizaciones = Column(Integer, default=0)
+    real_ventas_monto = Column(Numeric(18, 2), default=0.00)
     
     # 3. RESULTADO DE GAMIFICACIÓN
     puntos_alcanzados = Column(Integer, default=0)
@@ -57,6 +58,7 @@ class MaestroMetas(Base):
     meta_llamadas = Column(Integer, default=30)
     meta_emails = Column(Integer, default=100)
     meta_cotizaciones = Column(Integer, default=0)
+    meta_ventas = Column(Numeric(18, 2), default=0.00) # Objetivo en dinero
     
     # Pesos (Puntos por unidad)
     puntos_visita = Column(Integer, default=10)
@@ -64,6 +66,7 @@ class MaestroMetas(Base):
     puntos_llamada = Column(Integer, default=1)
     puntos_email = Column(Integer, default=1)
     puntos_cotizacion = Column(Integer, default=0)
+    puntos_venta = Column(Integer, default=0) # Puntos por cada 1.00 (o divisa base)
     
     # Objetivo Final
     puntaje_objetivo = Column(Integer, default=205)

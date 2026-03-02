@@ -33,7 +33,8 @@ class KPIService:
             "visita_asistida": ("real_visitas_asistidas", maestro.puntos_visita_asistida),
             "llamada": ("real_llamadas", maestro.puntos_llamada),
             "email": ("real_emails", maestro.puntos_email),
-            "cotizacion": ("real_cotizaciones", maestro.puntos_cotizacion)
+            "cotizacion": ("real_cotizaciones", maestro.puntos_cotizacion),
+            "venta": ("real_ventas_monto", maestro.puntos_venta)
         }
 
         if tipo_actividad not in mapping:
@@ -128,12 +129,27 @@ class KPIService:
             RegistroEmail.fecha_registro <= plan.fecha_fin_semana
         ).count()
 
+        # 4. Cotizaciones y Ventas (Upgrade DB)
+        empleado = plan.empleado
+        if empleado and empleado.id_vendedor_externo:
+            informe.real_cotizaciones = ExternalDBService.count_cotizaciones(
+                vendedor_id_externo=empleado.id_vendedor_externo,
+                fecha_inicio=plan.fecha_inicio_semana,
+                fecha_fin=plan.fecha_fin_semana
+            )
+            informe.real_ventas_monto = ExternalDBService.sum_ventas_monto(
+                vendedor_id_externo=empleado.id_vendedor_externo,
+                fecha_inicio=plan.fecha_inicio_semana,
+                fecha_fin=plan.fecha_fin_semana
+            )
+
         # 4. Calcular Puntos Totales usando pesos del maestro vinculado
         puntos = (informe.real_visitas * maestro.puntos_visita)
         puntos += (informe.real_visitas_asistidas * maestro.puntos_visita_asistida)
         puntos += (informe.real_llamadas * maestro.puntos_llamada)
         puntos += (informe.real_emails * maestro.puntos_email)
         puntos += (informe.real_cotizaciones * maestro.puntos_cotizacion)
+        puntos += int(informe.real_ventas_monto * (maestro.puntos_venta or 0))
 
         informe.puntos_alcanzados = puntos
         db.add(informe)

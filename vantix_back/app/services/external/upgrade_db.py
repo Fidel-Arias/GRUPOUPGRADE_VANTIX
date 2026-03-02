@@ -3,6 +3,7 @@ from psycopg2.extras import RealDictCursor
 from app.core.config import settings
 import logging
 from datetime import date
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -99,5 +100,76 @@ class ExternalDBService:
                 cur.execute(query, (vendedor_id_externo, fecha_inicio, fecha_fin))
                 result = cur.fetchone()
                 return result[0] if result else 0
+        finally:
+            conn.close()
+    @staticmethod
+    def fetch_ventas_detalladas(
+        vendedor_id_externo: int = None, 
+        fecha_inicio: date = None, 
+        fecha_fin: date = None, 
+        limit: int = 100
+    ):
+        """
+        Trae el detalle de ventas (productos) para un vendedor en un periodo.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                query = """
+                    SELECT 
+                        c.numero as numero_orden,
+                        v.nombre as vendedor_nombre,
+                        p.nombre as producto,
+                        d.cantidad,
+                        d.precio_unitario_venta as precio_unitario,
+                        mon.simbolo as moneda_simbolo,
+                        d.total as total_linea,
+                        c.fecha
+                    FROM cmrlz.ventas_det d
+                    INNER JOIN cmrlz.ventas_cab c ON d.venta_id = c.id
+                    INNER JOIN extcs.productos p ON d.producto_id = p.id
+                    INNER JOIN public.monedas mon ON c.moneda_id = mon.id
+                    INNER JOIN tcros.personas v ON c.vendedor_id = v.id
+                    WHERE c.anulada = false
+                """
+                params = []
+                if vendedor_id_externo:
+                    query += " AND c.vendedor_id = %s"
+                    params.append(vendedor_id_externo)
+                
+                if fecha_inicio:
+                    query += " AND c.fecha >= %s"
+                    params.append(fecha_inicio)
+                
+                if fecha_fin:
+                    query += " AND c.fecha <= %s"
+                    params.append(fecha_fin)
+                
+                query += " ORDER BY c.fecha DESC, c.numero DESC LIMIT %s"
+                params.append(limit)
+                
+                cur.execute(query, params)
+                return cur.fetchall()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def sum_ventas_monto(vendedor_id_externo: int, fecha_inicio, fecha_fin) -> Decimal:
+        """
+        Obtiene el monto total de ventas (Suma de columna total) para un vendedor en un periodo.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor() as cur:
+                query = """
+                    SELECT SUM(total) 
+                    FROM cmrlz.ventas_cab 
+                    WHERE vendedor_id = %s 
+                    AND fecha BETWEEN %s AND %s
+                    AND anulada = false
+                """
+                cur.execute(query, (vendedor_id_externo, fecha_inicio, fecha_fin))
+                result = cur.fetchone()
+                return result[0] if result and result[0] else Decimal("0.00")
         finally:
             conn.close()
