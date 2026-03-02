@@ -14,10 +14,12 @@ def seed():
                 meta_emails=100,
                 meta_visitas_asistidas=5,
                 meta_cotizaciones=0,
+                meta_ventas=0.00,
                 puntos_visita=10,
                 puntos_visita_asistida=5,
                 puntos_llamada=1,
                 puntos_email=1,
+                puntos_venta=0,
                 puntaje_objetivo=205,
                 is_active=1
             )

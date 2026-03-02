@@ -62,6 +62,7 @@ class PlanValidatorService:
             real_emails=0,
             real_visitas_asistidas=0,
             real_cotizaciones=0,
+            real_ventas_monto=0,
             puntos_alcanzados=0
         )
         db.add(informe)

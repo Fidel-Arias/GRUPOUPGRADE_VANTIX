@@ -111,3 +111,28 @@ def sincronizar_informe_kpi(
     if not informe:
         raise HTTPException(status_code=404, detail="Informe no encontrado")
     return informe
+@router.post("/sincronizar-ventas-semanales")
+def sincronizar_ventas_semanales_masivo(
+    fecha_sabado: date = Query(..., description="Fecha del sábado de cierre de semana"),
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_admin_user)
+):
+    """
+    Sincroniza masivamente las ventas de todos los empleados para la semana que termina
+    en la fecha indicada. Solo disponible para administradores.
+    """
+    total = kpi_service.sync_all_weekly_sales(db, fecha_fin_sabado=fecha_sabado)
+    return {"message": f"Se han sincronizado correctamente las ventas de {total} empleados."}
+    
+@router.get("/reporte-ventas-semanal", response_model=List[schemas.kpi.ResumenVentasEmpleado])
+def obtener_resumen_ventas_semanal(
+    fecha_inicio: date = Query(..., description="Fecha inicial (Lunes)"),
+    fecha_fin: date = Query(..., description="Fecha final (Sábado)"),
+    id_empleado: Optional[int] = Query(None, description="Filtrar por ID de empleado específico"),
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    """
+    Obtiene el resumen de ventas realizado por CADA empleado o uno en específico.
+    """
+    return kpi_service.get_weekly_sales_report(db, fecha_inicio, fecha_fin, id_empleado=id_empleado)
