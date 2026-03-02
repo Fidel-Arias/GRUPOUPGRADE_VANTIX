@@ -103,3 +103,27 @@ class IncentivoPagoResponse(IncentivoPagoBase):
 
     class Config:
         from_attributes = True
+
+# --- CONFIGURACIÓN DE METAS GLOBALES ---
+
+class ConfiguracionMetaBase(BaseModel):
+    clave: str
+    valor: int
+    puntos_por_unidad: int = 0
+    descripcion: Optional[str] = None
+    editable_por_supervisor: int = 1
+
+class ConfiguracionMetaCreate(ConfiguracionMetaBase):
+    pass
+
+class ConfiguracionMetaUpdate(BaseModel):
+    valor: Optional[int] = None
+    puntos_por_unidad: Optional[int] = None
+    descripcion: Optional[str] = None
+    editable_por_supervisor: Optional[int] = None
+
+class ConfiguracionMetaResponse(ConfiguracionMetaBase):
+    id_meta: int
+
+    class Config:
+        from_attributes = True

@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+import sqlalchemy as sa
 
 from alembic import context
 
@@ -62,6 +63,8 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+from app.core.config import settings
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -69,9 +72,11 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    # Usamos la URL configurada en nuestro archivo .env a través de settings
+    url = str(settings.SQLALCHEMY_DATABASE_URL)
+    
+    connectable = sa.create_engine(
+        url,
         poolclass=pool.NullPool,
     )
 

@@ -64,3 +64,15 @@ class IncentivoPago(Base):
     
     # 2. Saber gracias a qué plan se ganó el bono (Unidireccional por ahora es suficiente)
     plan_origen = relationship("PlanTrabajoSemanal")
+
+
+# 3. TABLA MAESTRA DE CONFIGURACIÓN (Lo que propusimos)
+class ConfiguracionMeta(Base):
+    __tablename__ = "configuracion_metas_globales"
+
+    id_meta = Column(Integer, primary_key=True, index=True)
+    clave = Column(String(50), unique=True, nullable=False) # e.g. 'meta_visitas'
+    valor = Column(Integer, default=0, nullable=False)
+    puntos_por_unidad = Column(Integer, default=0) # Puntos que otorga cada unidad (ej: 5 puntos por visita)
+    descripcion = Column(String(100))
+    editable_por_supervisor = Column(Integer, default=1) # 1=Si, 0=No

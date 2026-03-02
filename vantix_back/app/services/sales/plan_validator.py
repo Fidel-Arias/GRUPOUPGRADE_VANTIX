@@ -51,12 +51,18 @@ class PlanValidatorService:
             )
             db.add(db_detalle)
             
-        # 5. CREAR AUTOMÁTICAMENTE EL INFORME DE PRODUCTIVIDAD (Dashboard vacío)
-        # Se asumen metas por defecto (pero podrían venir de configuración)
+        # 5. CREAR AUTOMÁTICAMENTE EL INFORME DE PRODUCTIVIDAD (Dashboard)
+        # 5.1 Obtener metas globales actuales de la base de datos
+        metas_globales = crud.kpi.config_meta.get_all_as_dict(db)
+        
         informe = InformeProductividad(
             id_plan=db_plan.id_plan,
-            # Las metas se toman por defecto del modelo (25 visitas, 30 llamadas, etc.)
-            # Los reales inician en 0
+            meta_visitas=metas_globales.get("meta_visitas", 25),
+            meta_llamadas=metas_globales.get("meta_llamadas", 30),
+            meta_emails=metas_globales.get("meta_emails", 100),
+            meta_visitas_asistidas=metas_globales.get("meta_visitas_asistidas", 0),
+            meta_cotizaciones=metas_globales.get("meta_cotizaciones", 0),
+            puntaje_objetivo=metas_globales.get("puntaje_objetivo", 205),
         )
         db.add(informe)
         
