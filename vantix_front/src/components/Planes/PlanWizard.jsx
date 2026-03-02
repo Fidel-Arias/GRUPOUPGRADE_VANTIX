@@ -5,7 +5,7 @@ import {
     User, Plus, Trash2, Clock, Building2, Briefcase, Phone, Search,
     ChevronDown, Mail, Users, Activity, AlertTriangle, Save, AlertCircle
 } from 'lucide-react';
-import { empleadoService, clienteService, planService, authService, BASE_URL } from '../../services/api';
+import { empleadoService, clienteService, planService, authService, maestroMetasService, BASE_URL } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import NuevoClienteModal from '../Cartera/NuevoClienteModal';
 import PremiumCard from '../Common/PremiumCard';
@@ -194,6 +194,8 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
     const [isNuevoClienteOpen, setIsNuevoClienteOpen] = useState(false);
     const [availableWeeks, setAvailableWeeks] = useState([]);
     const [existingPlanes, setExistingPlanes] = useState([]);
+    const [activeMeta, setActiveMeta] = useState(null);
+    const [metaError, setMetaError] = useState(null);
 
     const getISOWeek = (date) => {
         const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -272,7 +274,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     label: `Semana ${getISOWeek(mNext)} (${mNext.getDate()}/${mNext.getMonth() + 1} al ${sNext.getDate()}/${sNext.getMonth() + 1})`
                 });
             }
-            
+
             // Mostrar los más recientes primero para comodidad del usuario
             weeks.reverse();
         }
@@ -287,6 +289,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
         meta_visitas_asistidas: 5,
         meta_llamadas: 30,
         meta_emails: 100,
+        meta_cotizaciones: 0,
         detalles_agenda: []
     });
 
@@ -306,16 +309,36 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     }
                 }
 
+                try {
+                    const active = await maestroMetasService.getActive();
+                    if (active) {
+                        setActiveMeta(active);
+                        setFormData(prev => ({
+                            ...prev,
+                            meta_visitas: active.meta_visitas,
+                            meta_visitas_asistidas: active.meta_visitas_asistidas,
+                            meta_llamadas: active.meta_llamadas,
+                            meta_emails: active.meta_emails,
+                            meta_cotizaciones: active.meta_cotizaciones
+                        }));
+                    } else {
+                        setMetaError("No hay metas configuradas para esta semana. Contacte al administrador.");
+                    }
+                } catch (e) {
+                    console.error("Error fetching active metas:", e);
+                    setMetaError("Error al cargar las metas globales.");
+                }
+
                 const weeks = generateWeekOptions();
-                
+
                 // Filter weeks if advisor (admins can still see all to override or manage)
                 let filteredWeeks = weeks;
                 if (currentUser && !currentUser.is_admin) {
-                    filteredWeeks = weeks.filter(w => 
+                    filteredWeeks = weeks.filter(w =>
                         !existing.some(p => p.fecha_inicio_semana.split('T')[0] === w.monday)
                     );
                 }
-                
+
                 setAvailableWeeks(filteredWeeks);
 
                 if (filteredWeeks.length > 0) {
@@ -432,6 +455,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 meta_visitas_asistidas: formData.meta_visitas_asistidas,
                 meta_llamadas: formData.meta_llamadas,
                 meta_emails: formData.meta_emails,
+                meta_cotizaciones: formData.meta_cotizaciones,
                 detalles_agenda: formData.detalles_agenda
             };
             await planService.create(payload, formData.id_empleado);
@@ -458,438 +482,459 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
 
     if (isPage) {
         return (
-            <div className="wizard-page-view">
-                <div className="p-noise-overlay" />
+            <>
+                <div className="wizard-page-view">
+                    <div className="p-noise-overlay" />
 
-                <PageHeader
-                    title="Propuesta de Plan Semanal"
-                    description="Configure sus objetivos y distribuya sus actividades comerciales para el periodo seleccionado."
-                    icon={Calendar}
-                    breadcrumb={['Apps', 'Planes', 'Nueva Propuesta']}
-                    actions={
-                        <button className="btn-cancel-elite" onClick={() => window.location.href = '/planes'}>
-                            <X size={16} />
-                            <span>Descartar y Salir</span>
-                        </button>
-                    }
-                />
+                    <PageHeader
+                        title="Propuesta de Plan Semanal"
+                        description="Configure sus objetivos y distribuya sus actividades comerciales para el periodo seleccionado."
+                        icon={Calendar}
+                        breadcrumb={['Apps', 'Planes', 'Nueva Propuesta']}
+                        actions={
+                            <button className="btn-cancel-elite" onClick={() => window.location.href = '/planes'}>
+                                <X size={16} />
+                                <span>Descartar y Salir</span>
+                            </button>
+                        }
+                    />
 
-                <div className="wizard-premium-layout">
-                    {/* Horizontal Stepper Refined */}
-                    <div className="stepper-modern-wrap">
-                        <div className="stepper-horizontal">
-                            {steps.map((s, idx) => (
-                                <React.Fragment key={s.n}>
-                                    <div className={`step-node ${step === s.n ? 'active' : ''} ${step > s.n ? 'completed' : ''}`} onClick={() => step > s.n && setStep(s.n)}>
-                                        <div className="node-outer">
-                                            <div className="node-inner">
-                                                {step > s.n ? <CheckCircle size={18} /> : s.icon}
-                                            </div>
-                                        </div>
-                                        <div className="node-content">
-                                            <span className="node-step">PASO 0{s.n}</span>
-                                            <span className="node-label">{s.label}</span>
-                                        </div>
-                                    </div>
-                                    {idx < steps.length - 1 && (
-                                        <div className={`step-line ${step > s.n ? 'filled' : ''}`} />
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="wizard-main-container">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={step}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.4, ease: "circOut" }}
-                                className="step-dynamic-content"
-                            >
-                                {step === 1 && (
-                                    <div className="step-goals-view">
-                                        <div className="config-top-bar">
-                                            <div className="plan-user-elite-card">
-                                                <div className="user-avatar-premium">
-                                                    {user?.nombre_completo?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                                </div>
-                                                <div className="user-text-meta">
-                                                    <span className="label">Responsable del Plan</span>
-                                                    <h4>{user?.nombre_completo}</h4>
-                                                    <Badge variant="info" className="role-badge">{user?.cargo || 'Asesor Comercial'}</Badge>
+                    <div className="wizard-premium-layout">
+                        {/* Horizontal Stepper Refined */}
+                        <div className="stepper-modern-wrap">
+                            <div className="stepper-horizontal">
+                                {steps.map((s, idx) => (
+                                    <React.Fragment key={s.n}>
+                                        <div className={`step-node ${step === s.n ? 'active' : ''} ${step > s.n ? 'completed' : ''}`} onClick={() => step > s.n && setStep(s.n)}>
+                                            <div className="node-outer">
+                                                <div className="node-inner">
+                                                    {step > s.n ? <CheckCircle size={18} /> : s.icon}
                                                 </div>
                                             </div>
-
-                                            <div className="week-selector-premium">
-                                                <div className="selector-title">
-                                                    <Calendar size={14} />
-                                                    <span>Periodo de Programación</span>
-                                                </div>
-                                                <WeekPicker
-                                                    plans={availableWeeks.map(w => ({
-                                                        id_plan: w.monday,
-                                                        fecha_inicio_semana: w.monday,
-                                                        estado: 'Nuevo'
-                                                    }))}
-                                                    selectedPlanId={formData.fecha_inicio_semana}
-                                                    onChange={(monday) => {
-                                                        const selected = availableWeeks.find(w => w.monday === monday);
-                                                        if (selected) {
-                                                            setFormData({
-                                                                ...formData,
-                                                                fecha_inicio_semana: selected.monday,
-                                                                fecha_fin_semana: selected.saturday
-                                                            });
-                                                        }
-                                                    }}
-                                                    isAdmin={false}
-                                                />
+                                            <div className="node-content">
+                                                <span className="node-step">PASO 0{s.n}</span>
+                                                <span className="node-label">{s.label}</span>
                                             </div>
                                         </div>
-
-                                        <div className="section-divider">
-                                            <span>Metas de Cumplimiento</span>
-                                            <div className="line" />
-                                        </div>
-
-                                        <div className="metas-elite-grid">
-                                            <GoalInputCard
-                                                icon={Briefcase}
-                                                title="Visitas Presenciales"
-                                                subtitle="Objetivo de clientes a visitar físicamente"
-                                                color="emerald"
-                                                value={formData.meta_visitas}
-                                                onChange={(v) => setFormData({ ...formData, meta_visitas: v })}
-                                            />
-                                            <GoalInputCard
-                                                icon={Users}
-                                                title="Visitas Asistidas"
-                                                subtitle="Requerimientos de acompañamiento"
-                                                color="indigo"
-                                                value={formData.meta_visitas_asistidas}
-                                                onChange={(v) => setFormData({ ...formData, meta_visitas_asistidas: v })}
-                                            />
-                                            <GoalInputCard
-                                                icon={Phone}
-                                                title="Llamadas Prospecto"
-                                                subtitle="Llamadas de telemarketing y seguimiento"
-                                                color="blue"
-                                                value={formData.meta_llamadas}
-                                                onChange={(v) => setFormData({ ...formData, meta_llamadas: v })}
-                                            />
-                                            <GoalInputCard
-                                                icon={Mail}
-                                                title="Emails y Propuestas"
-                                                subtitle="Gestión de correo y envíos formales"
-                                                color="amber"
-                                                value={formData.meta_emails}
-                                                onChange={(v) => setFormData({ ...formData, meta_emails: v })}
-                                            />
-                                        </div>
-
-                                        {availableWeeks.length === 0 && (
-                                            <motion.div 
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                className="empty-weeks-warning"
-                                            >
-                                                <AlertCircle size={32} />
-                                                <div className="warning-text">
-                                                    <h4>Periodos Completados</h4>
-                                                    <p>Ya has registrado planes para todas las semanas disponibles en este momento. Vuelve el sábado para planificar la siguiente semana.</p>
-                                                </div>
-                                            </motion.div>
+                                        {idx < steps.length - 1 && (
+                                            <div className={`step-line ${step > s.n ? 'filled' : ''}`} />
                                         )}
-                                    </div>
-                                )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
 
-                                {step === 2 && (
-                                    <div className="step-agenda-view">
-                                        <div className="agenda-header-premium">
-                                            <div className="text">
-                                                <div className="title-with-badge">
-                                                    <h3>Planificación Táctica</h3>
-                                                    <span className="premium-status">Elite Edition</span>
+                        <div className="wizard-main-container">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={step}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.4, ease: "circOut" }}
+                                    className="step-dynamic-content"
+                                >
+                                    {step === 1 && (
+                                        <div className="step-goals-view">
+                                            <div className="config-top-bar">
+                                                <div className="plan-user-elite-card">
+                                                    <div className="user-avatar-premium">
+                                                        {user?.nombre_completo?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="user-text-meta">
+                                                        <span className="label">Responsable del Plan</span>
+                                                        <h4>{user?.nombre_completo}</h4>
+                                                        <Badge variant="info" className="role-badge">{user?.cargo || 'Asesor Comercial'}</Badge>
+                                                    </div>
                                                 </div>
-                                                <p>Distribuya sus actividades comerciales con precisión estratégica.</p>
+
+                                                <div className="week-selector-premium">
+                                                    <div className="selector-title">
+                                                        <Calendar size={14} />
+                                                        <span>Periodo de Programación</span>
+                                                    </div>
+                                                    <WeekPicker
+                                                        plans={availableWeeks.map(w => ({
+                                                            id_plan: w.monday,
+                                                            fecha_inicio_semana: w.monday,
+                                                            estado: 'Nuevo'
+                                                        }))}
+                                                        selectedPlanId={formData.fecha_inicio_semana}
+                                                        onChange={(monday) => {
+                                                            const selected = availableWeeks.find(w => w.monday === monday);
+                                                            if (selected) {
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    fecha_inicio_semana: selected.monday,
+                                                                    fecha_fin_semana: selected.saturday
+                                                                });
+                                                            }
+                                                        }}
+                                                        isAdmin={false}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="calendar-legend-premium">
-                                                <div className="legend-p"><span className="dot v" /> Venta</div>
-                                                <div className="legend-p"><span className="dot c" /> Llamada</div>
-                                                <div className="legend-p"><span className="dot a" /> Asistida</div>
+
+                                            <div className="section-divider">
+                                                <span>Metas de Cumplimiento</span>
+                                                <div className="line" />
                                             </div>
+
+                                            {metaError ? (
+                                                <div className="meta-error-alert">
+                                                    <AlertTriangle size={24} />
+                                                    <div className="error-text">
+                                                        <h4>Atención Requerida</h4>
+                                                        <p>{metaError}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="metas-elite-grid">
+                                                    <GoalInputCard
+                                                        icon={Briefcase}
+                                                        title="Visitas Presenciales"
+                                                        subtitle="Objetivo global de visitas semanales"
+                                                        color="emerald"
+                                                        value={formData.meta_visitas}
+                                                        isGlobal={true}
+                                                    />
+                                                    <GoalInputCard
+                                                        icon={Users}
+                                                        title="Visitas Asistidas"
+                                                        subtitle="Objetivo global de acompañamiento"
+                                                        color="indigo"
+                                                        value={formData.meta_visitas_asistidas}
+                                                        isGlobal={true}
+                                                    />
+                                                    <GoalInputCard
+                                                        icon={Phone}
+                                                        title="Llamadas Prospecto"
+                                                        subtitle="Objetivo global de llamadas"
+                                                        color="blue"
+                                                        value={formData.meta_llamadas}
+                                                        isGlobal={true}
+                                                    />
+                                                    <GoalInputCard
+                                                        icon={Mail}
+                                                        title="Emails y Propuestas"
+                                                        subtitle="Objetivo global de correos"
+                                                        color="amber"
+                                                        value={formData.meta_emails}
+                                                        isGlobal={true}
+                                                    />
+                                                    <GoalInputCard
+                                                        icon={Target}
+                                                        title="Cotizaciones"
+                                                        subtitle="Objetivo global de cotizaciones"
+                                                        color="pink"
+                                                        value={formData.meta_cotizaciones}
+                                                        isGlobal={true}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {availableWeeks.length === 0 && !metaError && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="empty-weeks-warning"
+                                                >
+                                                    <AlertCircle size={32} />
+                                                    <div className="warning-text">
+                                                        <h4>Periodos Completados</h4>
+                                                        <p>Ya has registrado planes para todas las semanas disponibles en este momento. Vuelve el sábado para planificar la siguiente semana.</p>
+                                                    </div>
+                                                </motion.div>
+                                            )}
                                         </div>
+                                    )}
 
-                                        <div className="tactical-board-elite">
-                                            {daysOfWeek.map(dia => {
-                                                const dayActivities = sortedAgenda(dia);
-                                                return (
-                                                    <div key={dia} className="board-column">
-                                                        <div className="column-head">
-                                                            <div className="day-meta">
-                                                                <span className="day-name">{dia}</span>
-                                                                <span className="activity-count">{dayActivities.length}</span>
+                                    {step === 2 && (
+                                        <div className="step-agenda-view">
+                                            <div className="agenda-header-premium">
+                                                <div className="text">
+                                                    <div className="title-with-badge">
+                                                        <h3>Planificación Táctica</h3>
+                                                        <span className="premium-status">Elite Edition</span>
+                                                    </div>
+                                                    <p>Distribuya sus actividades comerciales con precisión estratégica.</p>
+                                                </div>
+                                                <div className="calendar-legend-premium">
+                                                    <div className="legend-p"><span className="dot v" /> Venta</div>
+                                                    <div className="legend-p"><span className="dot c" /> Llamada</div>
+                                                    <div className="legend-p"><span className="dot a" /> Asistida</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="tactical-board-elite">
+                                                {daysOfWeek.map(dia => {
+                                                    const dayActivities = sortedAgenda(dia);
+                                                    return (
+                                                        <div key={dia} className="board-column">
+                                                            <div className="column-head">
+                                                                <div className="day-meta">
+                                                                    <span className="day-name">{dia}</span>
+                                                                    <span className="activity-count">{dayActivities.length}</span>
+                                                                </div>
+                                                                <button className="add-float-btn" onClick={() => handleOpenActivityModal(dia)}>
+                                                                    <Plus size={18} />
+                                                                </button>
                                                             </div>
-                                                            <button className="add-float-btn" onClick={() => handleOpenActivityModal(dia)}>
-                                                                <Plus size={18} />
-                                                            </button>
-                                                        </div>
 
-                                                        <div className="activities-drop-zone">
-                                                            {dayActivities.map((act) => (
-                                                                <motion.div
-                                                                    key={act.originalIndex}
-                                                                    whileHover={{ scale: 1.02, y: -2 }}
-                                                                    className={`agenda-ticket-elite ${act.tipo_actividad.toLowerCase().replace(' ', '-')}`}
-                                                                    onClick={() => handleOpenActivityModal(dia, act.originalIndex)}
-                                                                >
-                                                                    <div className="ticket-accent" />
-                                                                    <div className="ticket-body">
-                                                                        <div className="ticket-header">
-                                                                            <span className="tick-time">{act.hora_programada}</span>
-                                                                            <span className="tick-icon">
-                                                                                {act.tipo_actividad === 'Visita' ? <Building2 size={12} /> :
-                                                                                    act.tipo_actividad === 'Llamada' ? <Phone size={12} /> :
-                                                                                        act.tipo_actividad === 'Correo' ? <Mail size={12} /> : <Users size={12} />}
-                                                                            </span>
+                                                            <div className="activities-drop-zone">
+                                                                {dayActivities.map((act) => (
+                                                                    <motion.div
+                                                                        key={act.originalIndex}
+                                                                        whileHover={{ scale: 1.02, y: -2 }}
+                                                                        className={`agenda-ticket-elite ${act.tipo_actividad.toLowerCase().replace(' ', '-')}`}
+                                                                        onClick={() => handleOpenActivityModal(dia, act.originalIndex)}
+                                                                    >
+                                                                        <div className="ticket-accent" />
+                                                                        <div className="ticket-body">
+                                                                            <div className="ticket-header">
+                                                                                <span className="tick-time">{act.hora_programada}</span>
+                                                                                <span className="tick-icon">
+                                                                                    {act.tipo_actividad === 'Visita' ? <Building2 size={12} /> :
+                                                                                        act.tipo_actividad === 'Llamada' ? <Phone size={12} /> :
+                                                                                            act.tipo_actividad === 'Correo' ? <Mail size={12} /> : <Users size={12} />}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="tick-client">
+                                                                                {clientes.find(c => c.id_cliente === act.id_cliente)?.nombre_razon_social || 'Seleccionar Cliente'}
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="tick-client">
-                                                                            {clientes.find(c => c.id_cliente === act.id_cliente)?.nombre_razon_social || 'Seleccionar Cliente'}
+                                                                    </motion.div>
+                                                                ))}
+                                                                {dayActivities.length === 0 && (
+                                                                    <div className="empty-column-state">
+                                                                        <div className="empty-dash" />
+                                                                        <span>Disponible</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Activity Quick Modal - Full Redesign */}
+                                            <AnimatePresence>
+                                                {isActivityModalOpen && activeActivity && (
+                                                    <div className="modal-root-overlay">
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                                                            className="elite-action-modal"
+                                                        >
+                                                            <div className="modal-header-glass">
+                                                                <div className="m-header-left">
+                                                                    <div className="m-icon-square">
+                                                                        <Activity size={20} />
+                                                                    </div>
+                                                                    <div className="m-title-stack">
+                                                                        <h4>{activeActivity.index === -1 ? 'Nueva Actividad' : 'Gestión de Actividad'}</h4>
+                                                                        <span>{activeActivity.dia_semana} comercial</span>
+                                                                    </div>
+                                                                </div>
+                                                                <button className="m-close-circular" onClick={() => setIsActivityModalOpen(false)}>
+                                                                    <X size={20} />
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="modal-content-elite">
+                                                                <div className="elite-form-row">
+                                                                    <div className="elite-field half">
+                                                                        <label><Clock size={12} /> Horario Programado</label>
+                                                                        <div className="time-input-container">
+                                                                            <input
+                                                                                type="time"
+                                                                                value={activeActivity.hora_programada}
+                                                                                onChange={(e) => setActiveActivity({ ...activeActivity, hora_programada: e.target.value })}
+                                                                            />
                                                                         </div>
                                                                     </div>
-                                                                </motion.div>
-                                                            ))}
-                                                            {dayActivities.length === 0 && (
-                                                                <div className="empty-column-state">
-                                                                    <div className="empty-dash" />
-                                                                    <span>Disponible</span>
+                                                                    <div className="elite-field half">
+                                                                        <label><Target size={12} /> Categoría</label>
+                                                                        <select
+                                                                            className="elite-select"
+                                                                            value={activeActivity.tipo_actividad}
+                                                                            onChange={(e) => setActiveActivity({ ...activeActivity, tipo_actividad: e.target.value })}
+                                                                        >
+                                                                            <option value="Visita">🛒 Visita de Negocios</option>
+                                                                            <option value="Llamada">📞 Seguimiento Telefónico</option>
+                                                                            <option value="Visita asistida">🤝 Soporte Técnico / Acompañamiento</option>
+                                                                            <option value="Correo">✉️ Gestión Documentaria / Email</option>
+                                                                            <option value="Cotización">📄 Elaboración de Cotización</option>
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
 
-                                        {/* Activity Quick Modal - Full Redesign */}
-                                        <AnimatePresence>
-                                            {isActivityModalOpen && activeActivity && (
-                                                <div className="modal-root-overlay">
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                                                        className="elite-action-modal"
-                                                    >
-                                                        <div className="modal-header-glass">
-                                                            <div className="m-header-left">
-                                                                <div className="m-icon-square">
-                                                                    <Activity size={20} />
-                                                                </div>
-                                                                <div className="m-title-stack">
-                                                                    <h4>{activeActivity.index === -1 ? 'Nueva Actividad' : 'Gestión de Actividad'}</h4>
-                                                                    <span>{activeActivity.dia_semana} comercial</span>
-                                                                </div>
-                                                            </div>
-                                                            <button className="m-close-circular" onClick={() => setIsActivityModalOpen(false)}>
-                                                                <X size={20} />
-                                                            </button>
-                                                        </div>
-
-                                                        <div className="modal-content-elite">
-                                                            <div className="elite-form-row">
-                                                                <div className="elite-field half">
-                                                                    <label><Clock size={12} /> Horario Programado</label>
-                                                                    <div className="time-input-container">
-                                                                        <input
-                                                                            type="time"
-                                                                            value={activeActivity.hora_programada}
-                                                                            onChange={(e) => setActiveActivity({ ...activeActivity, hora_programada: e.target.value })}
+                                                                <div className="elite-field">
+                                                                    <label><Building2 size={12} /> Cliente o Prospecto Asociado</label>
+                                                                    <div className="client-select-wrapper-elite">
+                                                                        <ClientSearchSelect
+                                                                            clientes={clientes}
+                                                                            value={activeActivity.id_cliente}
+                                                                            onChange={(val) => setActiveActivity({ ...activeActivity, id_cliente: val })}
+                                                                            onOpenNuevo={() => setIsNuevoClienteOpen(true)}
                                                                         />
                                                                     </div>
                                                                 </div>
-                                                                <div className="elite-field half">
-                                                                    <label><Target size={12} /> Categoría</label>
-                                                                    <select
-                                                                        className="elite-select"
-                                                                        value={activeActivity.tipo_actividad}
-                                                                        onChange={(e) => setActiveActivity({ ...activeActivity, tipo_actividad: e.target.value })}
+                                                            </div>
+
+                                                            <div className="modal-footer-glass">
+                                                                {activeActivity.index !== -1 && (
+                                                                    <button
+                                                                        className="btn-trash-elite"
+                                                                        onClick={() => { handleRemoveActivity(activeActivity.index); setIsActivityModalOpen(false); }}
                                                                     >
-                                                                        <option value="Visita">🛒 Visita de Negocios</option>
-                                                                        <option value="Llamada">📞 Seguimiento Telefónico</option>
-                                                                        <option value="Visita asistida">🤝 Soporte Técnico / Acompañamiento</option>
-                                                                        <option value="Correo">✉️ Gestión Documentaria / Email</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="elite-field">
-                                                                <label><Building2 size={12} /> Cliente o Prospecto Asociado</label>
-                                                                <div className="client-select-wrapper-elite">
-                                                                    <ClientSearchSelect
-                                                                        clientes={clientes}
-                                                                        value={activeActivity.id_cliente}
-                                                                        onChange={(val) => setActiveActivity({ ...activeActivity, id_cliente: val })}
-                                                                        onOpenNuevo={() => setIsNuevoClienteOpen(true)}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="modal-footer-glass">
-                                                            {activeActivity.index !== -1 && (
+                                                                        <Trash2 size={18} />
+                                                                        <span>Eliminar</span>
+                                                                    </button>
+                                                                )}
+                                                                <div className="flex-spacer" />
                                                                 <button
-                                                                    className="btn-trash-elite"
-                                                                    onClick={() => { handleRemoveActivity(activeActivity.index); setIsActivityModalOpen(false); }}
-                                                                >
-                                                                    <Trash2 size={18} />
-                                                                    <span>Eliminar</span>
-                                                                </button>
-                                                            )}
-                                                            <div className="flex-spacer" />
-                                                            <button
-                                                                className="btn-primary-confirm"
-                                                                disabled={!activeActivity.id_cliente}
-                                                                onClick={() => {
-                                                                    if (activeActivity.index === -1) {
-                                                                        setFormData(prev => ({
-                                                                            ...prev,
-                                                                            detalles_agenda: [...prev.detalles_agenda, {
+                                                                    className="btn-primary-confirm"
+                                                                    disabled={!activeActivity.id_cliente}
+                                                                    onClick={() => {
+                                                                        if (activeActivity.index === -1) {
+                                                                            setFormData(prev => ({
+                                                                                ...prev,
+                                                                                detalles_agenda: [...prev.detalles_agenda, {
+                                                                                    dia_semana: activeActivity.dia_semana,
+                                                                                    hora_programada: activeActivity.hora_programada,
+                                                                                    tipo_actividad: activeActivity.tipo_actividad,
+                                                                                    id_cliente: activeActivity.id_cliente
+                                                                                }]
+                                                                            }));
+                                                                        } else {
+                                                                            const up = [...formData.detalles_agenda];
+                                                                            up[activeActivity.index] = {
                                                                                 dia_semana: activeActivity.dia_semana,
                                                                                 hora_programada: activeActivity.hora_programada,
                                                                                 tipo_actividad: activeActivity.tipo_actividad,
                                                                                 id_cliente: activeActivity.id_cliente
-                                                                            }]
-                                                                        }));
-                                                                    } else {
-                                                                        const up = [...formData.detalles_agenda];
-                                                                        up[activeActivity.index] = {
-                                                                            dia_semana: activeActivity.dia_semana,
-                                                                            hora_programada: activeActivity.hora_programada,
-                                                                            tipo_actividad: activeActivity.tipo_actividad,
-                                                                            id_cliente: activeActivity.id_cliente
-                                                                        };
-                                                                        setFormData(prev => ({ ...prev, detalles_agenda: up }));
-                                                                    }
-                                                                    setIsActivityModalOpen(false);
-                                                                }}
-                                                            >
-                                                                <Save size={18} />
-                                                                <span>{activeActivity.index === -1 ? 'Programar Actividad' : 'Actualizar Cambios'}</span>
-                                                            </button>
-                                                        </div>
-                                                    </motion.div>
-                                                </div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                )}
-
-                                {step === 3 && (
-                                    <div className="step-summary-view">
-                                        <div className="summary-hero-card">
-                                            <div className="hero-content">
-                                                <div className="badge-confirm">
-                                                    <CheckCircle size={14} />
-                                                    <span>Propuesta Lista</span>
-                                                </div>
-                                                <h3>Confirmación de Plan Semanal</h3>
-                                                <p>Verifique los detalles antes de enviar su propuesta a revisión.</p>
-                                            </div>
-                                            <div className="hero-week-info">
-                                                <Calendar size={18} />
-                                                <div className="text">
-                                                    <span className="label">Periodo</span>
-                                                    <span className="val">{availableWeeks.find(w => w.monday === formData.fecha_inicio_semana)?.label || 'Semana seleccionada'}</span>
-                                                </div>
-                                            </div>
+                                                                            };
+                                                                            setFormData(prev => ({ ...prev, detalles_agenda: up }));
+                                                                        }
+                                                                        setIsActivityModalOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <Save size={18} />
+                                                                    <span>{activeActivity.index === -1 ? 'Programar Actividad' : 'Actualizar Cambios'}</span>
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    </div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
-
-                                        <div className="summary-grid">
-                                            <div className="summary-stats-column">
-                                                <div className="stats-header">BALANCE DE METAS</div>
-                                                <div className="stat-progress-list">
-                                                    <StatRow label="Visitas" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita').length} target={formData.meta_visitas} color="#10b981" />
-                                                    <StatRow label="Asistidas" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita asistida').length} target={formData.meta_visitas_asistidas} color="#6366f1" />
-                                                    <StatRow label="Llamadas" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Llamada').length} target={formData.meta_llamadas} color="#3b82f6" />
-                                                    <StatRow label="Emails" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Correo').length} target={formData.meta_emails} color="#f59e0b" />
-                                                </div>
-
-                                                <div className="summary-notice">
-                                                    <AlertTriangle size={18} />
-                                                    <p>Al finalizar, el Director Comercial recibirá una notificación para la aprobación de sus actividades.</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="summary-agenda-column">
-                                                <div className="stats-header">VISTA PREVIA DE AGENDA</div>
-                                                <div className="agenda-preview-list">
-                                                    {[...formData.detalles_agenda].sort((a, b) => {
-                                                        const daysArr = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-                                                        if (daysArr.indexOf(a.dia_semana) !== daysArr.indexOf(b.dia_semana)) return daysArr.indexOf(a.dia_semana) - daysArr.indexOf(b.dia_semana);
-                                                        return a.hora_programada.localeCompare(b.hora_programada);
-                                                    }).map((act, i) => (
-                                                        <div key={i} className="preview-item">
-                                                            <div className="time">{act.hora_programada}</div>
-                                                            <div className="day">{act.dia_semana.slice(0, 3)}</div>
-                                                            <div className="type">{act.tipo_actividad}</div>
-                                                            <div className="client">{clientes.find(c => c.id_cliente === parseInt(act.id_cliente))?.nombre_cliente || 'Sin cliente'}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
-                        </AnimatePresence>
-
-                        <div className="wizard-navigation-bar">
-                            {step > 1 ? (
-                                <button className="btn-nav-prev" onClick={prevStep}>
-                                    <ChevronLeft size={20} />
-                                    <span>Paso Anterior</span>
-                                </button>
-                            ) : (
-                                <button className="btn-nav-prev cancel-mode" onClick={() => window.location.href = '/planes'}>
-                                    <X size={20} />
-                                    <span>Cancelar Propuesta</span>
-                                </button>
-                            )}
-                            <div className="flex-spacer" />
-                            {step < 3 ? (
-                                <button
-                                    className="btn-nav-next"
-                                    onClick={nextStep}
-                                    disabled={!formData.fecha_inicio_semana || availableWeeks.length === 0}
-                                >
-                                    <span>Siguiente Paso</span>
-                                    <ChevronRight size={20} />
-                                </button>
-                            ) : (
-                                <button className="btn-nav-submit" onClick={handleSubmit} disabled={loading}>
-                                    {loading ? <LoadingSpinner size="sm" color="white" inline /> : (
-                                        <>
-                                            <span>Finalizar y Enviar Propuesta</span>
-                                            <CheckCircle size={20} />
-                                        </>
                                     )}
-                                </button>
-                            )}
+
+                                    {step === 3 && (
+                                        <div className="step-summary-view">
+                                            <div className="summary-hero-card">
+                                                <div className="hero-content">
+                                                    <div className="badge-confirm">
+                                                        <CheckCircle size={14} />
+                                                        <span>Propuesta Lista</span>
+                                                    </div>
+                                                    <h3>Confirmación de Plan Semanal</h3>
+                                                    <p>Verifique los detalles antes de enviar su propuesta a revisión.</p>
+                                                </div>
+                                                <div className="hero-week-info">
+                                                    <Calendar size={18} />
+                                                    <div className="text">
+                                                        <span className="label">Periodo</span>
+                                                        <span className="val">{availableWeeks.find(w => w.monday === formData.fecha_inicio_semana)?.label || 'Semana seleccionada'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="summary-grid">
+                                                <div className="summary-stats-column">
+                                                    <div className="stats-header">BALANCE DE METAS</div>
+                                                    <div className="stat-progress-list">
+                                                        <StatRow label="Visitas" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita').length} target={formData.meta_visitas} color="#10b981" />
+                                                        <StatRow label="Asistidas" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita asistida').length} target={formData.meta_visitas_asistidas} color="#6366f1" />
+                                                        <StatRow label="Llamadas" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Llamada').length} target={formData.meta_llamadas} color="#3b82f6" />
+                                                        <StatRow label="Emails" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Correo').length} target={formData.meta_emails} color="#f59e0b" />
+                                                        <StatRow label="Cotizaciones" current={formData.detalles_agenda.filter(a => a.tipo_actividad === 'Cotización').length} target={formData.meta_cotizaciones} color="#ec4899" />
+                                                    </div>
+
+                                                    <div className="summary-notice">
+                                                        <AlertTriangle size={18} />
+                                                        <p>Al finalizar, el Director Comercial recibirá una notificación para la aprobación de sus actividades.</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="summary-agenda-column">
+                                                    <div className="stats-header">VISTA PREVIA DE AGENDA</div>
+                                                    <div className="agenda-preview-list">
+                                                        {[...formData.detalles_agenda].sort((a, b) => {
+                                                            const daysArr = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+                                                            if (daysArr.indexOf(a.dia_semana) !== daysArr.indexOf(b.dia_semana)) return daysArr.indexOf(a.dia_semana) - daysArr.indexOf(b.dia_semana);
+                                                            return a.hora_programada.localeCompare(b.hora_programada);
+                                                        }).map((act, i) => (
+                                                            <div key={i} className="preview-item">
+                                                                <div className="time">{act.hora_programada}</div>
+                                                                <div className="day">{act.dia_semana.slice(0, 3)}</div>
+                                                                <div className="type">{act.tipo_actividad}</div>
+                                                                <div className="client">{clientes.find(c => c.id_cliente === parseInt(act.id_cliente))?.nombre_cliente || 'Sin cliente'}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
+
+                            <div className="wizard-navigation-bar">
+                                {step > 1 ? (
+                                    <button className="btn-nav-prev" onClick={prevStep}>
+                                        <ChevronLeft size={20} />
+                                        <span>Paso Anterior</span>
+                                    </button>
+                                ) : (
+                                    <button className="btn-nav-prev cancel-mode" onClick={() => window.location.href = '/planes'}>
+                                        <X size={20} />
+                                        <span>Cancelar Propuesta</span>
+                                    </button>
+                                )}
+                                <div className="flex-spacer" />
+                                {step < 3 ? (
+                                    <button
+                                        className="btn-nav-next"
+                                        onClick={nextStep}
+                                        disabled={!formData.fecha_inicio_semana || availableWeeks.length === 0 || !!metaError}
+                                    >
+                                        <span>Siguiente Paso</span>
+                                        <ChevronRight size={20} />
+                                    </button>
+                                ) : (
+                                    <button className="btn-nav-submit" onClick={handleSubmit} disabled={loading}>
+                                        {loading ? <LoadingSpinner size="sm" color="white" inline /> : (
+                                            <>
+                                                <span>Finalizar y Enviar Propuesta</span>
+                                                <CheckCircle size={20} />
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <NuevoClienteModal
-                    isOpen={isNuevoClienteOpen}
-                    onClose={() => setIsNuevoClienteOpen(false)}
-                    onSave={() => formData.id_empleado && fetchClientes(formData.id_empleado)}
-                />
+                    <NuevoClienteModal
+                        isOpen={isNuevoClienteOpen}
+                        onClose={() => setIsNuevoClienteOpen(false)}
+                        onSave={() => formData.id_empleado && fetchClientes(formData.id_empleado)}
+                    />
 
-                <style jsx>{`
+                    <style jsx>{`
                     .wizard-page-view {
                         display: flex;
                         flex-direction: column;
@@ -1356,383 +1401,377 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                         .wizard-navigation-bar { padding: 1.25rem 2rem; }
                     }
                 `}</style>
-            </div>
+                </div>
+                <NuevoClienteModal
+                    isOpen={isNuevoClienteOpen}
+                    onClose={() => setIsNuevoClienteOpen(false)}
+                    onSave={() => formData.id_empleado && fetchClientes(formData.id_empleado)}
+                />
+            </>
         );
     }
 
     return (
-        <div className="wizard-overlay">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="wizard-modal glass-morphism"
-            >
-                <div className="wizard-sidebar">
-                    <div className="wizard-logo">
-                        <div className="logo-icon">V</div>
-                        <span>VANTIX <span>Plan</span></span>
-                    </div>
-                    <div className="steps-indicator">
-                        {[
-                            { n: 1, label: 'Metas Semanales', icon: <Target size={18} /> },
-                            { n: 2, label: 'Planificación', icon: <ClipboardList size={18} /> },
-                            { n: 3, label: 'Confirmación', icon: <CheckCircle size={18} /> }
-                        ].map((s) => (
-                            <div key={s.n} className={`step-item ${step === s.n ? 'active' : ''} ${step > s.n ? 'completed' : ''}`}>
-                                <div className="step-icon">{step > s.n ? <CheckCircle size={14} /> : s.icon}</div>
-                                <div className="step-text">
-                                    <span className="step-number">PASO {s.n}</span>
-                                    <span className="step-label">{s.label}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="wizard-footer-note">
-                        <Calendar size={14} />
-                        <span>Semana: {formData.fecha_inicio_semana || 'Seleccionar'}</span>
-                    </div>
-                </div>
-
-                <div className="wizard-content-area">
-                    {!isPage && <button className="close-btn" onClick={onClose}><X size={20} /></button>}
-
-                    {step === 1 && (
-                        <div className="wizard-header-context">
-                            <div className="advisor-account-card-mini">
-                                <div className="account-avatar">
-                                    <div className="mini-avatar">
-                                        {user?.nombre_completo?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                    </div>
-                                    <div className="online-pulse"></div>
-                                </div>
-                                <div className="mini-info">
-                                    <span className="mini-label">Planificador</span>
-                                    <h4 className="mini-name">{user?.nombre_completo}</h4>
-                                    <span className="mini-role">{user?.cargo || 'Asesor Comercial'}</span>
-                                </div>
-                            </div>
-
-                            <div className="context-week-selection unified-picker-wrap">
-                                <div className="context-label">
-                                    <Calendar size={14} />
-                                    <span>Periodo de Trabajo</span>
-                                </div>
-                                <WeekPicker
-                                    plans={availableWeeks.map(w => ({
-                                        id_plan: w.monday,
-                                        fecha_inicio_semana: w.monday,
-                                        estado: 'Nuevo'
-                                    }))}
-                                    selectedPlanId={formData.fecha_inicio_semana}
-                                    headerText="Semanas Disponibles"
-                                    onChange={(monday) => {
-                                        const selected = availableWeeks.find(w => w.monday === monday);
-                                        if (selected) {
-                                            setFormData({
-                                                ...formData,
-                                                fecha_inicio_semana: selected.monday,
-                                                fecha_fin_semana: selected.saturday
-                                            });
-                                        }
-                                    }}
-                                    isAdmin={false}
-                                />
-                            </div>
+        <>
+            <div className="wizard-overlay">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="wizard-modal glass-morphism"
+                >
+                    <div className="wizard-sidebar">
+                        <div className="wizard-logo">
+                            <div className="logo-icon">V</div>
+                            <span>VANTIX <span>Plan</span></span>
                         </div>
-                    )}
+                        <div className="steps-indicator">
+                            {[
+                                { n: 1, label: 'Metas Semanales', icon: <Target size={18} /> },
+                                { n: 2, label: 'Planificación', icon: <ClipboardList size={18} /> },
+                                { n: 3, label: 'Confirmación', icon: <CheckCircle size={18} /> }
+                            ].map((s) => (
+                                <div key={s.n} className={`step-item ${step === s.n ? 'active' : ''} ${step > s.n ? 'completed' : ''}`}>
+                                    <div className="step-icon">{step > s.n ? <CheckCircle size={14} /> : s.icon}</div>
+                                    <div className="step-text">
+                                        <span className="step-number">PASO {s.n}</span>
+                                        <span className="step-label">{s.label}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="wizard-footer-note">
+                            <Calendar size={14} />
+                            <span>Semana: {formData.fecha_inicio_semana || 'Seleccionar'}</span>
+                        </div>
+                    </div>
 
-                    <div className="wizard-main-content">
+                    <div className="wizard-content-area">
+                        {!isPage && <button className="close-btn" onClick={onClose}><X size={20} /></button>}
+
                         {step === 1 && (
-                            <div className="wizard-step">
-                                <h3>Definición de Metas</h3>
-                                <p>Establece los objetivos de actividad para esta propuesta semanal.</p>
-
-                                <div className="metas-dashboard-grid">
-                                    <PremiumCard className="meta-card-premium visit" hover={true}>
-                                        <div className="meta-info">
-                                            <div className="meta-icon-box"><Briefcase size={22} /></div>
-                                            <div className="meta-text">
-                                                <span className="meta-title">Visitas Semanales</span>
-                                                <span className="meta-desc">Objetivo de clientes a visitar</span>
-                                            </div>
-                                        </div>
-                                        <div className="meta-input-section">
-                                            <input
-                                                type="number"
-                                                value={formData.meta_visitas}
-                                                onChange={(e) => setFormData({ ...formData, meta_visitas: e.target.value })}
-                                            />
-                                            <span className="meta-unit">unid.</span>
-                                        </div>
-                                    </PremiumCard>
-
-                                    <PremiumCard className="meta-card-premium asistida" hover={true}>
-                                        <div className="meta-info">
-                                            <div className="meta-icon-box"><Users size={22} /></div>
-                                            <div className="meta-text">
-                                                <span className="meta-title">Visitas Asistidas</span>
-                                                <span className="meta-desc">Visitas con acompañamiento</span>
-                                            </div>
-                                        </div>
-                                        <div className="meta-input-section">
-                                            <input
-                                                type="number"
-                                                value={formData.meta_visitas_asistidas}
-                                                onChange={(e) => setFormData({ ...formData, meta_visitas_asistidas: e.target.value })}
-                                            />
-                                            <span className="meta-unit">unid.</span>
-                                        </div>
-                                    </PremiumCard>
-
-                                    <PremiumCard className="meta-card-premium call" hover={true}>
-                                        <div className="meta-info">
-                                            <div className="meta-icon-box"><Phone size={22} /></div>
-                                            <div className="meta-text">
-                                                <span className="meta-title">Llamadas Telemarketing</span>
-                                                <span className="meta-desc">Prospección y seguimiento</span>
-                                            </div>
-                                        </div>
-                                        <div className="meta-input-section">
-                                            <input
-                                                type="number"
-                                                value={formData.meta_llamadas}
-                                                onChange={(e) => setFormData({ ...formData, meta_llamadas: e.target.value })}
-                                            />
-                                            <span className="meta-unit">unid.</span>
-                                        </div>
-                                    </PremiumCard>
-
-                                    <PremiumCard className="meta-card-premium email" hover={true}>
-                                        <div className="meta-info">
-                                            <div className="meta-icon-box"><Mail size={22} /></div>
-                                            <div className="meta-text">
-                                                <span className="meta-title">Correos / Propuestas</span>
-                                                <span className="meta-desc">Envío de información formal</span>
-                                            </div>
-                                        </div>
-                                        <div className="meta-input-section">
-                                            <input
-                                                type="number"
-                                                value={formData.meta_emails}
-                                                onChange={(e) => setFormData({ ...formData, meta_emails: e.target.value })}
-                                            />
-                                            <span className="meta-unit">unid.</span>
-                                        </div>
-                                    </PremiumCard>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 2 && (
-                            <div className="wizard-step agenda-step">
-                                <h3>Planificación de Agenda</h3>
-                                <p>Organiza las actividades diarias con los clientes.</p>
-
-                                <div className="agenda-manager">
-                                    <div className="days-nav">
-                                        {['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'].map(dia => (
-                                            <button
-                                                key={dia}
-                                                className="day-add-btn"
-                                                onClick={() => handleAddActivity(dia)}
-                                            >
-                                                <Plus size={14} />
-                                                <span>{dia}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div className="activities-list">
-                                        {formData.detalles_agenda.map((act, index) => (
-                                            <motion.div
-                                                key={index}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                className="activity-row"
-                                            >
-                                                <div className="act-dia">{act.dia_semana.slice(0, 3)}</div>
-                                                <div className="act-hora">
-                                                    <Clock size={14} />
-                                                    <input
-                                                        type="time"
-                                                        value={act.hora_programada}
-                                                        onChange={(e) => handleUpdateActivity(index, 'hora_programada', e.target.value)}
-                                                    />
-                                                </div>
-                                                <div className="act-type">
-                                                    <select
-                                                        value={act.tipo_actividad}
-                                                        onChange={(e) => handleUpdateActivity(index, 'tipo_actividad', e.target.value)}
-                                                    >
-                                                        <option value="Visita">Visita</option>
-                                                        <option value="Visita asistida">Visita Asistida</option>
-                                                        <option value="Llamada">Llamada</option>
-                                                        <option value="Correo">Email / Correo</option>
-                                                    </select>
-                                                </div>
-                                                <div className="act-client-wrapper">
-                                                    <ClientSearchSelect
-                                                        clientes={clientes}
-                                                        value={act.id_cliente}
-                                                        onChange={(val) => handleUpdateActivity(index, 'id_cliente', val)}
-                                                        onOpenNuevo={() => setIsNuevoClienteOpen(true)}
-                                                    />
-                                                </div>
-                                                <button
-                                                    className="remove-act"
-                                                    onClick={() => handleRemoveActivity(index)}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </motion.div>
-                                        ))}
-                                        {formData.detalles_agenda.length === 0 && (
-                                            <EmptyState
-                                                icon={Clock}
-                                                title="Agenda Vacía"
-                                                message="Haz clic en los botones superiores para agregar actividades por día."
-                                                compact
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 3 && (
-                            <div className="wizard-step summary-step-revamp">
-                                <div className="summary-intro">
-                                    <h3>Resumen del Plan de Trabajo</h3>
-                                    <p>Propuesta final de cumplimiento y agenda para la semana seleccionada.</p>
-                                </div>
-
-                                <div className="summary-revamp-card">
-                                    <div className="summary-user-header">
-                                        <div className="summary-avatar">
+                            <div className="wizard-header-context">
+                                <div className="advisor-account-card-mini">
+                                    <div className="account-avatar">
+                                        <div className="mini-avatar">
                                             {user?.nombre_completo?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                         </div>
-                                        <div className="summary-meta-info">
-                                            <h4 className="user-displayName">{user?.nombre_completo}</h4>
-                                            <div className="summary-date-badge">
-                                                <Calendar size={14} />
-                                                <span>{availableWeeks.find(w => w.monday === formData.fecha_inicio_semana)?.label || formData.fecha_inicio_semana}</span>
-                                            </div>
-                                        </div>
+                                        <div className="online-pulse"></div>
                                     </div>
-
-                                    <div className="summary-stats-grid">
-                                        <div className="sum-stat visit">
-                                            <Briefcase size={16} />
-                                            <div className="val-box">
-                                                <span className="label">Visitas</span>
-                                                <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita').length} / {formData.meta_visitas}</span>
-                                            </div>
-                                        </div>
-                                        <div className="sum-stat asistida">
-                                            <Users size={16} />
-                                            <div className="val-box">
-                                                <span className="label">Asistidas</span>
-                                                <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita asistida').length} / {formData.meta_visitas_asistidas}</span>
-                                            </div>
-                                        </div>
-                                        <div className="sum-stat call">
-                                            <Phone size={16} />
-                                            <div className="val-box">
-                                                <span className="label">Llamadas</span>
-                                                <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Llamada').length} / {formData.meta_llamadas}</span>
-                                            </div>
-                                        </div>
-                                        <div className="sum-stat email">
-                                            <Mail size={16} />
-                                            <div className="val-box">
-                                                <span className="label">Emails</span>
-                                                <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Correo').length} / {formData.meta_emails}</span>
-                                            </div>
-                                        </div>
+                                    <div className="mini-info">
+                                        <span className="mini-label">Planificador</span>
+                                        <h4 className="mini-name">{user?.nombre_completo}</h4>
+                                        <span className="mini-role">{user?.cargo || 'Asesor Comercial'}</span>
                                     </div>
                                 </div>
 
-                                <div className="agenda-review-list shadow-hover">
-                                    <table className="summary-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Día</th>
-                                                <th>Hora</th>
-                                                <th>Actividad</th>
-                                                <th>Cliente</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {[...formData.detalles_agenda].sort((a, b) => {
-                                                const daysArr = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-                                                if (daysArr.indexOf(a.dia_semana) !== daysArr.indexOf(b.dia_semana)) return daysArr.indexOf(a.dia_semana) - daysArr.indexOf(b.dia_semana);
-                                                return a.hora_programada.localeCompare(b.hora_programada);
-                                            }).map((act, i) => (
-                                                <tr key={i}>
-                                                    <td className="day-cell">{act.dia_semana}</td>
-                                                    <td className="time-cell">{act.hora_programada}</td>
-                                                    <td className="type-cell">
-                                                        <span className={`badge-lite ${act.tipo_actividad === 'Visita' ? 'visit' : act.tipo_actividad === 'Llamada' ? 'call' : act.tipo_actividad === 'Correo' ? 'email' : 'asist'}`}>
-                                                            {act.tipo_actividad}
-                                                        </span>
-                                                    </td>
-                                                    <td className="client-cell">
-                                                        {clientes.find(c => c.id_cliente === parseInt(act.id_cliente))?.nombre_cliente || 'N/A'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {formData.detalles_agenda.length === 0 && (
-                                                <tr>
-                                                    <td colSpan="4" className="empty-row-lux">
-                                                        <Activity size={24} />
-                                                        <span>No has programado actividades para esta semana.</span>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="final-notice-bar">
-                                    <AlertTriangle size={16} />
-                                    <span>Al finalizar, este plan quedará guardado para revisión del Director Comercial.</span>
+                                <div className="context-week-selection unified-picker-wrap">
+                                    <div className="context-label">
+                                        <Calendar size={14} />
+                                        <span>Periodo de Trabajo</span>
+                                    </div>
+                                    <WeekPicker
+                                        plans={availableWeeks.map(w => ({
+                                            id_plan: w.monday,
+                                            fecha_inicio_semana: w.monday,
+                                            estado: 'Nuevo'
+                                        }))}
+                                        selectedPlanId={formData.fecha_inicio_semana}
+                                        headerText="Semanas Disponibles"
+                                        onChange={(monday) => {
+                                            const selected = availableWeeks.find(w => w.monday === monday);
+                                            if (selected) {
+                                                setFormData({
+                                                    ...formData,
+                                                    fecha_inicio_semana: selected.monday,
+                                                    fecha_fin_semana: selected.saturday
+                                                });
+                                            }
+                                        }}
+                                        isAdmin={false}
+                                    />
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="wizard-actions">
-                        {step > 1 && (
-                            <button className="btn-wizard-secondary" onClick={prevStep}>
-                                <ChevronLeft size={20} />
-                                Atrás
-                            </button>
-                        )}
-                        <div className="spacer"></div>
-                        {step < 3 ? (
-                            <button
-                                className="btn-wizard-primary"
-                                onClick={nextStep}
-                                disabled={step === 1 && !formData.id_empleado}
-                            >
-                                Siguiente
-                                <ChevronRight size={20} />
-                            </button>
-                        ) : (
-                            <button className="btn-wizard-success" onClick={handleSubmit} disabled={loading}>
-                                {loading ? <LoadingSpinner size="sm" color="white" inline /> : (
-                                    <>
-                                        <span>Finalizar y Crear Plan</span>
-                                        <CheckCircle size={20} />
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </motion.div>
+                        <div className="wizard-main-content">
+                            {step === 1 && (
+                                <div className="wizard-step">
+                                    <h3>Definición de Metas</h3>
+                                    <p>Establece los objetivos de actividad para esta propuesta semanal.</p>
 
+                                    {metaError ? (
+                                        <div className="meta-error-alert">
+                                            <AlertTriangle size={24} />
+                                            <div className="error-text">
+                                                <h4>Atención Requerida</h4>
+                                                <p>{metaError}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="metas-dashboard-grid">
+                                            <GoalInputCard
+                                                icon={Briefcase}
+                                                title="Visitas Semanales"
+                                                subtitle="Objetivo global de visitas"
+                                                color="emerald"
+                                                value={formData.meta_visitas}
+                                                isGlobal={true}
+                                            />
+                                            <GoalInputCard
+                                                icon={Users}
+                                                title="Visitas Asistidas"
+                                                subtitle="Objetivo global de acompañamiento"
+                                                color="indigo"
+                                                value={formData.meta_visitas_asistidas}
+                                                isGlobal={true}
+                                            />
+                                            <GoalInputCard
+                                                icon={Phone}
+                                                title="Llamadas Telemarketing"
+                                                subtitle="Objetivo global de llamadas"
+                                                color="blue"
+                                                value={formData.meta_llamadas}
+                                                isGlobal={true}
+                                            />
+                                            <GoalInputCard
+                                                icon={Mail}
+                                                title="Correos / Propuestas"
+                                                subtitle="Objetivo global de correos"
+                                                color="amber"
+                                                value={formData.meta_emails}
+                                                isGlobal={true}
+                                            />
+                                            <GoalInputCard
+                                                icon={Target}
+                                                title="Cotizaciones"
+                                                subtitle="Objetivo global de cotizaciones"
+                                                color="pink"
+                                                value={formData.meta_cotizaciones}
+                                                isGlobal={true}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {step === 2 && (
+                                <div className="wizard-step agenda-step">
+                                    <h3>Planificación de Agenda</h3>
+                                    <p>Organiza las actividades diarias con los clientes.</p>
+
+                                    <div className="agenda-manager">
+                                        <div className="days-nav">
+                                            {['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'].map(dia => (
+                                                <button
+                                                    key={dia}
+                                                    className="day-add-btn"
+                                                    onClick={() => handleAddActivity(dia)}
+                                                >
+                                                    <Plus size={14} />
+                                                    <span>{dia}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="activities-list">
+                                            {formData.detalles_agenda.map((act, index) => (
+                                                <motion.div
+                                                    key={index}
+                                                    initial={{ opacity: 0, x: -20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    className="activity-row"
+                                                >
+                                                    <div className="act-dia">{act.dia_semana.slice(0, 3)}</div>
+                                                    <div className="act-hora">
+                                                        <Clock size={14} />
+                                                        <input
+                                                            type="time"
+                                                            value={act.hora_programada}
+                                                            onChange={(e) => handleUpdateActivity(index, 'hora_programada', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="act-type">
+                                                        <select
+                                                            value={act.tipo_actividad}
+                                                            onChange={(e) => handleUpdateActivity(index, 'tipo_actividad', e.target.value)}
+                                                        >
+                                                            <option value="Visita">Visita</option>
+                                                            <option value="Visita asistida">Visita Asistida</option>
+                                                            <option value="Llamada">Llamada</option>
+                                                            <option value="Correo">Email / Correo</option>
+                                                            <option value="Cotización">Cotización</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="act-client-wrapper">
+                                                        <ClientSearchSelect
+                                                            clientes={clientes}
+                                                            value={act.id_cliente}
+                                                            onChange={(val) => handleUpdateActivity(index, 'id_cliente', val)}
+                                                            onOpenNuevo={() => setIsNuevoClienteOpen(true)}
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        className="remove-act"
+                                                        onClick={() => handleRemoveActivity(index)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </motion.div>
+                                            ))}
+                                            {formData.detalles_agenda.length === 0 && (
+                                                <EmptyState
+                                                    icon={Clock}
+                                                    title="Agenda Vacía"
+                                                    message="Haz clic en los botones superiores para agregar actividades por día."
+                                                    compact
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step === 3 && (
+                                <div className="wizard-step summary-step-revamp">
+                                    <div className="summary-intro">
+                                        <h3>Resumen del Plan de Trabajo</h3>
+                                        <p>Propuesta final de cumplimiento y agenda para la semana seleccionada.</p>
+                                    </div>
+
+                                    <div className="summary-revamp-card">
+                                        <div className="summary-user-header">
+                                            <div className="summary-avatar">
+                                                {user?.nombre_completo?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div className="summary-meta-info">
+                                                <h4 className="user-displayName">{user?.nombre_completo}</h4>
+                                                <div className="summary-date-badge">
+                                                    <Calendar size={14} />
+                                                    <span>{availableWeeks.find(w => w.monday === formData.fecha_inicio_semana)?.label || formData.fecha_inicio_semana}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="summary-stats-grid">
+                                            <div className="sum-stat visit">
+                                                <Briefcase size={16} />
+                                                <div className="val-box">
+                                                    <span className="label">Visitas</span>
+                                                    <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita').length} / {formData.meta_visitas}</span>
+                                                </div>
+                                            </div>
+                                            <div className="sum-stat asistida">
+                                                <Users size={16} />
+                                                <div className="val-box">
+                                                    <span className="label">Asistidas</span>
+                                                    <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Visita asistida').length} / {formData.meta_visitas_asistidas}</span>
+                                                </div>
+                                            </div>
+                                            <div className="sum-stat call">
+                                                <Phone size={16} />
+                                                <div className="val-box">
+                                                    <span className="label">Llamadas</span>
+                                                    <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Llamada').length} / {formData.meta_llamadas}</span>
+                                                </div>
+                                            </div>
+                                            <div className="sum-stat email">
+                                                <Mail size={16} />
+                                                <div className="val-box">
+                                                    <span className="label">Emails</span>
+                                                    <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Correo').length} / {formData.meta_emails}</span>
+                                                </div>
+                                            </div>
+                                            <div className="sum-stat cotizacion">
+                                                <Target size={16} />
+                                                <div className="val-box">
+                                                    <span className="label">Cotizaciones</span>
+                                                    <span className="count">{formData.detalles_agenda.filter(a => a.tipo_actividad === 'Cotización').length} / {formData.meta_cotizaciones}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="agenda-review-list shadow-hover">
+                                        <table className="summary-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Día</th>
+                                                    <th>Hora</th>
+                                                    <th>Actividad</th>
+                                                    <th>Cliente</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {[...formData.detalles_agenda].sort((a, b) => {
+                                                    const daysArr = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+                                                    if (daysArr.indexOf(a.dia_semana) !== daysArr.indexOf(b.dia_semana)) return daysArr.indexOf(a.dia_semana) - daysArr.indexOf(b.dia_semana);
+                                                    return a.hora_programada.localeCompare(b.hora_programada);
+                                                }).map((act, i) => (
+                                                    <tr key={i}>
+                                                        <td className="day-cell">{act.dia_semana}</td>
+                                                        <td className="time-cell">{act.hora_programada}</td>
+                                                        <td className="type-cell">
+                                                            <span className={`badge-lite ${act.tipo_actividad === 'Visita' ? 'visit' : act.tipo_actividad === 'Llamada' ? 'call' : act.tipo_actividad === 'Correo' ? 'email' : act.tipo_actividad === 'Cotización' ? 'cotiz' : 'asist'}`}>
+                                                                {act.tipo_actividad}
+                                                            </span>
+                                                        </td>
+                                                        <td className="client-cell">
+                                                            {clientes.find(c => c.id_cliente === parseInt(act.id_cliente))?.nombre_cliente || 'N/A'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {formData.detalles_agenda.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="4" className="empty-row-lux">
+                                                            <Activity size={24} />
+                                                            <span>No has programado actividades para esta semana.</span>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div className="final-notice-bar">
+                                        <AlertTriangle size={16} />
+                                        <span>Al finalizar, este plan quedará guardado para revisión del Director Comercial.</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="wizard-actions">
+                            {step > 1 && (
+                                <button className="btn-wizard-secondary" onClick={prevStep}>
+                                    <ChevronLeft size={20} />
+                                    Atrás
+                                </button>
+                            )}
+                            <div className="spacer"></div>
+                            {step < 3 ? (
+                                <button
+                                    className="btn-wizard-primary"
+                                    onClick={nextStep}
+                                    disabled={(step === 1 && (!formData.id_empleado || !!metaError))}
+                                >
+                                    Siguiente
+                                    <ChevronRight size={20} />
+                                </button>
+                            ) : (
+                                <button className="btn-wizard-success" onClick={handleSubmit} disabled={loading}>
+                                    {loading ? <LoadingSpinner size="sm" color="white" inline /> : (
+                                        <>
+                                            <span>Finalizar y Crear Plan</span>
+                                            <CheckCircle size={20} />
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
             <NuevoClienteModal
                 isOpen={isNuevoClienteOpen}
                 onClose={() => setIsNuevoClienteOpen(false)}
@@ -2186,6 +2225,20 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     background: #fdf2f8; color: #be185d; padding: 1rem; border-radius: 16px; display: flex; align-items: center; gap: 12px; font-size: 0.85rem; font-weight: 700; border: 1px solid #fbcfe8;
                 }
 
+                .meta-error-alert {
+                    display: flex;
+                    align-items: center;
+                    gap: 1.5rem;
+                    background: #fff1f2;
+                    border: 1px solid #fecaca;
+                    border-radius: 20px;
+                    padding: 2rem;
+                    color: #e11d48;
+                    margin: 1rem 0;
+                }
+                .meta-error-alert .error-text h4 { margin: 0 0 4px 0; font-weight: 800; font-size: 1.1rem; }
+                .meta-error-alert .error-text p { margin: 0; font-size: 0.9rem; font-weight: 600; opacity: 0.8; }
+
                 .empty-row { text-align: center; color: var(--text-muted); padding: 3rem !important; font-style: italic; }
 
                 .final-disclaimer {
@@ -2222,11 +2275,11 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     @keyframes spin { to { transform: rotate(360deg); } }
                 }
             `}</style>
-        </div>
+        </>
     );
 };
 
-const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, onChange }) => {
+const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, onChange }) => {
     return (
         <div className={`goal-card-premium ${color}`}>
             <div className="goal-icon-side">
@@ -2241,6 +2294,12 @@ const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, onChange }) 
                     <span className="goal-value">{value}</span>
                     <span className="unit">UNID.</span>
                 </div>
+                {isGlobal && (
+                    <div className="global-badge">
+                        <CheckCircle size={10} />
+                        <span>Meta Global</span>
+                    </div>
+                )}
             </div>
 
             <style jsx>{`
@@ -2291,6 +2350,23 @@ const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, onChange }) 
                     font-size: 1.4rem; font-weight: 900; color: #1e293b;
                 }
                 .goal-input-box .unit { font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-top: 4px; }
+
+                .global-badge {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: #f0f9ff;
+                    color: #0ea5e9;
+                    padding: 2px 8px;
+                    border-radius: 50px;
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    border: 1px solid #bae6fd;
+                }
             `}</style>
         </div>
     );

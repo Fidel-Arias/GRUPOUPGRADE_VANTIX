@@ -440,3 +440,42 @@ export const syncExternaService = {
     }
 };
 
+export const maestroMetasService = {
+    async getAll() {
+        const response = await authFetch('/config/metas/');
+        if (!response.ok) throw new Error('Error al obtener configuración de metas');
+        return response.json();
+    },
+
+    async getActive() {
+        const response = await authFetch('/config/metas/');
+        if (!response.ok) throw new Error('Error al obtener metas activas');
+        const metas = await response.json();
+        return metas.find(m => m.is_active === 1) || null;
+    },
+
+    async create(metaData) {
+        const response = await authFetch('/config/metas/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(metaData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al crear meta maestra');
+        }
+        return response.json();
+    },
+
+    async update(id, metaData) {
+        const response = await authFetch(`/config/metas/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(metaData),
+        });
+        if (!response.ok) throw new Error('Error al actualizar meta maestra');
+        return response.json();
+    }
+};
+
+
