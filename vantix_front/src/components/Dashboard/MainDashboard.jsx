@@ -24,11 +24,13 @@ import {
     crmService,
     kpiService,
     authService,
-    syncExternaService
+    syncExternaService,
+    planService
 } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
+import WeekPicker from '../Common/WeekPicker';
 
 const MainDashboard = () => {
     const [user, setUser] = useState(null);
@@ -46,30 +48,75 @@ const MainDashboard = () => {
     });
     const [actividades, setActividades] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [weekInfo, setWeekInfo] = useState({ number: 0, range: '' });
+    const [planes, setPlanes] = useState([]);
+    const [selectedPlanId, setSelectedPlanId] = useState(null);
 
     useEffect(() => {
-        const currentUser = authService.getUser();
-        setUser(currentUser);
-
-        const fetchDashboardData = async () => {
+        const fetchDashboardData = async (targetPlanId) => {
+            const currentUser = authService.getUser();
             if (!currentUser) return;
 
+            setUser(currentUser);
             try {
                 setLoading(true);
                 const empId = currentUser.is_admin === true ? null : currentUser.id_empleado;
                 const fetchLimit = currentUser.is_admin === true ? 1000 : 500;
 
-                // 1. Fetches concurrentes (Manejando errores individuales para no romper el dashboard)
+                // Determinar el rango de fechas para la semana seleccionada
+                let fechaInicioSemana, fechaFinSemana;
+                let mondayDate;
+
+                if (targetPlanId) {
+                    const [y, m, d] = targetPlanId.split('-').map(Number);
+                    // Usamos UTC para evitar desfases por zona horaria al parsear el ID
+                    mondayDate = new Date(Date.UTC(y, m - 1, d));
+                    mondayDate.setUTCHours(0, 0, 0, 0); // Ensure it's midnight UTC
+                    fechaInicioSemana = targetPlanId;
+
+                    const sunday = new Date(mondayDate);
+                    sunday.setUTCDate(mondayDate.getUTCDate() + 6); // Use UTC date methods
+                    fechaFinSemana = sunday.toISOString().split('T')[0];
+                } else {
+                    // Por defecto, semana actual
+                    const now = new Date();
+                    const day = now.getDay() || 7;
+                    const monday = new Date(now);
+                    monday.setDate(now.getDate() - day + 1);
+                    monday.setHours(0, 0, 0, 0);
+                    mondayDate = monday;
+                    fechaInicioSemana = monday.toISOString().split('T')[0];
+
+                    const sunday = new Date(monday);
+                    sunday.setDate(monday.getDate() + 6);
+                    fechaFinSemana = sunday.toISOString().split('T')[0];
+                    setSelectedPlanId(fechaInicioSemana);
+                }
+
+                console.log(`[Dashboard] Cargando datos para: ${fechaInicioSemana} hasta ${fechaFinSemana}`);
+
+                // Intentar encontrar si existe un plan real para esta semana y usuario
+                const plansResponse = await planService.getAll(0, 50, empId).catch(err => {
+                    console.error("Error al cargar planes:", err);
+                    return [];
+                });
+                const planReal = plansResponse.find(p => p.fecha_inicio_semana.split('T')[0] === fechaInicioSemana);
+
+                // 1. Fetches concurrentes
                 const fetchResults = await Promise.allSettled([
                     clienteService.getAll(0, fetchLimit, empId),
-                    visitaService.getAll({ limit: fetchLimit, id_empleado: empId }),
+                    visitaService.getAll({
+                        limit: fetchLimit,
+                        id_empleado: empId,
+                        id_plan: planReal?.id_plan
+                    }),
                     currentUser.is_admin ? empleadoService.getAll(0, 100) : Promise.resolve([]),
-                    crmService.getLlamadas(null, 0, fetchLimit, empId),
-                    crmService.getEmails(null, 0, fetchLimit, empId),
+                    crmService.getLlamadas(planReal?.id_plan, 0, fetchLimit, empId),
+                    crmService.getEmails(planReal?.id_plan, 0, fetchLimit, empId),
                     kpiService.getInformes(0, fetchLimit, empId)
                 ]);
 
-                // Descomponer resultados con fallback
+                // Descomponer resultados
                 const clientes = fetchResults[0].status === 'fulfilled' ? fetchResults[0].value : [];
                 const visitas = fetchResults[1].status === 'fulfilled' ? fetchResults[1].value : [];
                 const empleados = fetchResults[2].status === 'fulfilled' ? fetchResults[2].value : [];
@@ -77,8 +124,25 @@ const MainDashboard = () => {
                 const emails = fetchResults[4].status === 'fulfilled' ? fetchResults[4].value : [];
                 const kpiReports = fetchResults[5].status === 'fulfilled' ? fetchResults[5].value : [];
 
-                // --- FETCH COTIZACIONES (Data de Upgrade DB) ---
-                const cotizaciones = await syncExternaService.getCotizaciones(empId).catch(() => []);
+                // --- CALCULAR INFO DE LA SEMANA ---
+                const sunDate = new Date(mondayDate);
+                sunDate.setUTCDate(mondayDate.getUTCDate() + 6); // Use UTC date methods
+
+                const formatDayMonth = (date) => {
+                    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' }).replace('.', '');
+                };
+
+                setWeekInfo({
+                    number: getISOWeek(mondayDate),
+                    range: `${formatDayMonth(mondayDate)} al ${formatDayMonth(sunDate)}`
+                });
+
+                // --- FETCH COTIZACIONES (Upgrade DB) ---
+                const cotizaciones = await syncExternaService.getCotizaciones(
+                    empId,
+                    fechaInicioSemana,
+                    fechaFinSemana
+                ).catch(() => []);
 
                 // 2. Calcular Estadísticas
                 const totalC = clientes.length || 0;
@@ -86,7 +150,6 @@ const MainDashboard = () => {
                 const totalL = llamadas.length || 0;
                 const totalE = emails.length || 0;
 
-                // Rendimiento (Lógica segura)
                 const rend = kpiReports.length > 0
                     ? (kpiReports.reduce((acc, curr) => acc + (curr.puntos_alcanzados || 0), 0) / kpiReports.length).toFixed(1)
                     : 0;
@@ -94,17 +157,13 @@ const MainDashboard = () => {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                const getNormalizedDateStr = (dateObj) => {
-                    const d = new Date(dateObj);
-                    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                };
-                const todayStr = getNormalizedDateStr(today);
-
                 const cotizacionesToday = cotizaciones.filter(c => {
-                    return getNormalizedDateStr(c.fecha) === todayStr;
+                    const cDate = new Date(c.fecha);
+                    return cDate.getFullYear() === today.getFullYear() &&
+                        cDate.getMonth() === today.getMonth() &&
+                        cDate.getDate() === today.getDate();
                 });
 
-                // Cálculo de Volumen de Ventas Real (Solo hoy) - Separado por moneda
                 const salesToday = cotizacionesToday.reduce((acc, c) => {
                     const val = parseFloat(c.total_linea) || 0;
                     if (c.moneda_simbolo?.includes('$')) acc.usd += val;
@@ -112,49 +171,29 @@ const MainDashboard = () => {
                     return acc;
                 }, { pen: 0, usd: 0 });
 
-                const metaVentas = 10000;
-                const progresoVentas = metaVentas > 0 ? (salesToday.pen / metaVentas) * 100 : 0;
-
-                // --- FILTRO DE VENTAS DE LA SEMANA ---
-                const startOfWeek = new Date();
-                const dayOfWeek = startOfWeek.getDay();
-                const diffToMonday = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-                startOfWeek.setDate(diffToMonday);
-                startOfWeek.setHours(0, 0, 0, 0);
-
-                const cotizacionesSemana = cotizaciones.filter(c => {
-                    const fechaCot = new Date(c.fecha);
-                    return fechaCot >= startOfWeek;
-                });
-
-                const salesSemana = cotizacionesSemana.reduce((acc, c) => {
+                const salesSemana = cotizaciones.reduce((acc, c) => {
                     const val = parseFloat(c.total_linea) || 0;
                     if (c.moneda_simbolo?.includes('$')) acc.usd += val;
                     else acc.pen += val;
                     return acc;
                 }, { pen: 0, usd: 0 });
 
-                // --- TENDENCIA DE LOS ÚLTIMOS 7 DÍAS ---
                 const last7Days = [...Array(7)].map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    d.setHours(0, 0, 0, 0);
+                    const currD = new Date(mondayDate);
+                    currD.setUTCDate(mondayDate.getUTCDate() + i); // Use UTC date methods
 
-                    const dayStr = getNormalizedDateStr(d);
+                    const dayLabel = currD.toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'UTC' });
                     const dailyTotal = cotizaciones.filter(c => {
-                        return getNormalizedDateStr(c.fecha) === dayStr;
+                        const cDate = new Date(c.fecha);
+                        return cDate.getUTCDate() === currD.getUTCDate() &&
+                            cDate.getUTCMonth() === currD.getUTCMonth();
                     }).reduce((acc, c) => acc + (parseFloat(c.total_linea) || 0), 0);
 
                     return {
-                        day: d.toLocaleDateString('es-ES', { weekday: 'short' }),
-                        val: dailyTotal,
-                        date: d
+                        day: dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1),
+                        val: dailyTotal
                     };
-                }).reverse();
-
-                // 2.2 Cobertura: Clientes visitados vs Total Cartera
-                const clientesVisitadosIds = new Set(visitas.map(v => v.id_cliente));
-                const cobertura = totalC > 0 ? (clientesVisitadosIds.size / totalC) * 100 : 0;
+                });
 
                 setStats({
                     totalClientes: totalC,
@@ -166,39 +205,36 @@ const MainDashboard = () => {
                     volumenVentasSemanaPEN: salesSemana.pen,
                     volumenVentasSemanaUSD: salesSemana.usd,
                     dailySalesTrend: last7Days,
-                    coberturaCartera: cobertura.toFixed(1)
+                    coberturaCartera: (totalC > 0 ? (new Set(visitas.map(v => v.id_cliente)).size / totalC) * 100 : 0).toFixed(1)
                 });
 
-                // 3. Procesar Feed de Actividad
+                // Activity Feed
                 const activityFeed = [
                     ...visitas.map(v => ({
                         type: 'visita',
-                        user: (empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo ||
-                            (v.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'Agente'),
+                        user: (empleados || []).find(e => e.id_empleado === v.id_empleado)?.nombre_completo || 'Agente',
                         initials: (v.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'A').charAt(0),
                         action: 'registró visita',
                         target: v.institucion_visitada || 'Cliente',
-                        time: v.fecha_hora_checkin || v.fecha_visita || new Date(),
+                        time: v.fecha_hora_checkin || v.fecha_visita,
                         icon: <MapPin size={16} />
                     })),
                     ...llamadas.map(l => ({
                         type: 'llamada',
-                        user: (empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo ||
-                            (l.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'Agente'),
+                        user: (empleados || []).find(e => e.id_empleado === l.id_empleado)?.nombre_completo || 'Agente',
                         initials: (l.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'A').charAt(0),
                         action: 'realizó llamada',
-                        target: l.nombre_destinatario || l.contacto_nombre || 'Contacto',
-                        time: l.fecha_hora || l.fecha_llamada || new Date(),
+                        target: l.nombre_destinatario || 'Contacto',
+                        time: l.fecha_hora || l.fecha_llamada,
                         icon: <Activity size={16} />
                     })),
                     ...emails.map(e => ({
                         type: 'email',
-                        user: (empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo ||
-                            (e.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'Agente'),
+                        user: (empleados || []).find(em => em.id_empleado === e.id_empleado)?.nombre_completo || 'Agente',
                         initials: (e.id_empleado === currentUser.id_empleado ? currentUser.nombre_completo : 'A').charAt(0),
                         action: 'envió correo',
                         target: e.email_destino || 'Destinatario',
-                        time: e.fecha_hora || e.fecha_email || new Date(),
+                        time: e.fecha_hora || e.fecha_email,
                         icon: <Send size={16} />
                     }))
                 ].sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0)).slice(0, 10);
@@ -206,14 +242,49 @@ const MainDashboard = () => {
                 setActividades(activityFeed);
 
             } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+                console.error('Error crítico en el Dashboard:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDashboardData();
-    }, []);
+        fetchDashboardData(selectedPlanId);
+    }, [selectedPlanId]);
+
+    const getISOWeek = (date) => {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    };
+
+    const generateHistoricalWeeks = (count = 12) => {
+        const weeks = [];
+        const today = new Date();
+        const currentDay = today.getDay();
+
+        // Monday of current week
+        const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+        const currentMonday = new Date(today);
+        currentMonday.setDate(today.getDate() + diffToMonday);
+        currentMonday.setHours(0, 0, 0, 0);
+
+        // Generate past weeks and current
+        for (let i = 0; i < count; i++) {
+            const m = new Date(currentMonday);
+            m.setDate(currentMonday.getDate() - (i * 7));
+
+            weeks.push({
+                id_plan: m.toISOString().split('T')[0], // Using Monday date as ID
+                fecha_inicio_semana: m.toISOString().split('T')[0],
+                weekNum: getISOWeek(m)
+            });
+        }
+        return weeks;
+    };
+
+    const availableWeeks = generateHistoricalWeeks(15);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -239,10 +310,13 @@ const MainDashboard = () => {
                 breadcrumb={['Vantix', 'Dashboard']}
                 actions={
                     <div className="dashboard-actions">
-                        <button className="btn-secondary">
-                            <Calendar size={18} />
-                            <span>Hoy: {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
-                        </button>
+                        <WeekPicker
+                            plans={availableWeeks}
+                            selectedPlanId={selectedPlanId}
+                            onChange={setSelectedPlanId}
+                            isAdmin={false} // No queremos mostrar el nombre del colaborador aquí
+                            headerText="Seleccionar periodo"
+                        />
                         <button
                             className="btn-primary"
                             onClick={() => window.location.href = user?.is_admin ? '/kpi' : '/cartera'}
@@ -404,11 +478,41 @@ const MainDashboard = () => {
                     cursor: pointer; transition: all 0.3s; box-shadow: var(--shadow-md);
                 }
                 .btn-secondary {
-                    background: white; color: var(--text-body); border: 1px solid var(--border-subtle);
-                    padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 700; display: flex;
-                    align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;
+                    background: white; 
+                    color: var(--text-body); 
+                    border: 1px solid var(--border-subtle);
+                    padding: 0.8rem 1.2rem; 
+                    border-radius: 12px; 
+                    font-weight: 700; 
+                    display: flex;
+                    align-items: center; 
+                    gap: 10px; 
+                    cursor: pointer; 
+                    transition: all 0.2s;
+                    font-size: 0.85rem;
                 }
                 :global(.dark) .btn-secondary { background: var(--bg-panel); border-color: var(--border-light); color: white; }
+
+                .week-indicator {
+                    padding: 0.5rem 1.25rem !important;
+                    cursor: default !important;
+                }
+                .week-text {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    line-height: 1.2;
+                }
+                .week-label {
+                    font-size: 0.85rem;
+                    font-weight: 800;
+                    color: var(--text-heading);
+                }
+                .week-dates {
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: var(--text-muted);
+                }
 
                 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 

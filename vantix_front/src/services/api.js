@@ -424,10 +424,12 @@ export const finanzasService = {
 };
 
 export const syncExternaService = {
-    async getCotizaciones(idEmpleado = null) {
+    async getCotizaciones(idEmpleado = null, fechaInicio = null, fechaFin = null) {
         let url = '/sync-externa/cotizaciones-detalladas';
         const params = new URLSearchParams();
         if (idEmpleado) params.append('id_empleado', idEmpleado);
+        if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+        if (fechaFin) params.append('fecha_fin', fechaFin);
 
         const response = await authFetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
         if (!response.ok) {

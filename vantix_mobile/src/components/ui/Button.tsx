@@ -89,10 +89,12 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: Colors.primary,
         shadowOpacity: 0,
+        elevation: 0,
     },
     ghost: {
         backgroundColor: 'transparent',
         shadowOpacity: 0,
+        elevation: 0,
     },
     textPrimary: {
         color: Colors.text.inverse,

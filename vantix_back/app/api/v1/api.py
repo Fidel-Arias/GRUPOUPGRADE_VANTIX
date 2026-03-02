@@ -1,5 +1,9 @@
 from fastapi import APIRouter
-from app.api.v1.controller import maestro, cartera, admin, geo, empleado, plan, visita, finanzas, kpi, crm, auth, sync_externa, almacenamiento
+from app.api.v1.controller import (
+    maestro, cartera, admin, geo, empleado, plan, visita, 
+    finanzas, kpi, crm, auth, sync_externa, almacenamiento,
+    maestro_metas
+)
 
 api_router = APIRouter()
 
@@ -7,6 +11,7 @@ api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["Autenticación"])
 api_router.include_router(sync_externa.router, prefix="/sync-externa", tags=["Sincronización Externa Upgrade"])
 api_router.include_router(maestro.router, prefix="/maestro", tags=["Maestro Entidades"])
+api_router.include_router(maestro_metas.router, prefix="/config/metas", tags=["Configuración Maestra de Metas"])
 api_router.include_router(cartera.router, prefix="/cartera", tags=["Cartera Clientes"])
 api_router.include_router(geo.router, prefix="/geo", tags=["Geografía"])
 api_router.include_router(empleado.router, prefix="/empleados", tags=["Empleados"])

@@ -1,5 +1,5 @@
 export const Colors = {
-    primary: '#4F46E5', // Indigo
+    primary: '#2563EB', // Blue 600
     secondary: '#06B6D4', // Cyan
     accent: '#F59E0B', // Amber
     success: '#10B981', // Emerald
