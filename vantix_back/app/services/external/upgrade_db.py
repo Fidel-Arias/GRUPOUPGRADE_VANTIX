@@ -123,7 +123,7 @@ class ExternalDBService:
                         v.nombre as vendedor_nombre,
                         cl.nombre as cliente_nombre,
                         string_agg(p.nombre, ', ') as producto,
-                        c.total,
+                        c.monto_adelanto as total,
                         c.fecha,
                         mon.simbolo as moneda_simbolo
                     FROM cmrlz.notas_pedido_cab c
@@ -149,7 +149,7 @@ class ExternalDBService:
                     params.append(fecha_fin)
                 
                 query += """ 
-                    GROUP BY c.id, c.numero, c.almacen_id, v.nombre, cl.nombre, c.total, c.fecha, mon.simbolo 
+                    GROUP BY c.id, c.numero, c.almacen_id, v.nombre, cl.nombre, c.monto_adelanto, c.fecha, mon.simbolo 
                     ORDER BY c.fecha DESC, c.numero DESC 
                     LIMIT %s
                 """
