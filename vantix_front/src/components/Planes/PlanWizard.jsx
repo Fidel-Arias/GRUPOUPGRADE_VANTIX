@@ -613,6 +613,12 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
 
                                             <div className="section-divider">
                                                 <span>Metas de Cumplimiento</span>
+                                                {activeMeta?.puntaje_objetivo && (
+                                                    <div className="target-score-badge">
+                                                        <span className="score-val">{activeMeta.puntaje_objetivo}</span>
+                                                        <span className="score-lbl">PTS OBJETIVO</span>
+                                                    </div>
+                                                )}
                                                 <div className="line" />
                                             </div>
 
@@ -633,6 +639,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="emerald"
                                                         value={formData.meta_visitas}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_visita}
                                                     />
                                                     <GoalInputCard
                                                         icon={Users}
@@ -641,6 +648,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="indigo"
                                                         value={formData.meta_visitas_asistidas}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_visita_asistida}
                                                     />
                                                     <GoalInputCard
                                                         icon={Phone}
@@ -649,6 +657,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="blue"
                                                         value={formData.meta_llamadas}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_llamada}
                                                     />
                                                     <GoalInputCard
                                                         icon={Mail}
@@ -657,6 +666,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="amber"
                                                         value={formData.meta_emails}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_email}
                                                     />
                                                     <GoalInputCard
                                                         icon={Target}
@@ -665,6 +675,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="pink"
                                                         value={formData.meta_cotizaciones}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_cotizacion}
                                                     />
                                                 </div>
                                             )}
@@ -1094,6 +1105,14 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                         display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;
                     }
                     .section-divider span { font-size: 0.9rem; font-weight: 900; color: #1e293b; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+                    .target-score-badge {
+                        background: #0ea5e9; padding: 4px 12px; border-radius: 50px;
+                        display: flex; align-items: baseline; gap: 6px; color: white;
+                        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+                        flex-shrink: 0;
+                    }
+                    .score-val { font-size: 1rem; font-weight: 950; }
+                    .score-lbl { font-size: 0.55rem; font-weight: 800; opacity: 0.9; text-transform: uppercase; }
                     .section-divider .line { height: 1px; flex: 1; background: linear-gradient(90deg, #e2e8f0, transparent); }
 
                     /* Metas Elite Grid */
@@ -1953,7 +1972,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     flex-direction: column;
                     position: relative;
                     background: #f8fafc;
-                    overflow: hidden;
+                    overflow: visible; /* Allow dropdowns to overflow */
                 }
 
                 .wizard-main-content { 
@@ -1991,6 +2010,8 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     border: 1px solid #e2e8f0;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
                     flex-shrink: 0;
+                    position: relative;
+                    z-index: 1000; /* Ensure header and its dropdowns are above everything else */
                 }
 
                 .advisor-account-card-mini {
@@ -2015,7 +2036,22 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 .mini-info { display: flex; flex-direction: column; }
                 .mini-label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
                 .mini-name { font-size: 1rem; font-weight: 800; color: #1e293b; margin: 0; }
-                .mini-role { font-size: 0.75rem; color: #64748b; font-weight: 600; }
+                .goal-titles p { font-size: 0.75rem; color: #64748b; margin: 0; font-weight: 500; }
+
+                .points-indicator {
+                    margin-top: 4px; display: flex; align-items: center; gap: 6px;
+                }
+                .pts-val {
+                    font-size: 0.65rem; font-weight: 900; padding: 2px 6px; background: #f1f5f9;
+                    border-radius: 4px; color: #475569;
+                }
+                .pts-lbl { font-size: 0.6rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+
+                .goal-input-box {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
 
                 .context-week-selection {
                     display: flex;
@@ -2315,7 +2351,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
     );
 };
 
-const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, onChange }) => {
+const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, points, onChange }) => {
     return (
         <div className={`goal-card-premium ${color}`}>
             <div className="goal-icon-side">
@@ -2325,6 +2361,12 @@ const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, on
                 <div className="goal-titles">
                     <h5>{title}</h5>
                     <p>{subtitle}</p>
+                    {points !== undefined && (
+                        <div className="points-indicator">
+                            <span className="pts-val">+{points} PTS</span>
+                            <span className="pts-lbl">por unidad</span>
+                        </div>
+                    )}
                 </div>
                 <div className="goal-input-box">
                     <span className="goal-value">{value}</span>
