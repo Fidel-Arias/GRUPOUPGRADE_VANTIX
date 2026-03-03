@@ -16,12 +16,12 @@ const AsesorCard = ({ v, onClick, idx }) => {
                     <div className="card-top">
                         <div className="asesor-profile">
                             <div className="avatar-pro">
-                                <span>{v.nombre_completo.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                                <span>{v.nombre_completo?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??'}</span>
                                 <div className="online-dot"></div>
                             </div>
                             <div className="asesor-details">
-                                <h4>{v.nombre_completo}</h4>
-                                <span className="cargo-tag">{v.cargo}</span>
+                                <h4>{v.nombre_completo || 'Sin Nombre'}</h4>
+                                <span className="cargo-tag">{v.cargo || 'Asesor'}</span>
                             </div>
                         </div>
                         <div className="client-stat">

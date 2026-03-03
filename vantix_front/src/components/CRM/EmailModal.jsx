@@ -13,6 +13,7 @@ import {
     Camera
 } from 'lucide-react';
 import { planService } from '../../services/api';
+import AlertModal from '../Common/AlertModal';
 
 const EmailModal = ({ isOpen, onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
@@ -24,6 +25,13 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
         asunto: '',
         estado_envio: 'Enviado',
         foto_prueba: null
+    });
+
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
     });
 
     useEffect(() => {
@@ -79,7 +87,12 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
             await onSave(data);
             onClose();
         } catch (err) {
-            alert('Error: ' + err.message);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error',
+                message: err.message || 'No se pudo registrar el correo comercial.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -192,6 +205,14 @@ const EmailModal = ({ isOpen, onClose, onSave }) => {
                     </div>
                 </form>
             </motion.div>
+
+            <AlertModal
+                isOpen={alertConfig.isOpen}
+                onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+            />
 
             <style jsx>{`
                 .modal-overlay {

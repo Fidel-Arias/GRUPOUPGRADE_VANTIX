@@ -7,6 +7,7 @@ import Badge from '../Common/Badge';
 import SearchInput from '../Common/SearchInput';
 import LoadingSpinner from '../Common/LoadingSpinner';
 import EmptyState from '../Common/EmptyState';
+import AlertModal from '../Common/AlertModal';
 import {
   Users,
   Plus,
@@ -29,6 +30,14 @@ const EmpleadoList = () => {
   const [filterActive, setFilterActive] = useState('todos'); // 'todos', 'activos', 'inactivos'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmpleado, setSelectedEmpleado] = useState(null);
+
+  // Alert Modal state
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   useEffect(() => {
     fetchEmpleados();
@@ -55,8 +64,21 @@ const EmpleadoList = () => {
       }
       setIsModalOpen(false);
       fetchEmpleados();
+
+      setAlertConfig({
+        isOpen: true,
+        title: 'Éxito',
+        message: `Empleado ${selectedEmpleado ? 'actualizado' : 'registrado'} correctamente.`,
+        type: 'success'
+      });
     } catch (error) {
-      alert('Error al guardar: ' + error.message);
+      setAlertConfig({
+        isOpen: true,
+        title: 'Error al guardar',
+        message: error.message || 'Ocurrió un error inesperado al intentar guardar los datos.',
+        type: 'error'
+      });
+      throw error;
     }
   };
 
@@ -75,7 +97,12 @@ const EmpleadoList = () => {
       await empleadoService.toggleActive(id);
       fetchEmpleados();
     } catch (error) {
-      alert('Error: ' + error.message);
+      setAlertConfig({
+        isOpen: true,
+        title: 'Error de estado',
+        message: error.message || 'No se pudo cambiar el estado del empleado.',
+        type: 'error'
+      });
     }
   };
 
@@ -220,6 +247,14 @@ const EmpleadoList = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveEmpleado}
         empleado={selectedEmpleado}
+      />
+
+      <AlertModal
+        isOpen={alertConfig.isOpen}
+        onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
       />
 
       <style jsx>{`

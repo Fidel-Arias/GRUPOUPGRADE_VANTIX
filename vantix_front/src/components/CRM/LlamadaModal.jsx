@@ -13,6 +13,7 @@ import {
     Upload
 } from 'lucide-react';
 import { planService } from '../../services/api';
+import AlertModal from '../Common/AlertModal';
 
 const LlamadaModal = ({ isOpen, onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
@@ -26,6 +27,13 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
         resultado: 'Contestó',
         notas_llamada: '',
         foto_prueba: null
+    });
+
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
     });
 
     useEffect(() => {
@@ -85,7 +93,12 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
             await onSave(data);
             onClose();
         } catch (err) {
-            alert('Error: ' + err.message);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error',
+                message: err.message || 'No se pudo registrar la llamada comercial.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -228,6 +241,14 @@ const LlamadaModal = ({ isOpen, onClose, onSave }) => {
                     </div>
                 </form>
             </motion.div>
+
+            <AlertModal
+                isOpen={alertConfig.isOpen}
+                onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+            />
 
             <style jsx>{`
                 .modal-overlay {

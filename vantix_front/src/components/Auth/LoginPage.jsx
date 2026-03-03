@@ -36,7 +36,7 @@ const LoginPage = () => {
             >
                 <div className="login-header">
                     <div className="logo-box">
-                        <ShieldCheck size={32} color="#0ea5e9" />
+                        <img src="/logo.png" alt="Vantix Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                     <h1>VANTIX<span>Elite</span></h1>
                     <p>Gestión Comercial de Alto Rendimiento</p>
@@ -144,13 +144,12 @@ const LoginPage = () => {
                 .logo-box {
                     width: 64px;
                     height: 64px;
-                    background: rgba(14, 165, 233, 0.1);
-                    border-radius: 20px;
+                    border-radius: 16px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     margin: 0 auto 1.5rem;
-                    border: 1px solid rgba(14, 165, 233, 0.2);
+                    overflow: hidden;
                 }
 
                 .login-header h1 {

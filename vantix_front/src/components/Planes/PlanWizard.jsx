@@ -8,6 +8,7 @@ import {
 import { empleadoService, clienteService, planService, authService, maestroMetasService, BASE_URL } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
 import NuevoClienteModal from '../Cartera/NuevoClienteModal';
+import AlertModal from '../Common/AlertModal';
 import PremiumCard from '../Common/PremiumCard';
 import Badge from '../Common/Badge';
 import LoadingSpinner from '../Common/LoadingSpinner';
@@ -196,6 +197,12 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
     const [existingPlanes, setExistingPlanes] = useState([]);
     const [activeMeta, setActiveMeta] = useState(null);
     const [metaError, setMetaError] = useState(null);
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     const getISOWeek = (date) => {
         const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -504,13 +511,28 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 onClose?.();
             }
         } catch (error) {
-            alert(error.message);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error al enviar plan',
+                message: error.message || 'No se pudo procesar la solicitud del plan semanal.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
     };
 
     if (!isOpen && !isPage) return null;
+
+    const renderAlertModal = () => (
+        <AlertModal
+            isOpen={alertConfig.isOpen}
+            onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+            title={alertConfig.title}
+            message={alertConfig.message}
+            type={alertConfig.type}
+        />
+    );
 
     const steps = [
         { n: 1, label: 'Definir Metas', icon: <Target size={18} /> },
@@ -900,6 +922,8 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {renderAlertModal()}
 
                                             <div className="summary-grid">
                                                 <div className="summary-stats-column">
@@ -1479,7 +1503,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 >
                     <div className="wizard-sidebar">
                         <div className="wizard-logo">
-                            <div className="logo-icon">V</div>
+                            <img src="/logo.png" alt="Vantix Logo" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '8px' }} />
                             <span>VANTIX <span>Plan</span></span>
                         </div>
                         <div className="steps-indicator">

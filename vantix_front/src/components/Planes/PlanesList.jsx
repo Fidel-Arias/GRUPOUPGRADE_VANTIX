@@ -10,6 +10,7 @@ import EmptyState from '../Common/EmptyState';
 import ConfirmModal from '../Common/ConfirmModal';
 import WeekPicker from '../Common/WeekPicker';
 import AsesorPlanCard from './AsesorPlanCard';
+import AlertModal from '../Common/AlertModal';
 import {
     Calendar,
     Plus,
@@ -44,6 +45,12 @@ const PlanesList = () => {
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, planId: null });
     const [activeMeta, setActiveMeta] = useState(null);
     const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     useEffect(() => {
         const monday = getMonday(new Date());
@@ -237,7 +244,12 @@ const PlanesList = () => {
             setDeleteModal({ isOpen: false, planId: null });
             fetchInitialData();
         } catch (error) {
-            alert('Error al eliminar: ' + error.message);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error al eliminar',
+                message: error.message || 'No se pudo eliminar el plan de trabajo.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -522,6 +534,14 @@ const PlanesList = () => {
                 title="¿Eliminar Plan de Trabajo?"
                 message="Esta acción no se puede deshacer. Se eliminará permanentemente la agenda y los objetivos asignados."
                 confirmLabel="Sí, Eliminar Plan"
+            />
+
+            <AlertModal
+                isOpen={alertConfig.isOpen}
+                onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
             />
 
             <style jsx>{`
