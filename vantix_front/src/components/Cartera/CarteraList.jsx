@@ -318,7 +318,7 @@ const CarteraList = () => {
                         <td className="hide-tablet">
                           <div className="geo-item">
                             <MapPin size={14} />
-                            <span>{c.distrito || 'N/A'}</span>
+                            <span>{c.distrito?.nombre || 'N/A'}</span>
                           </div>
                         </td>
                         <td>
