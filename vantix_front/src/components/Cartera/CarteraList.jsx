@@ -70,8 +70,10 @@ const CarteraList = () => {
         clienteService.getAll(0, 1000)
       ]);
 
-      const empleadosData = results[0].status === 'fulfilled' ? results[0].value : [];
-      const todosClientes = results[1].status === 'fulfilled' ? results[1].value : [];
+      const rawEmpleados = results[0].status === 'fulfilled' ? results[0].value : [];
+      const empleadosData = Array.isArray(rawEmpleados) ? rawEmpleados : [];
+      const rawClientes = results[1].status === 'fulfilled' ? results[1].value : [];
+      const todosClientes = Array.isArray(rawClientes) ? rawClientes : [];
 
       const resumen = (empleadosData || [])
         .filter(emp => !emp.is_admin) // Hide administrators
@@ -79,7 +81,7 @@ const CarteraList = () => {
           id_empleado: emp.id_empleado,
           nombre_completo: emp.nombre_completo,
           cargo: emp.cargo,
-          total_clientes: (todosClientes || []).filter(c => c.id_empleado === emp.id_empleado).length
+          total_clientes: (todosClientes || []).filter(c => c.id_empleado == emp.id_empleado).length
         })).sort((a, b) => b.total_clientes - a.total_clientes);
 
       setVendedores(resumen);
@@ -94,7 +96,7 @@ const CarteraList = () => {
     try {
       setLoading(true);
       const data = await clienteService.getAll(0, 500, idVendedor);
-      setClientes(data);
+      setClientes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -103,8 +105,13 @@ const CarteraList = () => {
   };
 
   const handleVendedorSelect = (vendedor) => {
+    if (!vendedor) return;
     setSelectedVendedor(vendedor);
-    fetchClientes(vendedor.id_empleado);
+    if (vendedor.id_empleado) {
+      fetchClientes(vendedor.id_empleado);
+    } else {
+      setClientes([]);
+    }
   };
 
   const handleBack = () => {
@@ -116,6 +123,24 @@ const CarteraList = () => {
   const handleEdit = (cliente) => {
     setSelectedCliente(cliente);
     setIsModalOpen(true);
+  };
+
+  const handleSaveCliente = async (formData) => {
+    if (!selectedCliente) return;
+    try {
+      await clienteService.update(selectedCliente.id_cliente, formData);
+      setIsModalOpen(false);
+      if (selectedVendedor) fetchClientes(selectedVendedor.id_empleado);
+      else fetchInitialData();
+
+      setImportStatus({
+        type: 'success',
+        message: 'Cliente actualizado correctamente'
+      });
+      setTimeout(() => setImportStatus(null), 3000);
+    } catch (error) {
+      throw error;
+    }
   };
 
   const handleFileChange = async (e) => {
@@ -150,16 +175,16 @@ const CarteraList = () => {
     fileInputRef.current.click();
   };
 
-  const filteredClientes = clientes.filter(c => {
-    const term = searchTerm.toLowerCase();
+  const filteredClientes = (clientes || []).filter(c => {
+    const term = searchTerm?.toLowerCase() || '';
     const name = c.nombre_cliente?.toLowerCase() || '';
-    const ruc = c.ruc || '';
-    const dni = c.dni || '';
+    const ruc = String(c.ruc_dni || c.ruc || '');
+    const dni = String(c.dni || '');
 
     const matchesSearch = name.includes(term) || ruc.includes(term) || dni.includes(term);
 
     if (filterCategory === 'TODOS') return matchesSearch;
-    return matchesSearch && c.categoria?.toUpperCase() === filterCategory;
+    return matchesSearch && String(c.categoria)?.toUpperCase() === filterCategory;
   });
 
   const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
@@ -180,10 +205,10 @@ const CarteraList = () => {
   return (
     <div className="cartera-container">
       <PageHeader
-        title={selectedVendedor ? `Cartera de ${selectedVendedor.nombre_completo.split(' ')[0]}` : 'Cartera de Clientes'}
-        description={selectedVendedor ? `Visualizando la cartera asignada a ${selectedVendedor.cargo}.` : 'Base de datos oficial de clientes y prospectos corporativos.'}
+        title={selectedVendedor ? `Cartera de ${selectedVendedor.nombre_completo?.split(' ')[0] || 'Asesor'}` : 'Cartera de Clientes'}
+        description={selectedVendedor ? `Visualizando la cartera asignada a ${selectedVendedor.cargo || 'Asesor'}.` : 'Base de datos oficial de clientes y prospectos corporativos.'}
         icon={Briefcase}
-        breadcrumb={selectedVendedor ? ['Apps', 'Cartera', selectedVendedor.nombre_completo.split(' ')[0]] : ['Apps', 'Cartera']}
+        breadcrumb={selectedVendedor ? ['Apps', 'Cartera', selectedVendedor.nombre_completo?.split(' ')[0] || 'Asesor'] : ['Apps', 'Cartera']}
         actions={
           <div className="action-group">
             {selectedVendedor && user?.is_admin && (
@@ -311,7 +336,7 @@ const CarteraList = () => {
                         <td className="hide-tablet">
                           <div className="geo-item">
                             <MapPin size={14} />
-                            <span>{c.distrito || 'N/A'}</span>
+                            <span>{c.distrito?.nombre || 'N/A'}</span>
                           </div>
                         </td>
                         <td>
@@ -373,13 +398,13 @@ const CarteraList = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         cliente={selectedCliente}
-        onSuccess={() => fetchClientes(selectedVendedor.id_empleado)}
+        onSave={handleSaveCliente}
       />
 
       <NuevoClienteModal
         isOpen={isNuevoModalOpen}
         onClose={() => setIsNuevoModalOpen(false)}
-        onSuccess={() => {
+        onSave={(newClient) => {
           if (selectedVendedor) fetchClientes(selectedVendedor.id_empleado);
           else fetchInitialData();
         }}

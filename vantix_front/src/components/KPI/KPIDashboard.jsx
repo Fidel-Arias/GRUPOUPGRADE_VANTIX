@@ -36,6 +36,7 @@ import LoadingSpinner from '../Common/LoadingSpinner';
 import EmptyState from '../Common/EmptyState';
 import Badge from '../Common/Badge';
 import WeekPicker from '../Common/WeekPicker';
+import AlertModal from '../Common/AlertModal';
 
 const KPIDashboard = () => {
     const [user, setUser] = useState(null);
@@ -61,6 +62,12 @@ const KPIDashboard = () => {
     const [salesReport, setSalesReport] = useState([]);
     const [syncingAll, setSyncingAll] = useState(false);
     const [loadingReport, setLoadingReport] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
     useEffect(() => {
         const currentUser = authService.getUser();
         setUser(currentUser);
@@ -187,7 +194,12 @@ const KPIDashboard = () => {
             await fetchKPIReport(selectedPlanId);
         } catch (error) {
             console.error('Error syncing metrics:', error);
-            alert('Error al sincronizar datos reales');
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error de Sincronización',
+                message: 'No se pudieron actualizar los datos reales para el informe de KPI.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -202,7 +214,12 @@ const KPIDashboard = () => {
             setIncentivos(incData || []);
         } catch (error) {
             console.error('Error paying incentive:', error);
-            alert('No se pudo procesar el pago');
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error en Pago',
+                message: 'Ocurrió un error al intentar marcar el bono como pagado.',
+                type: 'error'
+            });
         }
     };
 
@@ -211,11 +228,21 @@ const KPIDashboard = () => {
         try {
             setSyncingAll(true);
             const result = await kpiService.syncVentasSemanales(syncDate);
-            alert(`Sincronización masiva completada: ${result.total_actualizados} informes actualizados.`);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Sincronización Exitosa',
+                message: `Se han actualizado ${result.total_actualizados} informes comerciales correctamente.`,
+                type: 'success'
+            });
             if (selectedPlanId) fetchKPIReport(selectedPlanId);
         } catch (error) {
             console.error('Error in bulk sync:', error);
-            alert('Error al realizar sincronización masiva');
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error Sincronización Masiva',
+                message: 'No se pudo completar la actualización global de ventas.',
+                type: 'error'
+            });
         } finally {
             setSyncingAll(false);
         }
@@ -228,7 +255,12 @@ const KPIDashboard = () => {
             setSalesReport(data || []);
         } catch (error) {
             console.error('Error generating sales report:', error);
-            alert('Error al generar el reporte de ventas');
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error en Reporte',
+                message: 'No se pudo generar el reporte consolidado de ventas para el periodo seleccionado.',
+                type: 'error'
+            });
         } finally {
             setLoadingReport(false);
         }
@@ -660,6 +692,14 @@ const KPIDashboard = () => {
                     message="No hay un plan semanal seleccionado o el asesor no tiene un informe de KPI para este periodo."
                 />
             )}
+
+            <AlertModal
+                isOpen={alertConfig.isOpen}
+                onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+            />
 
             <style jsx>{`
                 .kpi-premium-view { display: flex; flex-direction: column; gap: 1.5rem; position: relative; min-height: 100vh; padding-bottom: 4rem; }

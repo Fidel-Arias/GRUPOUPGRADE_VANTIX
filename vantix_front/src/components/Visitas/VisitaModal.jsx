@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { clienteService, planService } from '../../services/api';
 import NuevoClienteModal from '../Cartera/NuevoClienteModal';
+import AlertModal from '../Common/AlertModal';
 
 const ClientSearchSelect = ({ clientes, value, onChange, onOpenNuevo }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -142,6 +143,12 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
     const [planes, setPlanes] = useState([]);
     const [location, setLocation] = useState({ lat: null, lon: null, loading: false });
     const [isNuevoClienteOpen, setIsNuevoClienteOpen] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     const [previews, setPreviews] = useState({ lugar: null, sello: null });
     const [formData, setFormData] = useState({
@@ -231,7 +238,12 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.foto_lugar || !formData.foto_sello) {
-            alert('Debes adjuntar ambas fotos obligatorias (Lugar y Sello)');
+            setAlertConfig({
+                isOpen: true,
+                title: 'Fotos faltantes',
+                message: 'Debes adjuntar ambas fotos obligatorias (Lugar y Sello) para registrar la visita.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -474,6 +486,14 @@ const VisitaModal = ({ isOpen, onClose, onSave }) => {
                     // Esperamos un momento para que se procese la migración (que es inmediata en el back pero por si acaso)
                     setTimeout(() => fetchData(), 500);
                 }}
+            />
+
+            <AlertModal
+                isOpen={alertConfig.isOpen}
+                onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
             />
 
             <style jsx>{`

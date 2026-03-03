@@ -13,6 +13,7 @@ import {
     Plus
 } from 'lucide-react';
 import { maestroService, geoService, authService, empleadoService } from '../../services/api';
+import AlertModal from '../Common/AlertModal';
 
 const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
     const [loading, setLoading] = useState(false);
@@ -33,6 +34,13 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
         id_distrito: '',
         id_empleado: '',
         activo: true
+    });
+
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
     });
 
     const [empleados, setEmpleados] = useState([]);
@@ -135,7 +143,12 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.id_empleado) {
-            alert('Debe asignar un asesor a este cliente.');
+            setAlertConfig({
+                isOpen: true,
+                title: 'Dato requerido',
+                message: 'Debe asignar un asesor a este cliente.',
+                type: 'warning'
+            });
             return;
         }
         setLoading(true);
@@ -149,7 +162,12 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
             if (onSave) onSave(result);
             onClose();
         } catch (err) {
-            alert('Error: ' + err.message);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error al registrar',
+                message: err.message || 'Ocurrió un error al intentar crear el cliente.',
+                type: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -332,6 +350,14 @@ const NuevoClienteModal = ({ isOpen, onClose, onSave }) => {
                                 </button>
                             </div>
                         </form>
+
+                        <AlertModal
+                            isOpen={alertConfig.isOpen}
+                            onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                            title={alertConfig.title}
+                            message={alertConfig.message}
+                            type={alertConfig.type}
+                        />
                     </motion.div>
                 )}
             </AnimatePresence>
