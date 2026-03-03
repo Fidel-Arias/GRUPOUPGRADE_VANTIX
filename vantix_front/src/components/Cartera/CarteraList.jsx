@@ -81,7 +81,7 @@ const CarteraList = () => {
           id_empleado: emp.id_empleado,
           nombre_completo: emp.nombre_completo,
           cargo: emp.cargo,
-          total_clientes: (todosClientes || []).filter(c => c.id_empleado === emp.id_empleado).length
+          total_clientes: (todosClientes || []).filter(c => c.id_empleado == emp.id_empleado).length
         })).sort((a, b) => b.total_clientes - a.total_clientes);
 
       setVendedores(resumen);
@@ -157,16 +157,16 @@ const CarteraList = () => {
     fileInputRef.current.click();
   };
 
-  const filteredClientes = clientes.filter(c => {
-    const term = searchTerm.toLowerCase();
+  const filteredClientes = (clientes || []).filter(c => {
+    const term = searchTerm?.toLowerCase() || '';
     const name = c.nombre_cliente?.toLowerCase() || '';
-    const ruc = c.ruc || '';
-    const dni = c.dni || '';
+    const ruc = String(c.ruc_dni || c.ruc || '');
+    const dni = String(c.dni || '');
 
     const matchesSearch = name.includes(term) || ruc.includes(term) || dni.includes(term);
 
     if (filterCategory === 'TODOS') return matchesSearch;
-    return matchesSearch && c.categoria?.toUpperCase() === filterCategory;
+    return matchesSearch && String(c.categoria)?.toUpperCase() === filterCategory;
   });
 
   const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
@@ -386,7 +386,7 @@ const CarteraList = () => {
       <NuevoClienteModal
         isOpen={isNuevoModalOpen}
         onClose={() => setIsNuevoModalOpen(false)}
-        onSuccess={() => {
+        onSave={(newClient) => {
           if (selectedVendedor) fetchClientes(selectedVendedor.id_empleado);
           else fetchInitialData();
         }}
