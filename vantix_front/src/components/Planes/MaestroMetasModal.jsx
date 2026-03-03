@@ -11,7 +11,18 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
     const [existingMetas, setExistingMetas] = useState([]);
     const [availableWeeks, setAvailableWeeks] = useState([]);
     const [isDuplicate, setIsDuplicate] = useState(false);
-    const [formData, setFormData] = useState({
+    const calculateTotalScore = (data) => {
+        return Math.round(
+            (Number(data.meta_visitas || 0) * Number(data.puntos_visita || 0)) +
+            (Number(data.meta_visitas_asistidas || 0) * Number(data.puntos_visita_asistida || 0)) +
+            (Number(data.meta_llamadas || 0) * Number(data.puntos_llamada || 0)) +
+            (Number(data.meta_emails || 0) * Number(data.puntos_email || 0)) +
+            (Number(data.meta_cotizaciones || 0) * Number(data.puntos_cotizacion || 0)) +
+            (Number(data.meta_ventas || 0) * Number(data.puntos_venta || 0))
+        );
+    };
+
+    const initialFormState = {
         nombre_meta: '',
         meta_visitas: 25,
         meta_visitas_asistidas: 5,
@@ -25,8 +36,12 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
         puntos_email: 1,
         puntos_cotizacion: 2,
         puntos_venta: 10,
-        puntaje_objetivo: 205,
         is_active: 1
+    };
+
+    const [formData, setFormData] = useState({
+        ...initialFormState,
+        puntaje_objetivo: calculateTotalScore(initialFormState)
     });
 
     const getMonday = (d) => {
@@ -89,30 +104,22 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
 
     useEffect(() => {
         if (existingMeta) {
-            setFormData({
+            const dataToSet = {
                 ...existingMeta,
                 meta_ventas: parseFloat(existingMeta.meta_ventas || 0)
+            };
+            setFormData({
+                ...dataToSet,
+                puntaje_objetivo: calculateTotalScore(dataToSet)
             });
             setIsDuplicate(false);
         } else if (isOpen && availableWeeks.length > 0) {
             const defaultWeek = availableWeeks[0].value;
             setFormData(prev => ({
                 ...prev,
+                ...initialFormState,
                 nombre_meta: defaultWeek,
-                meta_visitas: 25,
-                meta_visitas_asistidas: 5,
-                meta_llamadas: 30,
-                meta_emails: 100,
-                meta_cotizaciones: 10,
-                meta_ventas: 0,
-                puntos_visita: 10,
-                puntos_visita_asistida: 5,
-                puntos_llamada: 1,
-                puntos_email: 1,
-                puntos_cotizacion: 2,
-                puntos_venta: 10,
-                puntaje_objetivo: 205,
-                is_active: 1
+                puntaje_objetivo: calculateTotalScore({ ...initialFormState, nombre_meta: defaultWeek })
             }));
 
             // Check if default is already taken
@@ -122,14 +129,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
     }, [existingMeta, isOpen, availableWeeks, existingMetas]);
 
     useEffect(() => {
-        const total = (
-            (formData.meta_visitas * formData.puntos_visita) +
-            (formData.meta_visitas_asistidas * formData.puntos_visita_asistida) +
-            (formData.meta_llamadas * formData.puntos_llamada) +
-            (formData.meta_emails * formData.puntos_email) +
-            (formData.meta_cotizaciones * formData.puntos_cotizacion) +
-            (formData.meta_ventas * formData.puntos_venta)
-        );
+        const total = calculateTotalScore(formData);
         setFormData(prev => {
             if (prev.puntaje_objetivo === total) return prev;
             return { ...prev, puntaje_objetivo: Math.round(total) };

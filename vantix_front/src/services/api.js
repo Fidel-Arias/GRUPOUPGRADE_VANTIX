@@ -376,6 +376,30 @@ export const kpiService = {
         });
         if (!response.ok) throw new Error('Error al procesar pago de incentivo');
         return response.json();
+    },
+
+    async sincronizarInforme(idInforme) {
+        const response = await authFetch(`/kpi/informes/${idInforme}/sincronizar`, {
+            method: 'POST'
+        });
+        if (!response.ok) throw new Error('Error al sincronizar métricas de KPI');
+        return response.json();
+    },
+
+    async syncVentasSemanales(fechaSabado) {
+        const response = await authFetch(`/kpi/sincronizar-ventas-semanales?fecha_sabado=${fechaSabado}`, {
+            method: 'POST'
+        });
+        if (!response.ok) throw new Error('Error al sincronizar ventas semanales');
+        return response.json();
+    },
+
+    async getReporteVentasSemanales(fechaInicio, fechaFin, idEmpleado = null) {
+        let url = `/kpi/reporte-ventas-semanal?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+        if (idEmpleado) url += `&id_empleado=${idEmpleado}`;
+        const response = await authFetch(url);
+        if (!response.ok) throw new Error('Error al obtener reporte de ventas');
+        return response.json();
     }
 };
 
@@ -435,6 +459,21 @@ export const syncExternaService = {
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || 'Error al obtener cotizaciones');
+        }
+        return response.json();
+    },
+
+    async getVentas(idEmpleado = null, fechaInicio = null, fechaFin = null) {
+        let url = '/sync-externa/ventas-detalladas';
+        const params = new URLSearchParams();
+        if (idEmpleado) params.append('id_empleado', idEmpleado);
+        if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+        if (fechaFin) params.append('fecha_fin', fechaFin);
+
+        const response = await authFetch(`${url}${params.toString() ? '?' + params.toString() : ''}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al obtener reporte de ventas');
         }
         return response.json();
     }

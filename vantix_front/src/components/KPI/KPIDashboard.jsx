@@ -24,7 +24,10 @@ import {
     Activity,
     RefreshCw,
     FileText,
-    LayoutDashboard
+    LayoutDashboard,
+    CloudSync,
+    FileBarChart,
+    Download
 } from 'lucide-react';
 import { kpiService, empleadoService, authService, planService } from '../../services/api';
 import PageHeader from '../Common/PageHeader';
@@ -48,6 +51,16 @@ const KPIDashboard = () => {
     const [loadingAdvisors, setLoadingAdvisors] = useState(false);
     const [plans, setPlans] = useState([]);
     const [selectedPlanId, setSelectedPlanId] = useState('');
+
+    // Admin Specific State
+    const [syncDate, setSyncDate] = useState(new Date().toISOString().split('T')[0]);
+    const [reportRange, setReportRange] = useState({
+        inicio: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
+        fin: new Date().toISOString().split('T')[0]
+    });
+    const [salesReport, setSalesReport] = useState([]);
+    const [syncingAll, setSyncingAll] = useState(false);
+    const [loadingReport, setLoadingReport] = useState(false);
     useEffect(() => {
         const currentUser = authService.getUser();
         setUser(currentUser);
@@ -166,6 +179,61 @@ const KPIDashboard = () => {
         fetchKPIReport(planId);
     };
 
+    const handleSyncMetrics = async () => {
+        if (!report?.id_informe) return;
+        try {
+            setLoading(true);
+            await kpiService.sincronizarInforme(report.id_informe);
+            await fetchKPIReport(selectedPlanId);
+        } catch (error) {
+            console.error('Error syncing metrics:', error);
+            alert('Error al sincronizar datos reales');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePayIncentive = async (idIncentivo) => {
+        if (!window.confirm('¿Estás seguro de marcar este bono como pagado?')) return;
+        try {
+            await kpiService.marcarIncentivoPagado(idIncentivo);
+            // Refrescar datos
+            const incData = await kpiService.getIncentivos(selectedAdvisorId);
+            setIncentivos(incData || []);
+        } catch (error) {
+            console.error('Error paying incentive:', error);
+            alert('No se pudo procesar el pago');
+        }
+    };
+
+    const handleBulkSync = async () => {
+        if (!syncDate) return;
+        try {
+            setSyncingAll(true);
+            const result = await kpiService.syncVentasSemanales(syncDate);
+            alert(`Sincronización masiva completada: ${result.total_actualizados} informes actualizados.`);
+            if (selectedPlanId) fetchKPIReport(selectedPlanId);
+        } catch (error) {
+            console.error('Error in bulk sync:', error);
+            alert('Error al realizar sincronización masiva');
+        } finally {
+            setSyncingAll(false);
+        }
+    };
+
+    const handleGenerateSalesReport = async () => {
+        try {
+            setLoadingReport(true);
+            const data = await kpiService.getReporteVentasSemanales(reportRange.inicio, reportRange.fin);
+            setSalesReport(data || []);
+        } catch (error) {
+            console.error('Error generating sales report:', error);
+            alert('Error al generar el reporte de ventas');
+        } finally {
+            setLoadingReport(false);
+        }
+    };
+
     // --- INTEGRACIÓN REAL DEL RANKING ---
     const sortedRanking = useMemo(() => {
         return advisors.map(adv => {
@@ -212,6 +280,12 @@ const KPIDashboard = () => {
                             <Trophy size={18} />
                             <span>Ranking</span>
                         </button>
+                        {user?.is_admin && (
+                            <button className={selectedView === 'admin' ? 'active' : ''} onClick={() => setSelectedView('admin')}>
+                                <CloudSync size={18} />
+                                <span>Administración</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -245,7 +319,7 @@ const KPIDashboard = () => {
                             />
                         </div>
 
-                        <button className="sync-btn-lux" onClick={() => fetchKPIReport(selectedPlanId)} disabled={loading || !selectedPlanId} title="Sincronizar Datos">
+                        <button className="sync-btn-lux" onClick={handleSyncMetrics} disabled={loading || !report} title="Sincronizar Datos Real">
                             <RefreshCw size={20} className={loading ? 'spin' : ''} />
                         </button>
                     </div>
@@ -374,7 +448,18 @@ const KPIDashboard = () => {
                                                                 <span className="b-name">{inc.concepto}</span>
                                                                 <span className="b-val">S/ {parseFloat(inc.monto_bono).toFixed(2)}</span>
                                                             </div>
-                                                            <Badge variant={inc.estado_pago === 'Pagado' ? 'success' : 'warning'}>{inc.estado_pago}</Badge>
+                                                            <div className="b-actions">
+                                                                <Badge variant={inc.estado_pago === 'Pagado' ? 'success' : 'warning'}>{inc.estado_pago}</Badge>
+                                                                {user?.is_admin && inc.estado_pago !== 'Pagado' && (
+                                                                    <button
+                                                                        className="pay-btn-mini"
+                                                                        onClick={() => handlePayIncentive(inc.id_incentivo)}
+                                                                        title="Marcar como pagado"
+                                                                    >
+                                                                        <DollarSign size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))
                                                 ) : (
@@ -444,7 +529,128 @@ const KPIDashboard = () => {
                                 </PremiumCard>
                             </motion.div>
                         )}
+                        {selectedView === 'admin' && user?.is_admin && (
+                            <motion.div key="admin" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="k-view-content">
+                                <div className="admin-grid">
+                                    <PremiumCard className="admin-card">
+                                        <div className="a-card-head">
+                                            <div className="a-title-icon"><CloudSync size={24} /></div>
+                                            <div className="a-title-text">
+                                                <h4>Sincronización Masiva</h4>
+                                                <p>Actualiza las ventas de todo el equipo comercial desde UpgradeDB.</p>
+                                            </div>
+                                        </div>
+                                        <div className="a-card-body">
+                                            <div className="elite-field">
+                                                <label>Fecha de Cierre (Sábado)</label>
+                                                <input
+                                                    type="date"
+                                                    className="elite-input"
+                                                    value={syncDate}
+                                                    onChange={(e) => setSyncDate(e.target.value)}
+                                                />
+                                            </div>
+                                            <button
+                                                className="btn-bulk-sync"
+                                                disabled={syncingAll}
+                                                onClick={handleBulkSync}
+                                            >
+                                                {syncingAll ? <RefreshCw size={18} className="spin" /> : <RefreshCw size={18} />}
+                                                <span>Ejecutar Sincronización Global</span>
+                                            </button>
+                                        </div>
+                                    </PremiumCard>
 
+                                    <PremiumCard className="admin-card">
+                                        <div className="a-card-head">
+                                            <div className="a-title-icon"><FileBarChart size={24} /></div>
+                                            <div className="a-title-text">
+                                                <h4>Reporte de Ventas Semanal</h4>
+                                                <p>Consolidado de ventas por asesor en un periodo determinado.</p>
+                                            </div>
+                                        </div>
+                                        <div className="a-card-body">
+                                            <div className="admin-range-row">
+                                                <div className="elite-field">
+                                                    <label>Inicio</label>
+                                                    <input
+                                                        type="date"
+                                                        className="elite-input"
+                                                        value={reportRange.inicio}
+                                                        onChange={(e) => setReportRange({ ...reportRange, inicio: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="elite-field">
+                                                    <label>Fin</label>
+                                                    <input
+                                                        type="date"
+                                                        className="elite-input"
+                                                        value={reportRange.fin}
+                                                        onChange={(e) => setReportRange({ ...reportRange, fin: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn-generate-report"
+                                                onClick={handleGenerateSalesReport}
+                                                disabled={loadingReport}
+                                            >
+                                                {loadingReport ? <RefreshCw size={18} className="spin" /> : <BarChart3 size={18} />}
+                                                <span>Generar Informe de Ventas</span>
+                                            </button>
+                                        </div>
+                                    </PremiumCard>
+                                </div>
+
+                                {salesReport.length > 0 && (
+                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="sales-report-display">
+                                        <PremiumCard className="lux-ranking-table-card">
+                                            <div className="report-header-lux">
+                                                <h3>Consolidado de Ventas: {reportRange.inicio} al {reportRange.fin}</h3>
+                                                <button className="btn-export-lux" onClick={() => window.print()}>
+                                                    <Download size={16} />
+                                                    <span>Exportar PDF</span>
+                                                </button>
+                                            </div>
+                                            <table className="lux-ranking-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>VENDEDOR</th>
+                                                        <th>ID EXTERNO</th>
+                                                        <th className="text-right">TOTAL VENTAS</th>
+                                                        <th className="text-right">ESTADO</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {salesReport.map((row, idx) => (
+                                                        <tr key={idx}>
+                                                            <td>
+                                                                <div className="agent-cell">
+                                                                    <div className="a-mini-avatar">{row.nombre_empleado?.charAt(0) || 'V'}</div>
+                                                                    <div className="a-info">
+                                                                        <span className="a-name">{row.nombre_empleado}</span>
+                                                                        <span className="a-role">PERIODO: {row.periodo}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td><code>{row.id_vendedor_externo}</code></td>
+                                                            <td className="text-right">
+                                                                <span className="sales-val">S/ {parseFloat(row.total_ventas).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                                                            </td>
+                                                            <td className="text-right">
+                                                                <Badge variant={row.total_ventas > 0 ? 'success' : 'info'}>
+                                                                    {row.total_ventas > 0 ? 'Con Ventas' : 'Sin Movimiento'}
+                                                                </Badge>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </PremiumCard>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
                     </AnimatePresence>
                 </>
             ) : (
@@ -578,6 +784,15 @@ const KPIDashboard = () => {
                 .b-meta { flex: 1; display: flex; flex-direction: column; }
                 .b-name { font-size: 0.75rem; font-weight: 850; color: var(--text-muted); }
                 .b-val { font-size: 0.9rem; font-weight: 900; color: var(--text-heading); }
+                
+                .b-actions { display: flex; align-items: center; gap: 8px; }
+                .pay-btn-mini {
+                    width: 28px; height: 28px; border-radius: 8px; border: none;
+                    background: var(--primary-glow); color: var(--primary);
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; transition: 0.2s;
+                }
+                .pay-btn-mini:hover { background: var(--primary); color: white; transform: translateY(-1px); }
 
                 /* Ranking Styles */
                 .ranking-podium-lux { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; align-items: flex-end; padding: 2rem 0; }
@@ -609,6 +824,48 @@ const KPIDashboard = () => {
                 .pct { font-size: 0.75rem; font-weight: 800; color: var(--text-heading); }
 
                 .kpi-loading-wrapper { height: 70vh; display: flex; align-items: center; justify-content: center; }
+
+                /* Admin View Styles */
+                .admin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+                .admin-card { padding: 1.5rem !important; border-radius: 24px !important; }
+                .a-card-head { display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem; }
+                .a-title-icon { width: 48px; height: 48px; border-radius: 14px; background: var(--primary-glow); color: var(--primary); display: flex; align-items: center; justify-content: center; }
+                .a-title-text h4 { font-size: 1rem; font-weight: 950; color: var(--text-heading); margin: 0; }
+                .a-title-text p { font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0 0; }
+                
+                .admin-range-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+                .elite-input { 
+                    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); 
+                    background: var(--bg-app); font-weight: 850; color: var(--text-heading); outline: none;
+                }
+                .elite-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+                .elite-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 1rem; }
+                .elite-field label { font-size: 0.65rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase; margin-left: 4px; }
+
+                .btn-bulk-sync, .btn-generate-report {
+                    width: 100%; padding: 14px; border-radius: 14px; border: none;
+                    background: var(--primary); color: white; font-weight: 850; font-size: 0.85rem;
+                    display: flex; align-items: center; justify-content: center; gap: 10px;
+                    cursor: pointer; transition: all 0.2s;
+                }
+                .btn-bulk-sync:hover, .btn-generate-report:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3); }
+                .btn-bulk-sync:disabled { opacity: 0.7; cursor: not-allowed; }
+
+                .sales-report-display { margin-top: 1rem; }
+                .report-header-lux { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; }
+                .report-header-lux h3 { font-size: 1.1rem; font-weight: 950; color: var(--text-heading); margin: 0; }
+                .btn-export-lux { 
+                    display: flex; align-items: center; gap: 8px; padding: 10px 16px; 
+                    background: var(--bg-app); border: 1px solid var(--border-subtle); 
+                    border-radius: 10px; font-weight: 850; color: var(--text-heading); font-size: 0.75rem;
+                    cursor: pointer; transition: 0.2s;
+                }
+                .btn-export-lux:hover { background: white; border-color: var(--primary); color: var(--primary); }
+                .sales-val { font-weight: 950; color: var(--text-heading); font-size: 1.1rem; }
+
+                @media (max-width: 900px) {
+                    .admin-grid { grid-template-columns: 1fr; }
+                }
 
                 @media (max-width: 1200px) { 
                     .stats-hero-strip { grid-template-columns: repeat(2, 1fr); } 
