@@ -20,8 +20,7 @@ def seed():
                 puntos_llamada=1,
                 puntos_email=1,
                 puntos_venta=0,
-                puntaje_objetivo=205,
-                is_active=1
+                puntaje_objetivo=205
             )
             db.add(meta_estandar)
             db.commit()
