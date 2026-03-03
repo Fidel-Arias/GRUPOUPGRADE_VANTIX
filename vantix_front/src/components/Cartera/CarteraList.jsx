@@ -125,6 +125,24 @@ const CarteraList = () => {
     setIsModalOpen(true);
   };
 
+  const handleSaveCliente = async (formData) => {
+    if (!selectedCliente) return;
+    try {
+      await clienteService.update(selectedCliente.id_cliente, formData);
+      setIsModalOpen(false);
+      if (selectedVendedor) fetchClientes(selectedVendedor.id_empleado);
+      else fetchInitialData();
+
+      setImportStatus({
+        type: 'success',
+        message: 'Cliente actualizado correctamente'
+      });
+      setTimeout(() => setImportStatus(null), 3000);
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -380,7 +398,7 @@ const CarteraList = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         cliente={selectedCliente}
-        onSuccess={() => fetchClientes(selectedVendedor.id_empleado)}
+        onSave={handleSaveCliente}
       />
 
       <NuevoClienteModal
