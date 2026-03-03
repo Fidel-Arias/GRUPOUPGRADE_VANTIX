@@ -21,6 +21,7 @@ class DetallePlanUpdate(DetallePlanBase):
 class DetallePlanResponse(DetallePlanBase):
     id_detalle: int
     id_plan: int
+    estado: Optional[str] = "Pendiente"
     cliente: Optional[CarteraResponse] = None
 
     class Config:

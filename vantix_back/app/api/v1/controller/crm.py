@@ -18,6 +18,7 @@ async def registrar_llamada(
     db: Session = Depends(deps.get_db),
     current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int = Form(...),
+    id_detalle: Optional[int] = Form(None),
     numero_destino: str = Form(...),
     resultado: ResultadoLlamadaEnum = Form(...),
     nombre_destinatario: Optional[str] = Form(None),
@@ -57,6 +58,13 @@ async def registrar_llamada(
     # 4. Guardar en DB
     db_obj = crud.llamada.create(db, obj_in=llamada_in)
     
+    # 4.b. Marcar como realizado en la agenda
+    if id_detalle:
+        detalle = db.query(models.plan.DetallePlanTrabajo).filter(models.plan.DetallePlanTrabajo.id_detalle == id_detalle).first()
+        if detalle:
+            detalle.estado = "Realizado"
+            db.commit()
+    
     # 5. Actualizar KPI (1 punto por llamada)
     kpi_service.update_kpi_metrics(
         db, 
@@ -88,6 +96,7 @@ async def registrar_email(
     db: Session = Depends(deps.get_db),
     current_user: models.empleado.Empleado = Depends(deps.get_current_active_user),
     id_plan: int = Form(...),
+    id_detalle: Optional[int] = Form(None),
     email_destino: str = Form(...),
     asunto: Optional[str] = Form(None),
     estado_envio: str = Form("Enviado"),
@@ -119,6 +128,13 @@ async def registrar_email(
     )
 
     db_obj = crud.email.create(db, obj_in=email_in)
+    
+    # Marcar como realizado en la agenda
+    if id_detalle:
+        detalle = db.query(models.plan.DetallePlanTrabajo).filter(models.plan.DetallePlanTrabajo.id_detalle == id_detalle).first()
+        if detalle:
+            detalle.estado = "Realizado"
+            db.commit()
     
     # 1 punto por email
     kpi_service.update_kpi_metrics(
