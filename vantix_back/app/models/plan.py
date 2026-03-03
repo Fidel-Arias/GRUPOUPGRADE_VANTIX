@@ -40,6 +40,7 @@ class DetallePlanTrabajo(Base):
     
     # ¡Enum de Actividad!
     tipo_actividad = Column(SQLEnum(TipoActividadEnum, name="tipo_actividad_enum", values_callable=lambda obj: [e.value for e in obj]), nullable=False)
+    estado = Column(String(20), default="Pendiente") # "Pendiente" o "Realizado"
     
     # ¡Apunta a la Cartera de Clientes!
     id_cliente = Column(Integer, ForeignKey("cartera_clientes.id_cliente", ondelete="RESTRICT"))

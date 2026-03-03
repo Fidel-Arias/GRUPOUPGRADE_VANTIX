@@ -44,6 +44,7 @@ class DistritoBase(BaseModel):
     ubigeo: Optional[str] = None
     activo: bool = True
     id_provincia: int
+    model_config = ConfigDict(from_attributes=True)
 
 class DistritoCreate(DistritoBase):
     pass

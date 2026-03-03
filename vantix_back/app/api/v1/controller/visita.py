@@ -21,6 +21,7 @@ async def registrar_visita(
     # Campos del Formulario (Multipart)
     id_plan: int = Form(...),
     id_cliente: int = Form(...),
+    id_detalle: Optional[int] = Form(None),
     resultado: ResultadoEstadoEnum = Form(...),
     nombre_tecnico: Optional[str] = Form(None),
     observaciones: Optional[str] = Form(None),
@@ -72,6 +73,13 @@ async def registrar_visita(
     db.add(db_visita)
     db.commit()
     db.refresh(db_visita)
+
+    # 3.b. Marcar como realizado en la agenda
+    if id_detalle:
+        detalle = db.query(models.plan.DetallePlanTrabajo).filter(models.plan.DetallePlanTrabajo.id_detalle == id_detalle).first()
+        if detalle:
+            detalle.estado = "Realizado"
+            db.commit()
 
     # 4. ACTUALIZAR KPI (Gamificación) usando el servicio centralizado
     kpi_service.update_kpi_metrics(

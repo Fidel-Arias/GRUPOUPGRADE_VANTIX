@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -38,13 +39,14 @@ import { BorderRadius, Colors, Shadow, Spacing } from '../../constants/theme';
 // --- SCHEMAS ---
 
 const baseSchema = {
-    id_plan: z.string().min(1, 'ID Plan es requerido'),
+    id_detalle: z.string().min(1, 'Selecciona una cita programada'),
+    id_plan: z.string().optional(),
 };
 
 const visitaSchema = z.object({
     ...baseSchema,
     id_cliente: z.string().min(1, 'ID Cliente es requerido'),
-    resultado: z.enum(['Cliente interesado', 'En evaluacion', 'Venta Cerrada', 'No interesado']),
+    resultado: z.enum(['Cliente interesado', 'En evaluación', 'Venta cerrada', 'No interesado']),
     nombre_tecnico: z.string().optional(),
     observaciones: z.string().optional(),
     lat: z.string().optional(),
@@ -58,7 +60,7 @@ const llamadaSchema = z.object({
     numero_destino: z.string().min(7, 'Número de destino es requerido'),
     nombre_destinatario: z.string().min(1, 'Nombre es requerido'),
     duracion_segundos: z.string().default('0'),
-    resultado: z.enum(['Cliente interesado', 'En evaluacion', 'Venta Cerrada', 'No interesado']),
+    resultado: z.enum(['Contestó', 'No Contestó', 'Buzón', 'Venta Cerrada', 'Interesado', 'Rechazado']),
     url_foto_prueba: z.any().optional(),
     notas_llamada: z.string().optional(),
 });
@@ -123,6 +125,7 @@ export const ActionForm = () => {
     const { control, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(getSchema()),
         defaultValues: {
+            id_detalle: '0',
             id_plan: '0',
             id_cliente: '0',
             resultado: 'Cliente interesado',
@@ -142,32 +145,33 @@ export const ActionForm = () => {
 
     // --- REFINED DATA LOGIC (Post-useForm) ---
 
-    // Flatten matching agenda items
+    // Flatten matching agenda items to only show those for CURRENT day
+    const daysInSpanish = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    const currentDaySpanish = daysInSpanish[new Date().getDay()];
+
     const matchingAgendaItems = planes.flatMap(p =>
         p.detalles_agenda
-            .filter(d => d.tipo_actividad === currentBackendType)
+            .filter(d => d.tipo_actividad === currentBackendType && d.dia_semana === currentDaySpanish && d.estado !== 'Realizado')
             .map(d => ({
                 ...d,
                 plan_info: p
             }))
     );
 
+    const activeIdDetalle = watch('id_detalle');
     const activeIdPlan = watch('id_plan');
 
-    // Filter clients based on selected plan or show all plan clients
+    // Filter clients based on selected plan
     const getFilteredClients = () => {
         if (!activeIdPlan || activeIdPlan === '0') return [];
 
-        // Find the selected plan
         const selectedPlan = planes.find(p => p.id_plan.toString() === activeIdPlan);
         if (!selectedPlan) return [];
 
-        // Identify which clients are in that specific plan for the current activity type
         const clientsInPlan = selectedPlan.detalles_agenda
             .filter(d => d.tipo_actividad === currentBackendType && d.cliente)
             .map(d => d.cliente!);
 
-        // Deduplicate
         return Array.from(new Map(clientsInPlan.map(c => [c.id_cliente, c])).values());
     };
 
@@ -180,6 +184,7 @@ export const ActionForm = () => {
             if (type === 'visita' || type === 'visita_asistida') {
                 await visitaService.registrar({
                     id_plan: data.id_plan,
+                    id_detalle: data.id_detalle,
                     id_cliente: data.id_cliente,
                     resultado: data.resultado,
                     nombre_tecnico: data.nombre_tecnico,
@@ -192,6 +197,7 @@ export const ActionForm = () => {
             } else if (type === 'llamada') {
                 await crmService.registrarLlamada({
                     id_plan: data.id_plan,
+                    id_detalle: data.id_detalle,
                     numero_destino: data.numero_destino,
                     nombre_destinatario: data.nombre_destinatario,
                     duracion_segundos: data.duracion_segundos,
@@ -202,6 +208,7 @@ export const ActionForm = () => {
             } else if (type === 'correo') {
                 await crmService.registrarEmail({
                     id_plan: data.id_plan,
+                    id_detalle: data.id_detalle,
                     email_destino: data.email_destino,
                     asunto: data.asunto,
                     estado_envio: data.estado_envio,
@@ -216,8 +223,15 @@ export const ActionForm = () => {
             );
         } catch (error: any) {
             console.error('Error al registrar:', error);
-            const message = error.response?.data?.detail || "Ocurrió un error al procesar el registro.";
-            Alert.alert("Error", message);
+            let message = "Ocurrió un error al procesar el registro.";
+            if (error.response?.data?.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    message = error.response.data.detail.map((err: any) => `${err.loc.join('.')}: ${err.msg}`).join('\n');
+                } else if (typeof error.response.data.detail === 'string') {
+                    message = error.response.data.detail;
+                }
+            }
+            Alert.alert("Error de Validación", message);
         }
     };
 
@@ -242,40 +256,48 @@ export const ActionForm = () => {
     };
 
     const pickImage = async (fieldName: any, useCamera: boolean = true) => {
-        if (useCamera) {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permiso denegado', 'Se requiere permiso de cámara.');
-                return;
+        try {
+            let result;
+
+            if (useCamera) {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert('Permiso denegado', 'Se requiere permiso de cámara.');
+                    return;
+                }
+
+                result = await ImagePicker.launchCameraAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: false,
+                    quality: 0.5,
+                });
+            } else {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert('Permiso denegado', 'Se requiere permiso de galería.');
+                    return;
+                }
+
+                result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: false,
+                    quality: 0.5,
+                });
             }
 
-            let result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [4, 3],
-                quality: 0.5,
-            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                // Compress the image to avoid 413 Payload Too Large error from Backend/Nginx
+                const manipResult = await ImageManipulator.manipulateAsync(
+                    result.assets[0].uri,
+                    [{ resize: { width: 1080 } }], // Resize down to 1080px width max
+                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                );
 
-            if (!result.canceled) {
-                setValue(fieldName, result.assets[0].uri);
+                setValue(fieldName, manipResult.uri);
             }
-        } else {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permiso denegado', 'Se requiere permiso de galería.');
-                return;
-            }
-
-            let result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [4, 3],
-                quality: 0.5,
-            });
-
-            if (!result.canceled) {
-                setValue(fieldName, result.assets[0].uri);
-            }
+        } catch (error) {
+            console.error('Error picking/compressing image:', error);
+            Alert.alert('Error', 'No se pudo procesar la imagen.');
         }
     };
 
@@ -339,26 +361,28 @@ export const ActionForm = () => {
                     {/* COMMON FIELDS */}
                     <Controller
                         control={control}
-                        name="id_plan"
+                        name="id_detalle"
                         render={({ field: { onChange, value } }) => (
                             <Select
                                 label="Ficha de Plan de Trabajo"
                                 placeholder={loadingData ? "Cargando planes..." : "Selecciona una cita programada"}
                                 options={matchingAgendaItems.map(item => ({
-                                    label: `${item.dia_semana} - ${item.hora_programada.substring(0, 5)}`,
-                                    value: item.id_plan.toString()
+                                    label: `${item.dia_semana || 'Sin día'} - ${(item.hora_programada || '').substring(0, 5)}`,
+                                    value: (item.id_detalle || 0).toString()
                                 }))}
                                 value={value}
                                 onValueChange={(val) => {
                                     onChange(val);
-                                    // Auto-select client if there's only one for this slot? 
-                                    // Or let user choose from filtered list.
-                                    const item = matchingAgendaItems.find(i => i.id_plan.toString() === val);
-                                    if (item && item.id_cliente) {
-                                        setValue('id_cliente', item.id_cliente.toString());
+                                    // Identify the specific agenda item to set plan and client
+                                    const item = matchingAgendaItems.find(i => (i.id_detalle || 0).toString() === val);
+                                    if (item) {
+                                        setValue('id_plan', (item.id_plan || 0).toString());
+                                        if (item.id_cliente) {
+                                            setValue('id_cliente', item.id_cliente.toString());
+                                        }
                                     }
                                 }}
-                                error={errors.id_plan?.message as string}
+                                error={errors.id_detalle?.message as string}
                             />
                         )}
                     />
@@ -389,8 +413,8 @@ export const ActionForm = () => {
                                         label="Resultado"
                                         options={[
                                             { label: 'Cliente interesado', value: 'Cliente interesado' },
-                                            { label: 'En evaluación', value: 'En evaluacion' },
-                                            { label: 'Venta Cerrada', value: 'Venta Cerrada' },
+                                            { label: 'En evaluación', value: 'En evaluación' },
+                                            { label: 'Venta cerrada', value: 'Venta cerrada' },
                                             { label: 'No interesado', value: 'No interesado' },
                                         ]}
                                         value={value}
@@ -513,10 +537,12 @@ export const ActionForm = () => {
                                     <Select
                                         label="Resultado"
                                         options={[
-                                            { label: 'Cliente interesado', value: 'Cliente interesado' },
-                                            { label: 'En evaluación', value: 'En evaluacion' },
+                                            { label: 'Contestó', value: 'Contestó' },
+                                            { label: 'No Contestó', value: 'No Contestó' },
+                                            { label: 'Buzón', value: 'Buzón' },
                                             { label: 'Venta Cerrada', value: 'Venta Cerrada' },
-                                            { label: 'No interesado', value: 'No interesado' },
+                                            { label: 'Interesado', value: 'Interesado' },
+                                            { label: 'Rechazado', value: 'Rechazado' },
                                         ]}
                                         value={value}
                                         onValueChange={onChange}
