@@ -7,6 +7,7 @@ export interface DetallePlan {
     hora_programada: string;
     tipo_actividad: string;
     id_cliente: number;
+    estado?: string;
     cliente?: {
         id_cliente: number;
         nombre_cliente: string;

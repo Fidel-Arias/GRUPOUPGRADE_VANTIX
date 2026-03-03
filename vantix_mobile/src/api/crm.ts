@@ -2,6 +2,7 @@ import { apiClient } from './client';
 
 export interface LlamadaData {
     id_plan: string;
+    id_detalle?: string;
     numero_destino: string;
     nombre_destinatario?: string;
     duracion_segundos?: string;
@@ -12,6 +13,7 @@ export interface LlamadaData {
 
 export interface EmailData {
     id_plan: string;
+    id_detalle?: string;
     email_destino: string;
     asunto?: string;
     estado_envio: string;
@@ -22,6 +24,7 @@ export const crmService = {
     registrarLlamada: async (data: LlamadaData) => {
         const formData = new FormData();
         formData.append('id_plan', data.id_plan);
+        if (data.id_detalle) formData.append('id_detalle', data.id_detalle);
         formData.append('numero_destino', data.numero_destino);
         formData.append('resultado', data.resultado);
         if (data.nombre_destinatario) formData.append('nombre_destinatario', data.nombre_destinatario);
@@ -47,6 +50,7 @@ export const crmService = {
     registrarEmail: async (data: EmailData) => {
         const formData = new FormData();
         formData.append('id_plan', data.id_plan);
+        if (data.id_detalle) formData.append('id_detalle', data.id_detalle);
         formData.append('email_destino', data.email_destino);
         if (data.asunto) formData.append('asunto', data.asunto);
         if (data.estado_envio) formData.append('estado_envio', data.estado_envio);

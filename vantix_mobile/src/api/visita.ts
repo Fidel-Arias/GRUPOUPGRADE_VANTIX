@@ -2,6 +2,7 @@ import { apiClient } from './client';
 
 export interface VisitaData {
     id_plan: string;
+    id_detalle?: string;
     id_cliente: string;
     resultado: string;
     nombre_tecnico?: string;
@@ -18,6 +19,7 @@ export const visitaService = {
 
         // Append text fields
         formData.append('id_plan', data.id_plan);
+        if (data.id_detalle) formData.append('id_detalle', data.id_detalle);
         formData.append('id_cliente', data.id_cliente);
         formData.append('resultado', data.resultado);
         if (data.nombre_tecnico) formData.append('nombre_tecnico', data.nombre_tecnico);
