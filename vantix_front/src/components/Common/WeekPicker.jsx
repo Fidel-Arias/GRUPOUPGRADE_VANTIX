@@ -235,14 +235,14 @@ const WeekPicker = ({ plans, selectedPlanId, onChange, isAdmin, headerText = 'Se
 
                 .picker-dropdown {
                     position: absolute;
-                    top: calc(100% + 12px);
+                    top: calc(100% + 8px);
                     left: 0;
                     right: 0;
                     background: white;
                     border: 1px solid var(--border-subtle);
-                    border-radius: 20px;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.12);
-                    z-index: 1000;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                    z-index: 2000;
                     overflow: hidden;
                 }
 
@@ -253,8 +253,8 @@ const WeekPicker = ({ plans, selectedPlanId, onChange, isAdmin, headerText = 'Se
                 }
 
                 .dropdown-header {
-                    padding: 1rem 1.25rem;
-                    font-size: 0.75rem;
+                    padding: 0.75rem 1rem;
+                    font-size: 0.65rem;
                     font-weight: 900;
                     color: var(--text-muted);
                     text-transform: uppercase;
@@ -268,9 +268,9 @@ const WeekPicker = ({ plans, selectedPlanId, onChange, isAdmin, headerText = 'Se
                 }
 
                 .dropdown-list {
-                    max-height: 380px;
+                    max-height: 260px;
                     overflow-y: auto;
-                    padding: 8px;
+                    padding: 6px;
                 }
 
                 /* Scrollbar styling */
@@ -283,9 +283,9 @@ const WeekPicker = ({ plans, selectedPlanId, onChange, isAdmin, headerText = 'Se
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 1rem;
-                    margin-bottom: 4px;
-                    border-radius: 14px;
+                    padding: 0.6rem 0.85rem;
+                    margin-bottom: 2px;
+                    border-radius: 12px;
                     cursor: pointer;
                     transition: all 0.2s;
                 }
