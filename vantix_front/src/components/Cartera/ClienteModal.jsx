@@ -6,7 +6,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
     const [formData, setFormData] = useState({
         nombre_cliente: '',
         ruc_dni: '',
-        categoria: 'CORPORATIVO',
+        categoria: 'Corporativo',
         direccion: '',
         nombre_contacto: '',
         celular_contacto: '',
@@ -23,7 +23,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             setFormData({
                 nombre_cliente: cliente.nombre_cliente || '',
                 ruc_dni: cliente.ruc_dni || '',
-                categoria: cliente.categoria || 'CORPORATIVO',
+                categoria: cliente.categoria || 'Corporativo',
                 direccion: cliente.direccion || '',
                 nombre_contacto: cliente.nombre_contacto || '',
                 celular_contacto: cliente.celular_contacto || '',
@@ -35,7 +35,7 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
             setFormData({
                 nombre_cliente: '',
                 ruc_dni: '',
-                categoria: 'CORPORATIVO',
+                categoria: 'Corporativo',
                 direccion: '',
                 nombre_contacto: '',
                 celular_contacto: '',
@@ -144,9 +144,9 @@ const ClienteModal = ({ isOpen, onClose, onSave, cliente = null }) => {
                                             value={formData.categoria}
                                             onChange={handleChange}
                                         >
-                                            <option value="CORPORATIVO">Corporativo</option>
-                                            <option value="GOBIERNO">Gobierno</option>
-                                            <option value="RETAIL">Retail</option>
+                                            <option value="Corporativo">Corporativo</option>
+                                            <option value="Gobierno">Gobierno</option>
+                                            <option value="Retail">Retail</option>
                                         </select>
                                     </div>
 
