@@ -12,17 +12,16 @@ class MaestroMetasBase(BaseModel):
     meta_llamadas: int = 30
     meta_emails: int = 100
     meta_cotizaciones: int = 0
-    meta_ventas: Decimal = 0.00
+    meta_ventas: Optional[Decimal] = 0.00
     
     puntos_visita: int = 10
     puntos_visita_asistida: int = 5
     puntos_llamada: int = 1
     puntos_email: int = 1
     puntos_cotizacion: int = 0
-    puntos_venta: int = 0
+    puntos_venta: Optional[int] = 0
     
     puntaje_objetivo: int = 205
-    is_active: int = 1
 
 class MaestroMetasCreate(MaestroMetasBase):
     pass
@@ -42,7 +41,6 @@ class MaestroMetasUpdate(BaseModel):
     puntos_cotizacion: Optional[int] = None
     puntos_venta: Optional[int] = None
     puntaje_objetivo: Optional[int] = None
-    is_active: Optional[int] = None
 
 class MaestroMetasResponse(MaestroMetasBase):
     id_maestro: int
@@ -74,7 +72,7 @@ class InformeProductividadResponse(BaseModel):
     real_llamadas: int
     real_emails: int
     real_cotizaciones: int
-    real_ventas_monto: Decimal
+    real_ventas_monto: Optional[Decimal] = 0.00
     puntos_alcanzados: int
     
     # Relación al maestro para ver las metas asociadas

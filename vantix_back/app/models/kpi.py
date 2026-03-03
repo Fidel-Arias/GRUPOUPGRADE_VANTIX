@@ -71,5 +71,4 @@ class MaestroMetas(Base):
     # Objetivo Final
     puntaje_objetivo = Column(Integer, default=205)
     
-    is_active = Column(Integer, default=1) # 1: Activa, 0: Inactiva
     fecha_creacion = Column(Date, server_default=text("CURRENT_DATE"))

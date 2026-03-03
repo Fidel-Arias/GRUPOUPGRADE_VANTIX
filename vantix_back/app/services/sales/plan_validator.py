@@ -10,12 +10,12 @@ from app.schemas.plan import PlanCreate
 class PlanValidatorService:
     @staticmethod
     def create_weekly_plan(db: Session, plan_in: PlanCreate, id_empleado: int) -> PlanTrabajoSemanal:
-        # 1. VALIDACIÓN CRÍTICA: Debe existir al menos un maestro de metas activo
-        maestro_activo = db.query(MaestroMetas).filter(MaestroMetas.is_active == 1).first()
+        # 1. VALIDACIÓN: Usar el último maestro de metas configurado
+        maestro_activo = db.query(MaestroMetas).order_by(MaestroMetas.id_maestro.desc()).first()
         if not maestro_activo:
             raise HTTPException(
                 status_code=400,
-                detail="No se puede crear el plan: No hay un Maestro de Metas activo configurado por el administrador."
+                detail="No se puede crear el plan: No hay un Maestro de Metas configurado por el administrador."
             )
 
         # 2. Validar si ya existe un plan para esa fecha y ese empleado

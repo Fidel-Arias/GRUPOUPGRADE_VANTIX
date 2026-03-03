@@ -137,8 +137,8 @@ const MainDashboard = () => {
                     range: `${formatDayMonth(mondayDate)} al ${formatDayMonth(sunDate)}`
                 });
 
-                // --- FETCH COTIZACIONES (Upgrade DB) ---
-                const cotizaciones = await syncExternaService.getCotizaciones(
+                // --- FETCH VENTAS (Upgrade DB) ---
+                const ventas = await syncExternaService.getVentas(
                     empId,
                     fechaInicioSemana,
                     fechaFinSemana
@@ -154,26 +154,19 @@ const MainDashboard = () => {
                     ? (kpiReports.reduce((acc, curr) => acc + (curr.puntos_alcanzados || 0), 0) / kpiReports.length).toFixed(1)
                     : 0;
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const todayStr = new Date().toISOString().split('T')[0];
+                const ventasToday = ventas.filter(v => v.fecha === todayStr);
 
-                const cotizacionesToday = cotizaciones.filter(c => {
-                    const cDate = new Date(c.fecha);
-                    return cDate.getFullYear() === today.getFullYear() &&
-                        cDate.getMonth() === today.getMonth() &&
-                        cDate.getDate() === today.getDate();
-                });
-
-                const salesToday = cotizacionesToday.reduce((acc, c) => {
-                    const val = parseFloat(c.total_linea) || 0;
-                    if (c.moneda_simbolo?.includes('$')) acc.usd += val;
+                const salesToday = ventasToday.reduce((acc, v) => {
+                    const val = parseFloat(v.total) || 0;
+                    if (v.moneda_simbolo?.includes('$')) acc.usd += val;
                     else acc.pen += val;
                     return acc;
                 }, { pen: 0, usd: 0 });
 
-                const salesSemana = cotizaciones.reduce((acc, c) => {
-                    const val = parseFloat(c.total_linea) || 0;
-                    if (c.moneda_simbolo?.includes('$')) acc.usd += val;
+                const salesSemana = ventas.reduce((acc, v) => {
+                    const val = parseFloat(v.total) || 0;
+                    if (v.moneda_simbolo?.includes('$')) acc.usd += val;
                     else acc.pen += val;
                     return acc;
                 }, { pen: 0, usd: 0 });
@@ -183,11 +176,11 @@ const MainDashboard = () => {
                     currD.setUTCDate(mondayDate.getUTCDate() + i); // Use UTC date methods
 
                     const dayLabel = currD.toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'UTC' });
-                    const dailyTotal = cotizaciones.filter(c => {
-                        const cDate = new Date(c.fecha);
-                        return cDate.getUTCDate() === currD.getUTCDate() &&
-                            cDate.getUTCMonth() === currD.getUTCMonth();
-                    }).reduce((acc, c) => acc + (parseFloat(c.total_linea) || 0), 0);
+                    const dailyTotal = ventas.filter(v => {
+                        const vDate = new Date(v.fecha);
+                        return vDate.getUTCDate() === currD.getUTCDate() &&
+                            vDate.getUTCMonth() === currD.getUTCMonth();
+                    }).reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0);
 
                     return {
                         day: dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1),
