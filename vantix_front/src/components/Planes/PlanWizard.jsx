@@ -319,6 +319,8 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
             setUser(currentUser);
 
             const initializeWizard = async () => {
+                const today = new Date();
+                const currentDay = today.getDay();
                 let existing = [];
                 if (currentUser?.id_empleado) {
                     try {
@@ -329,11 +331,8 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     }
                 }
 
-                // Metas are now handled by the dynamic useEffect based on selected week
-
                 const weeks = generateWeekOptions();
 
-                // Filter weeks if advisor (admins can still see all to override or manage)
                 let filteredWeeks = weeks;
                 if (currentUser && !currentUser.is_admin) {
                     filteredWeeks = weeks.filter(w =>
@@ -344,21 +343,18 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 setAvailableWeeks(filteredWeeks);
 
                 if (filteredWeeks.length > 0) {
-                    // Intelligent date suggestion logic: Prefer current week
                     const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
                     const curMonday = new Date(today);
                     curMonday.setDate(today.getDate() + diffToMonday);
                     curMonday.setHours(0, 0, 0, 0);
                     const currentMondayStr = curMonday.toISOString().split('T')[0];
 
-                    // Intentar encontrar la semana actual en la lista disponible
                     const currentWeekInList = filteredWeeks.find(w => w.monday === currentMondayStr);
 
                     let defaultMonday;
                     if (currentWeekInList) {
                         defaultMonday = currentWeekInList.monday;
                     } else {
-                        // Si no está (por ejemplo, ya existe plan), la más reciente (primera de la lista ya que está reversada)
                         defaultMonday = filteredWeeks[0]?.monday;
                     }
 
@@ -428,10 +424,16 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
 
     const fetchClientes = async (idEmpleado) => {
         try {
-            const cliData = await clienteService.getAll(0, 500, idEmpleado);
+            // Si el usuario es admin, obtenemos todos los clientes de la base oficial
+            // para que pueda planificar sin restricciones. De lo contrario, solo los suyos.
+            const currentUser = authService.getUser();
+            const targetId = currentUser?.is_admin ? null : idEmpleado;
+
+            const rawData = await clienteService.getAll(0, 500, targetId);
+            const cliData = Array.isArray(rawData) ? rawData : (rawData?.data || []);
             setClientes(cliData);
         } catch (error) {
-            console.error('Error fetching clients for employee:', error);
+            console.error('Error fetching clients:', error);
         }
     };
 
