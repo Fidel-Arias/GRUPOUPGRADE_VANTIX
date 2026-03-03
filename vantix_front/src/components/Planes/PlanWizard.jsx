@@ -233,7 +233,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const m = new Date(baseMonday);
                 m.setDate(baseMonday.getDate() + (i * 7));
                 const s = new Date(m);
-                s.setDate(m.getDate() + 5);
+                s.setDate(m.getDate() + 6); // Monday-Sunday range
 
                 weeks.push({
                     weekNum: getISOWeek(m),
@@ -249,6 +249,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const m = new Date(currentMonday);
                 m.setDate(currentMonday.getDate() + (i * 7));
                 const s = new Date(m);
+                s.setDate(m.getDate() + 6); // Monday-Sunday range
                 const daySu = s.getDate().toString().padStart(2, '0');
                 const monthSu = (s.getMonth() + 1).toString().padStart(2, '0');
                 const dayMo = m.getDate().toString().padStart(2, '0');
@@ -265,11 +266,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
             // 2. Semana Actual
             const mNow = new Date(currentMonday);
             const sNow = new Date(mNow);
-            sNow.setDate(mNow.getDate() + 5);
-            const dayMoNow = mNow.getDate().toString().padStart(2, '0');
-            const monthMoNow = (mNow.getMonth() + 1).toString().padStart(2, '0');
-            const daySuNow = sNow.getDate().toString().padStart(2, '0');
-            const monthSuNow = (sNow.getMonth() + 1).toString().padStart(2, '0');
+            sNow.setDate(mNow.getDate() + 6);
 
             weeks.push({
                 weekNum: getISOWeek(mNow),
@@ -283,11 +280,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const mNext = new Date(currentMonday);
                 mNext.setDate(currentMonday.getDate() + 7);
                 const sNext = new Date(mNext);
-                sNext.setDate(mNext.getDate() + 5);
-                const dayMoNext = mNext.getDate().toString().padStart(2, '0');
-                const monthMoNext = (mNext.getMonth() + 1).toString().padStart(2, '0');
-                const daySuNext = sNext.getDate().toString().padStart(2, '0');
-                const monthSuNext = (sNext.getMonth() + 1).toString().padStart(2, '0');
+                sNext.setDate(mNext.getDate() + 6);
 
                 weeks.push({
                     weekNum: getISOWeek(mNext),
@@ -395,8 +388,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const allMetas = await maestroMetasService.getAll();
                 // Filter by name (label) and is_active
                 const matchingMeta = allMetas.find(m =>
-                    m.is_active === 1 &&
-                    m.nombre_meta === selectedWeek.label
+                    m.nombre_meta?.trim() === selectedWeek.label?.trim()
                 );
 
                 if (matchingMeta) {
