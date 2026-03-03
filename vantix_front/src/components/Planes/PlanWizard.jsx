@@ -205,6 +205,14 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
         return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     };
 
+    const getWeekLabel = (monday, saturday) => {
+        const dayMo = monday.getDate().toString().padStart(2, '0');
+        const monthMo = (monday.getMonth() + 1).toString().padStart(2, '0');
+        const daySu = saturday.getDate().toString().padStart(2, '0');
+        const monthSu = (saturday.getMonth() + 1).toString().padStart(2, '0');
+        return `Semana ${getISOWeek(monday)} (${dayMo}/${monthMo} - ${daySu}/${monthSu})`;
+    };
+
     const generateWeekOptions = () => {
         const weeks = [];
         const today = new Date();
@@ -231,7 +239,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     weekNum: getISOWeek(m),
                     monday: m.toISOString().split('T')[0],
                     saturday: s.toISOString().split('T')[0],
-                    label: `Semana ${getISOWeek(m)} (${m.getDate()}/${m.getMonth() + 1} al ${s.getDate()}/${s.getMonth() + 1})`
+                    label: getWeekLabel(m, s)
                 });
             }
         } else {
@@ -241,12 +249,16 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const m = new Date(currentMonday);
                 m.setDate(currentMonday.getDate() + (i * 7));
                 const s = new Date(m);
-                s.setDate(m.getDate() + 5);
+                const daySu = s.getDate().toString().padStart(2, '0');
+                const monthSu = (s.getMonth() + 1).toString().padStart(2, '0');
+                const dayMo = m.getDate().toString().padStart(2, '0');
+                const monthMo = (m.getMonth() + 1).toString().padStart(2, '0');
+
                 weeks.push({
                     weekNum: getISOWeek(m),
                     monday: m.toISOString().split('T')[0],
                     saturday: s.toISOString().split('T')[0],
-                    label: `Semana ${getISOWeek(m)} (${m.getDate()}/${m.getMonth() + 1} al ${s.getDate()}/${s.getMonth() + 1})`
+                    label: getWeekLabel(m, s)
                 });
             }
 
@@ -254,11 +266,16 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
             const mNow = new Date(currentMonday);
             const sNow = new Date(mNow);
             sNow.setDate(mNow.getDate() + 5);
+            const dayMoNow = mNow.getDate().toString().padStart(2, '0');
+            const monthMoNow = (mNow.getMonth() + 1).toString().padStart(2, '0');
+            const daySuNow = sNow.getDate().toString().padStart(2, '0');
+            const monthSuNow = (sNow.getMonth() + 1).toString().padStart(2, '0');
+
             weeks.push({
                 weekNum: getISOWeek(mNow),
                 monday: mNow.toISOString().split('T')[0],
                 saturday: sNow.toISOString().split('T')[0],
-                label: `Semana ${getISOWeek(mNow)} (${mNow.getDate()}/${mNow.getMonth() + 1} al ${sNow.getDate()}/${sNow.getMonth() + 1})`
+                label: getWeekLabel(mNow, sNow)
             });
 
             // 3. Siguiente Semana (SOLO si es Sábado o Domingo)
@@ -267,17 +284,20 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 mNext.setDate(currentMonday.getDate() + 7);
                 const sNext = new Date(mNext);
                 sNext.setDate(mNext.getDate() + 5);
+                const dayMoNext = mNext.getDate().toString().padStart(2, '0');
+                const monthMoNext = (mNext.getMonth() + 1).toString().padStart(2, '0');
+                const daySuNext = sNext.getDate().toString().padStart(2, '0');
+                const monthSuNext = (sNext.getMonth() + 1).toString().padStart(2, '0');
+
                 weeks.push({
                     weekNum: getISOWeek(mNext),
                     monday: mNext.toISOString().split('T')[0],
                     saturday: sNext.toISOString().split('T')[0],
-                    label: `Semana ${getISOWeek(mNext)} (${mNext.getDate()}/${mNext.getMonth() + 1} al ${sNext.getDate()}/${sNext.getMonth() + 1})`
+                    label: getWeekLabel(mNext, sNext)
                 });
             }
-
-            // Mostrar los más recientes primero para comodidad del usuario
-            weeks.reverse();
         }
+        weeks.reverse();
         return weeks;
     };
 
@@ -309,25 +329,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     }
                 }
 
-                try {
-                    const active = await maestroMetasService.getActive();
-                    if (active) {
-                        setActiveMeta(active);
-                        setFormData(prev => ({
-                            ...prev,
-                            meta_visitas: active.meta_visitas,
-                            meta_visitas_asistidas: active.meta_visitas_asistidas,
-                            meta_llamadas: active.meta_llamadas,
-                            meta_emails: active.meta_emails,
-                            meta_cotizaciones: active.meta_cotizaciones
-                        }));
-                    } else {
-                        setMetaError("No hay metas configuradas para esta semana. Contacte al administrador.");
-                    }
-                } catch (e) {
-                    console.error("Error fetching active metas:", e);
-                    setMetaError("Error al cargar las metas globales.");
-                }
+                // Metas are now handled by the dynamic useEffect based on selected week
 
                 const weeks = generateWeekOptions();
 
@@ -380,6 +382,48 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
             setClientes([]); // Opcional: limpiar si no hay empleado
         }
     }, [formData.id_empleado]);
+
+    // Re-fetch metas when week changes
+    useEffect(() => {
+        const fetchMetasForWeek = async () => {
+            if (!formData.fecha_inicio_semana) return;
+
+            const selectedWeek = availableWeeks.find(w => w.monday === formData.fecha_inicio_semana);
+            if (!selectedWeek) return;
+
+            try {
+                const allMetas = await maestroMetasService.getAll();
+                // Filter by name (label) and is_active
+                const matchingMeta = allMetas.find(m =>
+                    m.is_active === 1 &&
+                    m.nombre_meta === selectedWeek.label
+                );
+
+                if (matchingMeta) {
+                    setActiveMeta(matchingMeta);
+                    setMetaError(null);
+                    setFormData(prev => ({
+                        ...prev,
+                        meta_visitas: matchingMeta.meta_visitas,
+                        meta_visitas_asistidas: matchingMeta.meta_visitas_asistidas,
+                        meta_llamadas: matchingMeta.meta_llamadas,
+                        meta_emails: matchingMeta.meta_emails,
+                        meta_cotizaciones: matchingMeta.meta_cotizaciones
+                    }));
+                } else {
+                    setActiveMeta(null);
+                    setMetaError("No hay metas configuradas para esta semana. Contacte al administrador.");
+                }
+            } catch (error) {
+                console.error('Error fetching metas for week:', error);
+                setMetaError("Error al cargar las metas globales.");
+            }
+        };
+
+        if (availableWeeks.length > 0) {
+            fetchMetasForWeek();
+        }
+    }, [formData.fecha_inicio_semana, availableWeeks]);
 
     const fetchClientes = async (idEmpleado) => {
         try {
