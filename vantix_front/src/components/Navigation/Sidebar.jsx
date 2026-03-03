@@ -130,7 +130,7 @@ const Sidebar = () => {
           <header className="sidebar-header">
             <div className="brand">
               <div className="logo-box">
-                <Zap size={22} fill="white" strokeWidth={0} />
+                <img src="/logo.png" alt="Vantix Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="brand-text">
                 <span className="name">VANTIX</span>
@@ -261,8 +261,7 @@ const Sidebar = () => {
         .logo-box {
           width: 44px;
           height: 44px;
-          background: linear-gradient(135deg, #0ea5e9, #2563eb);
-          border-radius: 14px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;

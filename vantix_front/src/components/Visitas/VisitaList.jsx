@@ -9,6 +9,7 @@ import EmptyState from '../Common/EmptyState';
 import ConfirmModal from '../Common/ConfirmModal';
 import PhotoPreview from '../Common/PhotoPreview';
 import WeekPicker from '../Common/WeekPicker';
+import AlertModal from '../Common/AlertModal';
 import {
     MapPin,
     Plus,
@@ -43,6 +44,12 @@ const VisitaList = () => {
     const [advisors, setAdvisors] = useState([]);
     const [selectedAdvisorId, setSelectedAdvisorId] = useState(null);
     const [loadingAdvisors, setLoadingAdvisors] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     useEffect(() => {
         const currentUser = authService.getUser();
@@ -160,7 +167,12 @@ const VisitaList = () => {
             fetchVisitas(selectedPlanId);
             setDeleteConfirm(null);
         } catch (error) {
-            alert('Error: ' + error.message);
+            setAlertConfig({
+                isOpen: true,
+                title: 'Error',
+                message: error.message || 'No se pudo eliminar la visita.',
+                type: 'error'
+            });
         }
     };
 
@@ -339,6 +351,14 @@ const VisitaList = () => {
             {previewPhoto && (
                 <PhotoPreview url={previewPhoto} onClose={() => setPreviewPhoto(null)} />
             )}
+
+            <AlertModal
+                isOpen={alertConfig.isOpen}
+                onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+            />
 
             <style jsx>{`
                 .visitas-premium-view { 

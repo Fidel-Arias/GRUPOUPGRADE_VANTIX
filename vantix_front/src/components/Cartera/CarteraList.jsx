@@ -70,8 +70,10 @@ const CarteraList = () => {
         clienteService.getAll(0, 1000)
       ]);
 
-      const empleadosData = results[0].status === 'fulfilled' ? results[0].value : [];
-      const todosClientes = results[1].status === 'fulfilled' ? results[1].value : [];
+      const rawEmpleados = results[0].status === 'fulfilled' ? results[0].value : [];
+      const empleadosData = Array.isArray(rawEmpleados) ? rawEmpleados : [];
+      const rawClientes = results[1].status === 'fulfilled' ? results[1].value : [];
+      const todosClientes = Array.isArray(rawClientes) ? rawClientes : [];
 
       const resumen = (empleadosData || [])
         .filter(emp => !emp.is_admin) // Hide administrators
@@ -94,7 +96,7 @@ const CarteraList = () => {
     try {
       setLoading(true);
       const data = await clienteService.getAll(0, 500, idVendedor);
-      setClientes(data);
+      setClientes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -103,8 +105,13 @@ const CarteraList = () => {
   };
 
   const handleVendedorSelect = (vendedor) => {
+    if (!vendedor) return;
     setSelectedVendedor(vendedor);
-    fetchClientes(vendedor.id_empleado);
+    if (vendedor.id_empleado) {
+      fetchClientes(vendedor.id_empleado);
+    } else {
+      setClientes([]);
+    }
   };
 
   const handleBack = () => {
@@ -180,10 +187,10 @@ const CarteraList = () => {
   return (
     <div className="cartera-container">
       <PageHeader
-        title={selectedVendedor ? `Cartera de ${selectedVendedor.nombre_completo.split(' ')[0]}` : 'Cartera de Clientes'}
-        description={selectedVendedor ? `Visualizando la cartera asignada a ${selectedVendedor.cargo}.` : 'Base de datos oficial de clientes y prospectos corporativos.'}
+        title={selectedVendedor ? `Cartera de ${selectedVendedor.nombre_completo?.split(' ')[0] || 'Asesor'}` : 'Cartera de Clientes'}
+        description={selectedVendedor ? `Visualizando la cartera asignada a ${selectedVendedor.cargo || 'Asesor'}.` : 'Base de datos oficial de clientes y prospectos corporativos.'}
         icon={Briefcase}
-        breadcrumb={selectedVendedor ? ['Apps', 'Cartera', selectedVendedor.nombre_completo.split(' ')[0]] : ['Apps', 'Cartera']}
+        breadcrumb={selectedVendedor ? ['Apps', 'Cartera', selectedVendedor.nombre_completo?.split(' ')[0] || 'Asesor'] : ['Apps', 'Cartera']}
         actions={
           <div className="action-group">
             {selectedVendedor && user?.is_admin && (
