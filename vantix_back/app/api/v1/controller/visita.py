@@ -77,8 +77,8 @@ async def registrar_visita(
     kpi_service.update_kpi_metrics(
         db, 
         id_plan=id_plan, 
-        field="real_visitas", 
-        puntos=2
+        tipo_actividad="visita", 
+        increment=1
     )
     
     return db_visita
@@ -142,9 +142,8 @@ def eliminar_visita(
     kpi_service.update_kpi_metrics(
         db, 
         id_plan=visita.id_plan, 
-        field="real_visitas", 
-        increment=-1,
-        puntos=-2
+        tipo_actividad="visita", 
+        increment=-1
     )
         
     # 2. Borrar archivos físicos del disco para ahorrar espacio

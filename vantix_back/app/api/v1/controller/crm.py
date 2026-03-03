@@ -61,8 +61,8 @@ async def registrar_llamada(
     kpi_service.update_kpi_metrics(
         db, 
         id_plan=id_plan, 
-        field="real_llamadas", 
-        puntos=1
+        tipo_actividad="llamada", 
+        increment=1
     )
     
     return db_obj
@@ -124,8 +124,8 @@ async def registrar_email(
     kpi_service.update_kpi_metrics(
         db, 
         id_plan=id_plan, 
-        field="real_emails", 
-        puntos=1 
+        tipo_actividad="email", 
+        increment=1 
     )
     
     return db_obj
