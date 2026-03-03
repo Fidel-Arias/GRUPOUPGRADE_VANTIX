@@ -76,6 +76,25 @@ def update_empleado(
             status_code=404,
             detail="Empleado no encontrado"
         )
+
+    # 1. Validar duplicidad de DNI si se está enviando uno nuevo
+    if empleado_in.dni and empleado_in.dni != empleado.dni:
+        check_dni = crud.empleado.get_by_dni(db, dni=empleado_in.dni)
+        if check_dni:
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe otro empleado con este DNI registrado."
+            )
+
+    # 2. Validar duplicidad de Email si se está enviando uno nuevo
+    if empleado_in.email_corporativo and empleado_in.email_corporativo != empleado.email_corporativo:
+        check_email = crud.empleado.get_by_email(db, email=empleado_in.email_corporativo)
+        if check_email:
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe otro empleado con este correo corporativo."
+            )
+
     return crud.empleado.update(db, db_obj=empleado, obj_in=empleado_in)
 
 @router.post("/{id_empleado}/toggle-active", response_model=EmpleadoResponse)

@@ -205,6 +205,14 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
         return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     };
 
+    const getWeekLabel = (monday, saturday) => {
+        const dayMo = monday.getDate().toString().padStart(2, '0');
+        const monthMo = (monday.getMonth() + 1).toString().padStart(2, '0');
+        const daySu = saturday.getDate().toString().padStart(2, '0');
+        const monthSu = (saturday.getMonth() + 1).toString().padStart(2, '0');
+        return `Semana ${getISOWeek(monday)} (${dayMo}/${monthMo} - ${daySu}/${monthSu})`;
+    };
+
     const generateWeekOptions = () => {
         const weeks = [];
         const today = new Date();
@@ -225,13 +233,13 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const m = new Date(baseMonday);
                 m.setDate(baseMonday.getDate() + (i * 7));
                 const s = new Date(m);
-                s.setDate(m.getDate() + 5);
+                s.setDate(m.getDate() + 6); // Monday-Sunday range
 
                 weeks.push({
                     weekNum: getISOWeek(m),
                     monday: m.toISOString().split('T')[0],
                     saturday: s.toISOString().split('T')[0],
-                    label: `Semana ${getISOWeek(m)} (${m.getDate()}/${m.getMonth() + 1} al ${s.getDate()}/${s.getMonth() + 1})`
+                    label: getWeekLabel(m, s)
                 });
             }
         } else {
@@ -241,24 +249,30 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const m = new Date(currentMonday);
                 m.setDate(currentMonday.getDate() + (i * 7));
                 const s = new Date(m);
-                s.setDate(m.getDate() + 5);
+                s.setDate(m.getDate() + 6); // Monday-Sunday range
+                const daySu = s.getDate().toString().padStart(2, '0');
+                const monthSu = (s.getMonth() + 1).toString().padStart(2, '0');
+                const dayMo = m.getDate().toString().padStart(2, '0');
+                const monthMo = (m.getMonth() + 1).toString().padStart(2, '0');
+
                 weeks.push({
                     weekNum: getISOWeek(m),
                     monday: m.toISOString().split('T')[0],
                     saturday: s.toISOString().split('T')[0],
-                    label: `Semana ${getISOWeek(m)} (${m.getDate()}/${m.getMonth() + 1} al ${s.getDate()}/${s.getMonth() + 1})`
+                    label: getWeekLabel(m, s)
                 });
             }
 
             // 2. Semana Actual
             const mNow = new Date(currentMonday);
             const sNow = new Date(mNow);
-            sNow.setDate(mNow.getDate() + 5);
+            sNow.setDate(mNow.getDate() + 6);
+
             weeks.push({
                 weekNum: getISOWeek(mNow),
                 monday: mNow.toISOString().split('T')[0],
                 saturday: sNow.toISOString().split('T')[0],
-                label: `Semana ${getISOWeek(mNow)} (${mNow.getDate()}/${mNow.getMonth() + 1} al ${sNow.getDate()}/${sNow.getMonth() + 1})`
+                label: getWeekLabel(mNow, sNow)
             });
 
             // 3. Siguiente Semana (SOLO si es Sábado o Domingo)
@@ -266,18 +280,17 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 const mNext = new Date(currentMonday);
                 mNext.setDate(currentMonday.getDate() + 7);
                 const sNext = new Date(mNext);
-                sNext.setDate(mNext.getDate() + 5);
+                sNext.setDate(mNext.getDate() + 6);
+
                 weeks.push({
                     weekNum: getISOWeek(mNext),
                     monday: mNext.toISOString().split('T')[0],
                     saturday: sNext.toISOString().split('T')[0],
-                    label: `Semana ${getISOWeek(mNext)} (${mNext.getDate()}/${mNext.getMonth() + 1} al ${sNext.getDate()}/${sNext.getMonth() + 1})`
+                    label: getWeekLabel(mNext, sNext)
                 });
             }
-
-            // Mostrar los más recientes primero para comodidad del usuario
-            weeks.reverse();
         }
+        weeks.reverse();
         return weeks;
     };
 
@@ -309,25 +322,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     }
                 }
 
-                try {
-                    const active = await maestroMetasService.getActive();
-                    if (active) {
-                        setActiveMeta(active);
-                        setFormData(prev => ({
-                            ...prev,
-                            meta_visitas: active.meta_visitas,
-                            meta_visitas_asistidas: active.meta_visitas_asistidas,
-                            meta_llamadas: active.meta_llamadas,
-                            meta_emails: active.meta_emails,
-                            meta_cotizaciones: active.meta_cotizaciones
-                        }));
-                    } else {
-                        setMetaError("No hay metas configuradas para esta semana. Contacte al administrador.");
-                    }
-                } catch (e) {
-                    console.error("Error fetching active metas:", e);
-                    setMetaError("Error al cargar las metas globales.");
-                }
+                // Metas are now handled by the dynamic useEffect based on selected week
 
                 const weeks = generateWeekOptions();
 
@@ -342,20 +337,22 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 setAvailableWeeks(filteredWeeks);
 
                 if (filteredWeeks.length > 0) {
-                    // Intelligent date suggestion logic
-                    const today = new Date();
-                    const currentDay = today.getDay();
-                    const isAdvisor = currentUser && !currentUser.is_admin;
+                    // Intelligent date suggestion logic: Prefer current week
+                    const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+                    const curMonday = new Date(today);
+                    curMonday.setDate(today.getDate() + diffToMonday);
+                    curMonday.setHours(0, 0, 0, 0);
+                    const currentMondayStr = curMonday.toISOString().split('T')[0];
+
+                    // Intentar encontrar la semana actual en la lista disponible
+                    const currentWeekInList = filteredWeeks.find(w => w.monday === currentMondayStr);
 
                     let defaultMonday;
-                    if (isAdvisor) {
-                        defaultMonday = filteredWeeks[0]?.monday;
+                    if (currentWeekInList) {
+                        defaultMonday = currentWeekInList.monday;
                     } else {
-                        if (currentDay === 0 || currentDay >= 4) {
-                            defaultMonday = filteredWeeks[1]?.monday || filteredWeeks[0]?.monday;
-                        } else {
-                            defaultMonday = filteredWeeks[0]?.monday;
-                        }
+                        // Si no está (por ejemplo, ya existe plan), la más reciente (primera de la lista ya que está reversada)
+                        defaultMonday = filteredWeeks[0]?.monday;
                     }
 
                     const selectedW = filteredWeeks.find(w => w.monday === defaultMonday) || filteredWeeks[0];
@@ -380,6 +377,47 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
             setClientes([]); // Opcional: limpiar si no hay empleado
         }
     }, [formData.id_empleado]);
+
+    // Re-fetch metas when week changes
+    useEffect(() => {
+        const fetchMetasForWeek = async () => {
+            if (!formData.fecha_inicio_semana) return;
+
+            const selectedWeek = availableWeeks.find(w => w.monday === formData.fecha_inicio_semana);
+            if (!selectedWeek) return;
+
+            try {
+                const allMetas = await maestroMetasService.getAll();
+                // Filter by name (label) and is_active
+                const matchingMeta = allMetas.find(m =>
+                    m.nombre_meta?.trim() === selectedWeek.label?.trim()
+                );
+
+                if (matchingMeta) {
+                    setActiveMeta(matchingMeta);
+                    setMetaError(null);
+                    setFormData(prev => ({
+                        ...prev,
+                        meta_visitas: matchingMeta.meta_visitas,
+                        meta_visitas_asistidas: matchingMeta.meta_visitas_asistidas,
+                        meta_llamadas: matchingMeta.meta_llamadas,
+                        meta_emails: matchingMeta.meta_emails,
+                        meta_cotizaciones: matchingMeta.meta_cotizaciones
+                    }));
+                } else {
+                    setActiveMeta(null);
+                    setMetaError("No hay metas configuradas para esta semana. Contacte al administrador.");
+                }
+            } catch (error) {
+                console.error('Error fetching metas for week:', error);
+                setMetaError("Error al cargar las metas globales.");
+            }
+        };
+
+        if (availableWeeks.length > 0) {
+            fetchMetasForWeek();
+        }
+    }, [formData.fecha_inicio_semana, availableWeeks]);
 
     const fetchClientes = async (idEmpleado) => {
         try {
@@ -577,6 +615,12 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
 
                                             <div className="section-divider">
                                                 <span>Metas de Cumplimiento</span>
+                                                {activeMeta?.puntaje_objetivo && (
+                                                    <div className="target-score-badge">
+                                                        <span className="score-val">{activeMeta.puntaje_objetivo}</span>
+                                                        <span className="score-lbl">PTS OBJETIVO</span>
+                                                    </div>
+                                                )}
                                                 <div className="line" />
                                             </div>
 
@@ -597,6 +641,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="emerald"
                                                         value={formData.meta_visitas}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_visita}
                                                     />
                                                     <GoalInputCard
                                                         icon={Users}
@@ -605,6 +650,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="indigo"
                                                         value={formData.meta_visitas_asistidas}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_visita_asistida}
                                                     />
                                                     <GoalInputCard
                                                         icon={Phone}
@@ -613,6 +659,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="blue"
                                                         value={formData.meta_llamadas}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_llamada}
                                                     />
                                                     <GoalInputCard
                                                         icon={Mail}
@@ -621,6 +668,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="amber"
                                                         value={formData.meta_emails}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_email}
                                                     />
                                                     <GoalInputCard
                                                         icon={Target}
@@ -629,6 +677,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                                                         color="pink"
                                                         value={formData.meta_cotizaciones}
                                                         isGlobal={true}
+                                                        points={activeMeta?.puntos_cotizacion}
                                                     />
                                                 </div>
                                             )}
@@ -1058,6 +1107,14 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                         display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;
                     }
                     .section-divider span { font-size: 0.9rem; font-weight: 900; color: #1e293b; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+                    .target-score-badge {
+                        background: #0ea5e9; padding: 4px 12px; border-radius: 50px;
+                        display: flex; align-items: baseline; gap: 6px; color: white;
+                        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+                        flex-shrink: 0;
+                    }
+                    .score-val { font-size: 1rem; font-weight: 950; }
+                    .score-lbl { font-size: 0.55rem; font-weight: 800; opacity: 0.9; text-transform: uppercase; }
                     .section-divider .line { height: 1px; flex: 1; background: linear-gradient(90deg, #e2e8f0, transparent); }
 
                     /* Metas Elite Grid */
@@ -1917,7 +1974,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     flex-direction: column;
                     position: relative;
                     background: #f8fafc;
-                    overflow: hidden;
+                    overflow: visible; /* Allow dropdowns to overflow */
                 }
 
                 .wizard-main-content { 
@@ -1955,6 +2012,8 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                     border: 1px solid #e2e8f0;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
                     flex-shrink: 0;
+                    position: relative;
+                    z-index: 1000; /* Ensure header and its dropdowns are above everything else */
                 }
 
                 .advisor-account-card-mini {
@@ -1979,7 +2038,22 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 .mini-info { display: flex; flex-direction: column; }
                 .mini-label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
                 .mini-name { font-size: 1rem; font-weight: 800; color: #1e293b; margin: 0; }
-                .mini-role { font-size: 0.75rem; color: #64748b; font-weight: 600; }
+                .goal-titles p { font-size: 0.75rem; color: #64748b; margin: 0; font-weight: 500; }
+
+                .points-indicator {
+                    margin-top: 4px; display: flex; align-items: center; gap: 6px;
+                }
+                .pts-val {
+                    font-size: 0.65rem; font-weight: 900; padding: 2px 6px; background: #f1f5f9;
+                    border-radius: 4px; color: #475569;
+                }
+                .pts-lbl { font-size: 0.6rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+
+                .goal-input-box {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
 
                 .context-week-selection {
                     display: flex;
@@ -2279,7 +2353,7 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
     );
 };
 
-const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, onChange }) => {
+const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, points, onChange }) => {
     return (
         <div className={`goal-card-premium ${color}`}>
             <div className="goal-icon-side">
@@ -2289,6 +2363,12 @@ const GoalInputCard = ({ icon: Icon, title, subtitle, color, value, isGlobal, on
                 <div className="goal-titles">
                     <h5>{title}</h5>
                     <p>{subtitle}</p>
+                    {points !== undefined && (
+                        <div className="points-indicator">
+                            <span className="pts-val">+{points} PTS</span>
+                            <span className="pts-lbl">por unidad</span>
+                        </div>
+                    )}
                 </div>
                 <div className="goal-input-box">
                     <span className="goal-value">{value}</span>
