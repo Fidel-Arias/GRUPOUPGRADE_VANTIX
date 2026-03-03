@@ -337,20 +337,22 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
                 setAvailableWeeks(filteredWeeks);
 
                 if (filteredWeeks.length > 0) {
-                    // Intelligent date suggestion logic
-                    const today = new Date();
-                    const currentDay = today.getDay();
-                    const isAdvisor = currentUser && !currentUser.is_admin;
+                    // Intelligent date suggestion logic: Prefer current week
+                    const diffToMonday = (currentDay === 0 ? -6 : 1) - currentDay;
+                    const curMonday = new Date(today);
+                    curMonday.setDate(today.getDate() + diffToMonday);
+                    curMonday.setHours(0, 0, 0, 0);
+                    const currentMondayStr = curMonday.toISOString().split('T')[0];
+
+                    // Intentar encontrar la semana actual en la lista disponible
+                    const currentWeekInList = filteredWeeks.find(w => w.monday === currentMondayStr);
 
                     let defaultMonday;
-                    if (isAdvisor) {
-                        defaultMonday = filteredWeeks[0]?.monday;
+                    if (currentWeekInList) {
+                        defaultMonday = currentWeekInList.monday;
                     } else {
-                        if (currentDay === 0 || currentDay >= 4) {
-                            defaultMonday = filteredWeeks[1]?.monday || filteredWeeks[0]?.monday;
-                        } else {
-                            defaultMonday = filteredWeeks[0]?.monday;
-                        }
+                        // Si no está (por ejemplo, ya existe plan), la más reciente (primera de la lista ya que está reversada)
+                        defaultMonday = filteredWeeks[0]?.monday;
                     }
 
                     const selectedW = filteredWeeks.find(w => w.monday === defaultMonday) || filteredWeeks[0];
