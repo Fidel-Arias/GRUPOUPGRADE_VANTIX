@@ -390,11 +390,24 @@ const PlanWizard = ({ isOpen = false, onClose = () => { }, onSuccess = () => { }
             if (!selectedWeek) return;
 
             try {
-                const allMetas = await maestroMetasService.getAll();
-                // Filter by name (label) and is_active
-                const matchingMeta = allMetas.find(m =>
-                    m.nombre_meta?.trim() === selectedWeek.label?.trim()
-                );
+                let matchingMeta = null;
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+
+                // Si la semana seleccionada incluye el día de hoy, usamos el nuevo endpoint optimizado
+                const isCurrentWeek = todayStr >= formData.fecha_inicio_semana && todayStr <= formData.fecha_fin_semana;
+
+                if (isCurrentWeek) {
+                    matchingMeta = await maestroMetasService.getCurrent();
+                }
+
+                // Fallback a búsqueda manual si el endpoint /current no retornó nada o no es la semana actual
+                if (!matchingMeta) {
+                    const allMetas = await maestroMetasService.getAll();
+                    matchingMeta = allMetas.find(m =>
+                        m.nombre_meta?.trim() === selectedWeek.label?.trim()
+                    );
+                }
 
                 if (matchingMeta) {
                     setActiveMeta(matchingMeta);

@@ -487,10 +487,15 @@ export const maestroMetasService = {
     },
 
     async getActive() {
-        const response = await authFetch('/config/metas/');
+        const response = await authFetch('/config/metas/current');
         if (!response.ok) throw new Error('Error al obtener metas activas');
-        const metas = await response.json();
-        return metas.find(m => m.is_active === 1) || null;
+        return response.json();
+    },
+
+    async getCurrent() {
+        const response = await authFetch('/config/metas/current');
+        if (!response.ok) throw new Error('Error al obtener metas actuales');
+        return response.json();
     },
 
     async create(metaData) {
