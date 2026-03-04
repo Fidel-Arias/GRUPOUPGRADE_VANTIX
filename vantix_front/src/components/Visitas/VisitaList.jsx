@@ -310,7 +310,9 @@ const VisitaList = () => {
                                     <div className="avatar">{(v.cliente?.nombre_cliente || 'C').charAt(0).toUpperCase()}</div>
                                     <div className="text">
                                         <span className="client-name">{v.cliente?.nombre_cliente || 'S/N'}</span>
-                                        <span className="location">{v.cliente?.distrito || v.distrito || 'Sin distrito'}</span>
+                                        <span className="location">
+                                            {typeof v.cliente?.distrito === 'object' ? v.cliente.distrito.nombre : (v.cliente?.distrito || (typeof v.distrito === 'object' ? v.distrito.nombre : v.distrito) || 'Sin distrito')}
+                                        </span>
                                     </div>
                                 </div>
                                 <Badge variant={getStatusVariant(v.resultado)}>{v.resultado}</Badge>
