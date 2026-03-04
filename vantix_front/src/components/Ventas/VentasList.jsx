@@ -376,6 +376,8 @@ const VentasList = () => {
                     padding: 0.75rem 1.5rem; border-radius: 20px;
                     background: rgba(255, 255, 255, 0.6) !important;
                     backdrop-filter: blur(10px);
+                    position: relative;
+                    z-index: 100;
                 }
                 :global(.dark) .filter-strip { background: rgba(30, 30, 30, 0.4) !important; border: 1px solid rgba(255,255,255,0.05); }
                 
