@@ -50,4 +50,8 @@ export const visitaService = {
 
         return response.data;
     },
+    getVisitasPorPlan: async (idPlan: number) => {
+        const response = await apiClient.get(`/api/v1/visitas/?id_plan=${idPlan}`);
+        return response.data;
+    },
 };

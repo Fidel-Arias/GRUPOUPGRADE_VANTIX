@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as Haptics from 'expo-haptics';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -11,11 +12,10 @@ import {
     Save,
     Trash2
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
     ActivityIndicator,
-    Alert,
     Image,
     KeyboardAvoidingView,
     Platform,
@@ -34,6 +34,8 @@ import { visitaService } from '../../api/visita';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { StatusModal } from '../../components/ui/StatusModal';
+import { SummaryImage, SummaryItem, SummaryModal } from '../../components/ui/SummaryModal';
 import { BorderRadius, Colors, Shadow, Spacing } from '../../constants/theme';
 
 // --- SCHEMAS ---
@@ -46,7 +48,7 @@ const baseSchema = {
 const visitaSchema = z.object({
     ...baseSchema,
     id_cliente: z.string().min(1, 'ID Cliente es requerido'),
-    resultado: z.enum(['Cliente interesado', 'En evaluación', 'Venta cerrada', 'No interesado']),
+    resultado: z.string().min(1, 'Selecciona un resultado'),
     nombre_tecnico: z.string().optional(),
     observaciones: z.string().optional(),
     lat: z.string().optional(),
@@ -57,10 +59,12 @@ const visitaSchema = z.object({
 
 const llamadaSchema = z.object({
     ...baseSchema,
-    numero_destino: z.string().min(7, 'Número de destino es requerido'),
+    numero_destino: z.string().regex(/^\d{9}$/, 'El número debe tener exactamente 9 dígitos'),
     nombre_destinatario: z.string().min(1, 'Nombre es requerido'),
-    duracion_segundos: z.string().default('0'),
-    resultado: z.enum(['Contestó', 'No Contestó', 'Buzón', 'Venta Cerrada', 'Interesado', 'Rechazado']),
+    resultado: z.string().min(1, 'Selecciona un resultado'),
+    duracion_horas: z.string().min(1, 'Horas requeridas'),
+    duracion_minutos: z.string().min(1, 'Minutos requeridos'),
+    duracion_segundos_input: z.string().min(1, 'Segundos requeridos'),
     url_foto_prueba: z.any().optional(),
     notas_llamada: z.string().optional(),
 });
@@ -69,7 +73,7 @@ const emailSchema = z.object({
     ...baseSchema,
     email_destino: z.string().email('Email inválido'),
     asunto: z.string().min(1, 'Asunto es requerido'),
-    estado_envio: z.enum(['Borrador', 'Enviado', 'No enviado']),
+    estado_envio: z.string().min(1, 'Selecciona estado'),
     url_foto_prueba: z.any().optional(),
 });
 
@@ -78,10 +82,26 @@ type ActionType = 'visita' | 'visita_asistida' | 'llamada' | 'correo';
 export const ActionForm = () => {
     const { type } = useLocalSearchParams<{ type: ActionType }>();
     const router = useRouter();
+    const [showSummary, setShowSummary] = useState(false);
+    const [summaryData, setSummaryData] = useState<{ items: SummaryItem[], images: SummaryImage[] }>({ items: [], images: [] });
     const [locating, setLocating] = useState(false);
     const [planes, setPlanes] = useState<Plan[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [loadingData, setLoadingData] = useState(true);
+    const [modalConfig, setModalConfig] = useState<{
+        visible: boolean;
+        type: 'success' | 'error' | 'warning';
+        title: string;
+        message: string;
+        onClose: () => void;
+        onAction?: () => void;
+    }>({
+        visible: false,
+        type: 'success',
+        title: '',
+        message: '',
+        onClose: () => { },
+    });
 
     // Mapping between mobile type and backend Enum
     const typeMapping: Record<string, string> = {
@@ -115,20 +135,23 @@ export const ActionForm = () => {
         loadFormData();
     }, []);
 
-    const getSchema = () => {
+    const currentSchema = useMemo(() => {
         if (type === 'visita' || type === 'visita_asistida') return visitaSchema;
         if (type === 'llamada') return llamadaSchema;
         if (type === 'correo') return emailSchema;
-        return visitaSchema; // fallback
-    };
+        return visitaSchema;
+    }, [type]);
 
-    const { control, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
-        resolver: zodResolver(getSchema()),
+    const resolver = useMemo(() => zodResolver(currentSchema), [currentSchema]);
+
+    const { control, handleSubmit, setValue, watch, formState: { errors, isSubmitting, isValid } } = useForm({
+        resolver,
+        mode: 'onChange',
         defaultValues: {
-            id_detalle: '0',
-            id_plan: '0',
-            id_cliente: '0',
-            resultado: 'Cliente interesado',
+            id_detalle: '',
+            id_plan: '',
+            id_cliente: '',
+            resultado: '',
             nombre_tecnico: '',
             observaciones: '',
             lat: '',
@@ -136,6 +159,9 @@ export const ActionForm = () => {
             numero_destino: '',
             nombre_destinatario: '',
             duracion_segundos: '0',
+            duracion_horas: '0',
+            duracion_minutos: '0',
+            duracion_segundos_input: '0',
             notas_llamada: '',
             email_destino: '',
             asunto: '',
@@ -195,12 +221,17 @@ export const ActionForm = () => {
                     foto_sello: data.foto_sello,
                 });
             } else if (type === 'llamada') {
+                const h = parseInt(data.duracion_horas || '0');
+                const m = parseInt(data.duracion_minutos || '0');
+                const s = parseInt(data.duracion_segundos_input || '0');
+                const totalSeconds = (h * 3600) + (m * 60) + s;
+
                 await crmService.registrarLlamada({
                     id_plan: data.id_plan,
                     id_detalle: data.id_detalle,
                     numero_destino: data.numero_destino,
                     nombre_destinatario: data.nombre_destinatario,
-                    duracion_segundos: data.duracion_segundos,
+                    duracion_segundos: totalSeconds.toString(),
                     resultado: data.resultado,
                     notas_llamada: data.notas_llamada,
                     foto_prueba: data.url_foto_prueba,
@@ -215,14 +246,75 @@ export const ActionForm = () => {
                     foto_prueba: data.url_foto_prueba,
                 });
             }
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-            Alert.alert(
-                "Registro Exitoso",
-                `Se ha registrado la ${title} correctamente.`,
-                [{ text: "OK", onPress: () => router.back() }]
-            );
+            const getPlanFicha = () => {
+                const item = matchingAgendaItems.find(i => (i.id_detalle || 0).toString() === data.id_detalle);
+                return item ? `${item.dia_semana || 'Sin día'} - ${(item.hora_programada || '').substring(0, 5)}` : data.id_detalle;
+            };
+
+            const getClientName = () => {
+                const client = filteredClients.find(c => c.id_cliente.toString() === data.id_cliente);
+                return client?.nombre_cliente || data.nombre_destinatario || data.email_destino || 'N/A';
+            };
+
+            let sItems: SummaryItem[] = [{ label: 'Ficha de Plan de Trabajo', value: getPlanFicha() }];
+            let sImages: SummaryImage[] = [];
+
+            if (type === 'visita' || type === 'visita_asistida') {
+                sItems.push(
+                    { label: 'Nombre del Cliente', value: getClientName() },
+                    { label: 'Resultado', value: data.resultado },
+                    { label: 'Latitud', value: data.lat },
+                    { label: 'Longitud', value: data.lon },
+                    { label: 'Fecha/Hora Check-in', value: new Date().toLocaleString() },
+                    { label: 'Observaciones', value: data.observaciones || 'Ninguna' }
+                );
+                if (data.foto_lugar) sImages.push({ label: 'Foto del lugar', uri: data.foto_lugar });
+                if (data.foto_sello) sImages.push({ label: 'Foto del sello', uri: data.foto_sello });
+            } else if (type === 'llamada') {
+                const h = parseInt(data.duracion_horas || '0');
+                const m = parseInt(data.duracion_minutos || '0');
+                const s = parseInt(data.duracion_segundos_input || '0');
+                sItems.push(
+                    { label: 'Número Destino', value: data.numero_destino },
+                    { label: 'Nombre Destinatario', value: getClientName() },
+                    { label: 'Duración', value: `${h}h ${m}m ${s}s` },
+                    { label: 'Resultado', value: data.resultado },
+                    { label: 'Fecha/Hora Registro', value: new Date().toLocaleString() },
+                    { label: 'Notas', value: data.notas_llamada || 'Ninguna' }
+                );
+                if (data.url_foto_prueba) sImages.push({ label: 'Foto de prueba', uri: data.url_foto_prueba });
+            } else if (type === 'correo') {
+                sItems.push(
+                    { label: 'Email Destino', value: data.email_destino },
+                    { label: 'Asunto', value: data.asunto },
+                    { label: 'Estado de Envío', value: data.estado_envio },
+                    { label: 'Fecha/Hora Registro', value: new Date().toLocaleString() }
+                );
+                if (data.url_foto_prueba) sImages.push({ label: 'Foto de prueba (Captura)', uri: data.url_foto_prueba });
+            }
+
+            setSummaryData({ items: sItems, images: sImages });
+
+            setModalConfig({
+                visible: true,
+                type: 'success',
+                title: '¡Registro Exitoso!',
+                message: `Se ha registrado la ${title} correctamente en el sistema.`,
+                onClose: () => {
+                    setModalConfig(prev => ({ ...prev, visible: false }));
+                    router.back();
+                },
+                onAction: () => {
+                    setModalConfig(prev => ({ ...prev, visible: false }));
+                    setShowSummary(true);
+                }
+            });
         } catch (error: any) {
             console.error('Error al registrar:', error);
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
             let message = "Ocurrió un error al procesar el registro.";
             if (error.response?.data?.detail) {
                 if (Array.isArray(error.response.data.detail)) {
@@ -231,7 +323,14 @@ export const ActionForm = () => {
                     message = error.response.data.detail;
                 }
             }
-            Alert.alert("Error de Validación", message);
+
+            setModalConfig({
+                visible: true,
+                type: 'error',
+                title: 'Error de Validación',
+                message: message,
+                onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+            });
         }
     };
 
@@ -239,7 +338,14 @@ export const ActionForm = () => {
         setLocating(true);
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permiso denegado', 'Permite el acceso al GPS para obtener la ubicación.');
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            setModalConfig({
+                visible: true,
+                type: 'warning' as any,
+                title: 'Permiso Denegado',
+                message: 'Por favor, permite el acceso al GPS en los ajustes de tu celular para registrar la ubicación.',
+                onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+            });
             setLocating(false);
             return;
         }
@@ -249,7 +355,14 @@ export const ActionForm = () => {
             setValue('lat', location.coords.latitude.toString());
             setValue('lon', location.coords.longitude.toString());
         } catch (e) {
-            Alert.alert('Error', 'No se pudo obtener la ubicación.');
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setModalConfig({
+                visible: true,
+                type: 'error',
+                title: 'Error de GPS',
+                message: 'No pudimos obtener tu ubicación actual. Asegúrate de tener el GPS encendido.',
+                onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+            });
         } finally {
             setLocating(false);
         }
@@ -262,7 +375,13 @@ export const ActionForm = () => {
             if (useCamera) {
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
                 if (status !== 'granted') {
-                    Alert.alert('Permiso denegado', 'Se requiere permiso de cámara.');
+                    setModalConfig({
+                        visible: true,
+                        type: 'warning' as any,
+                        title: 'Sin Acceso a Cámara',
+                        message: 'Debes conceder permisos de cámara para tomar fotos de evidencia.',
+                        onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+                    });
                     return;
                 }
 
@@ -274,7 +393,13 @@ export const ActionForm = () => {
             } else {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (status !== 'granted') {
-                    Alert.alert('Permiso denegado', 'Se requiere permiso de galería.');
+                    setModalConfig({
+                        visible: true,
+                        type: 'warning' as any,
+                        title: 'Sin Acceso a Galería',
+                        message: 'Debes conceder permisos a tu galería para subir archivos.',
+                        onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+                    });
                     return;
                 }
 
@@ -286,10 +411,9 @@ export const ActionForm = () => {
             }
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
-                // Compress the image to avoid 413 Payload Too Large error from Backend/Nginx
                 const manipResult = await ImageManipulator.manipulateAsync(
                     result.assets[0].uri,
-                    [{ resize: { width: 1080 } }], // Resize down to 1080px width max
+                    [{ resize: { width: 1080 } }],
                     { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
                 );
 
@@ -297,7 +421,13 @@ export const ActionForm = () => {
             }
         } catch (error) {
             console.error('Error picking/compressing image:', error);
-            Alert.alert('Error', 'No se pudo procesar la imagen.');
+            setModalConfig({
+                visible: true,
+                type: 'error',
+                title: 'Error de Archivo',
+                message: 'No se pudo procesar la imagen seleccionada.',
+                onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+            });
         }
     };
 
@@ -495,8 +625,9 @@ export const ActionForm = () => {
                                         label="Número Destino"
                                         placeholder="987654321"
                                         keyboardType="phone-pad"
+                                        maxLength={9}
                                         value={value}
-                                        onChangeText={onChange}
+                                        onChangeText={(text) => onChange(text.replace(/[^0-9]/g, ''))}
                                         error={errors.numero_destino?.message as string}
                                     />
                                 )}
@@ -516,19 +647,62 @@ export const ActionForm = () => {
                                 )}
                             />
 
-                            <Controller
-                                control={control}
-                                name="duracion_segundos"
-                                render={({ field: { onChange, value } }) => (
-                                    <Input
-                                        label="Duración (Segundos)"
-                                        placeholder="60"
-                                        keyboardType="numeric"
-                                        value={value}
-                                        onChangeText={onChange}
-                                    />
-                                )}
-                            />
+                            <View style={styles.durationSection}>
+                                <Text style={styles.fieldLabel}>Duración de la llamada</Text>
+                                <View style={styles.durationRow}>
+                                    <View style={styles.durationItem}>
+                                        <Controller
+                                            control={control}
+                                            name="duracion_horas"
+                                            render={({ field: { onChange, value } }) => (
+                                                <Input
+                                                    label="HH"
+                                                    placeholder="0"
+                                                    keyboardType="numeric"
+                                                    value={value}
+                                                    onChangeText={onChange}
+                                                />
+                                            )}
+                                        />
+                                    </View>
+                                    <View style={styles.durationItem}>
+                                        <Controller
+                                            control={control}
+                                            name="duracion_minutos"
+                                            render={({ field: { onChange, value } }) => (
+                                                <Input
+                                                    label="MM"
+                                                    placeholder="0"
+                                                    keyboardType="numeric"
+                                                    value={value}
+                                                    onChangeText={(text) => {
+                                                        const val = parseInt(text || '0');
+                                                        if (val < 60) onChange(text);
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    </View>
+                                    <View style={styles.durationItem}>
+                                        <Controller
+                                            control={control}
+                                            name="duracion_segundos_input"
+                                            render={({ field: { onChange, value } }) => (
+                                                <Input
+                                                    label="SS"
+                                                    placeholder="0"
+                                                    keyboardType="numeric"
+                                                    value={value}
+                                                    onChangeText={(text) => {
+                                                        const val = parseInt(text || '0');
+                                                        if (val < 60) onChange(text);
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    </View>
+                                </View>
+                            </View>
 
                             <Controller
                                 control={control}
@@ -628,13 +802,47 @@ export const ActionForm = () => {
 
                     <Button
                         title="Guardar Registro"
-                        onPress={handleSubmit(onSubmit)}
+                        onPress={() => {
+                            if (!isValid) {
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                                setModalConfig({
+                                    visible: true,
+                                    type: 'warning',
+                                    title: 'Incompleto',
+                                    message: 'Por favor, completa todos los campos requeridos antes de guardar.',
+                                    onClose: () => setModalConfig(prev => ({ ...prev, visible: false }))
+                                });
+                            } else {
+                                handleSubmit(onSubmit)();
+                            }
+                        }}
                         loading={isSubmitting}
-                        style={styles.submitButton}
+                        style={StyleSheet.flatten([styles.submitButton, !isValid ? styles.disabledBtn : {}])}
                         icon={<Save size={20} color={Colors.text.inverse} />}
                     />
                 </View>
             </ScrollView>
+
+            <StatusModal
+                visible={modalConfig.visible}
+                type={modalConfig.type as any}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                onClose={modalConfig.onClose}
+                onAction={modalConfig.onAction}
+                actionLabel={modalConfig.type === 'success' ? 'Ver resumen' : 'Intentar de nuevo'}
+            />
+
+            <SummaryModal
+                visible={showSummary}
+                title={`Resumen - ${title}`}
+                items={summaryData.items}
+                images={summaryData.images}
+                onClose={() => {
+                    setShowSummary(false);
+                    router.back();
+                }}
+            />
         </KeyboardAvoidingView>
     );
 };
@@ -732,6 +940,21 @@ const styles = StyleSheet.create({
     galleryButton: {
         borderColor: Colors.secondary,
         backgroundColor: '#ECFEFF',
+    },
+    durationSection: {
+        marginBottom: Spacing.md,
+    },
+    durationRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: Spacing.sm,
+    },
+    durationItem: {
+        flex: 1,
+    },
+    disabledBtn: {
+        opacity: 0.6,
+        backgroundColor: Colors.text.muted,
     },
     mediaButtonText: {
         marginLeft: Spacing.sm,

@@ -1,9 +1,10 @@
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-    Alert, Dimensions,
+    Dimensions,
     Image,
     KeyboardAvoidingView,
     Platform,
@@ -14,9 +15,10 @@ import {
 import { authService } from '../../api/auth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { StatusModal } from '../../components/ui/StatusModal';
 import { Colors, Spacing } from '../../constants/theme';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export const LoginScreen = () => {
     const router = useRouter();
@@ -24,10 +26,27 @@ export const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [modalConfig, setModalConfig] = useState<{
+        visible: boolean;
+        type: 'error' | 'warning';
+        title: string;
+        message: string;
+    }>({
+        visible: false,
+        type: 'error',
+        title: '',
+        message: '',
+    });
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert("Error", "Por favor ingresa tu correo y contraseña.");
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            setModalConfig({
+                visible: true,
+                type: 'warning',
+                title: 'Campos Vacíos',
+                message: "Por favor ingresa tu correo y contraseña.",
+            });
             return;
         }
 
@@ -37,8 +56,15 @@ export const LoginScreen = () => {
             router.replace('/(main)');
         } catch (error: any) {
             console.error('Login error:', error);
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             const message = error.response?.data?.detail || "Correo o contraseña incorrectos.";
-            Alert.alert("Error de Inicio de Sesión", message);
+
+            setModalConfig({
+                visible: true,
+                type: 'error',
+                title: 'Error de Acceso',
+                message: message,
+            });
         } finally {
             setLoading(false);
         }
@@ -114,6 +140,15 @@ export const LoginScreen = () => {
                     </View>
                 </View>
             </ScrollView>
+
+            <StatusModal
+                visible={modalConfig.visible}
+                type={modalConfig.type}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                onClose={() => setModalConfig(prev => ({ ...prev, visible: false }))}
+                actionLabel={modalConfig.type === 'error' ? 'Reintentar' : 'Entendido'}
+            />
         </KeyboardAvoidingView>
     );
 };
@@ -127,7 +162,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     header: {
-        height: 320,
+        height: height > 700 ? 300 : 250,
         width: '100%',
     },
     headerGradient: {
@@ -140,17 +175,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logoWrapper: {
-        width: 110,
-        height: 110,
-        marginBottom: Spacing.md,
+        width: 90,
+        height: 90,
+        marginBottom: Spacing.sm,
     },
     logoImage: {
-        width: 110,
-        height: 110,
-        borderRadius: 28,
+        width: 90,
+        height: 90,
+        borderRadius: 24,
     },
     appName: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: '900',
         color: Colors.text.inverse,
         letterSpacing: 2,
@@ -163,10 +198,10 @@ const styles = StyleSheet.create({
     formContainer: {
         flex: 1,
         backgroundColor: Colors.background,
-        marginTop: -40,
-        borderTopRightRadius: 60,
+        marginTop: -30,
+        borderTopRightRadius: 40,
         paddingHorizontal: Spacing.xl,
-        paddingTop: Spacing.xxl,
+        paddingTop: Spacing.xl,
     },
     welcomeTitle: {
         fontSize: 28,
@@ -177,14 +212,14 @@ const styles = StyleSheet.create({
     welcomeSubtitle: {
         fontSize: 16,
         color: Colors.text.secondary,
-        marginBottom: Spacing.xl,
+        marginBottom: Spacing.lg,
     },
     loginButton: {
         marginTop: Spacing.md,
     },
     footer: {
         marginTop: 'auto',
-        paddingVertical: Spacing.xl,
+        paddingVertical: Spacing.lg,
         alignItems: 'center',
     },
     versionText: {

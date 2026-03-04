@@ -1,6 +1,7 @@
 import React from 'react';
 import {
     ActivityIndicator,
+    StyleProp,
     StyleSheet,
     Text,
     TextStyle,
@@ -15,7 +16,7 @@ interface ButtonProps {
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
     loading?: boolean;
     disabled?: boolean;
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
     textStyle?: TextStyle;
     icon?: React.ReactNode;
 }
