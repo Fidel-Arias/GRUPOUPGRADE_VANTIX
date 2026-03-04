@@ -311,7 +311,7 @@ const VisitaList = () => {
                                     <div className="text">
                                         <span className="client-name">{v.cliente?.nombre_cliente || 'S/N'}</span>
                                         <span className="location">
-                                            {typeof v.cliente?.distrito === 'object' ? v.cliente.distrito.nombre : (v.cliente?.distrito || (typeof v.distrito === 'object' ? v.distrito.nombre : v.distrito) || 'Sin distrito')}
+                                            {v.cliente?.distrito?.nombre || (typeof v.cliente?.distrito === 'string' ? v.cliente.distrito : null) || v.distrito?.nombre || (typeof v.distrito === 'string' ? v.distrito : null) || 'Sin distrito'}
                                         </span>
                                     </div>
                                 </div>
