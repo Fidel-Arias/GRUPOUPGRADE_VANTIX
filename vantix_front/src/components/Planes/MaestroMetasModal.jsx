@@ -4,6 +4,30 @@ import { X, Target, Save, CheckCircle2, Briefcase, Users, Phone, Mail, FileText,
 import { maestroMetasService } from '../../services/api';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
+const MetaInput = React.memo(({ icon: Icon, label, name, value, sublabel, onChange }) => (
+    <div className="meta-input-card glass-morphism">
+        <div className="card-header">
+            <div className="icon-wrap">
+                <Icon size={18} />
+            </div>
+            <div className="label-wrap">
+                <span className="main-label">{label}</span>
+                <span className="sub-label">{sublabel}</span>
+            </div>
+        </div>
+        <div className="input-wrap">
+            <input
+                type="number"
+                name={name}
+                value={value}
+                onChange={onChange}
+                min="0"
+            />
+            <span className="unit">UNID.</span>
+        </div>
+    </div>
+));
+
 const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -11,6 +35,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
     const [existingMetas, setExistingMetas] = useState([]);
     const [availableWeeks, setAvailableWeeks] = useState([]);
     const [isDuplicate, setIsDuplicate] = useState(false);
+
     const calculateTotalScore = (data) => {
         return Math.round(
             (Number(data.meta_visitas || 0) * Number(data.puntos_visita || 0)) +
@@ -180,30 +205,6 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
         }
     };
 
-    const MetaInput = React.memo(({ icon: Icon, label, name, value, sublabel, onChange }) => (
-        <div className="meta-input-card glass-morphism">
-            <div className="card-header">
-                <div className="icon-wrap">
-                    <Icon size={18} />
-                </div>
-                <div className="label-wrap">
-                    <span className="main-label">{label}</span>
-                    <span className="sub-label">{sublabel}</span>
-                </div>
-            </div>
-            <div className="input-wrap">
-                <input
-                    type="number"
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    min="0"
-                />
-                <span className="unit">UNID.</span>
-            </div>
-        </div>
-    ));
-
     if (!isOpen) return null;
 
     return (
@@ -307,10 +308,10 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                             />
                             <MetaInput
                                 icon={TrendingUp}
-                                label="Ventas ($)"
+                                label="Ventas (S/)"
                                 name="meta_ventas"
                                 value={formData.meta_ventas}
-                                sublabel="Monto objetivo (USD)"
+                                sublabel="Monto objetivo (Soles)"
                                 onChange={handleChange}
                             />
                         </div>
