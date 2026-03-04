@@ -264,7 +264,15 @@ const GastoList = () => {
                                         <div className="card-top">
                                             <div className="date-badge">
                                                 <Calendar size={14} />
-                                                <span>{new Date(g.fecha_gasto).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                                                <div className="date-time-group">
+                                                    <span>{new Date(g.fecha_gasto).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                                                    {g.hora_registro && (
+                                                        <>
+                                                            <span className="time-sep">•</span>
+                                                            <span className="time-val">{g.hora_registro.slice(0, 5)}</span>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                             <Badge variant="teal">S/ {parseFloat(g.monto_gastado).toFixed(2)}</Badge>
                                         </div>
@@ -309,7 +317,7 @@ const GastoList = () => {
                                         <div className="card-foot">
                                             <div className="meta-audit">
                                                 <Clock size={12} />
-                                                <span>Auditado por Sistema</span>
+                                                <span>{g.hora_registro ? `Automático: ${g.hora_registro.slice(0, 5)}` : 'Auditado por Sistema'}</span>
                                             </div>
                                             <div className="plan-tag">
                                                 <Badge variant="info">PLAN #{g.id_plan}</Badge>
@@ -484,6 +492,9 @@ const GastoList = () => {
                     padding: 6px 12px;
                     border-radius: 12px;
                 }
+                .date-time-group { display: flex; align-items: center; gap: 4px; }
+                .time-sep { opacity: 0.3; font-weight: 400; }
+                .time-val { color: var(--primary); opacity: 0.9; }
 
                 .route-viz {
                     display: flex;
