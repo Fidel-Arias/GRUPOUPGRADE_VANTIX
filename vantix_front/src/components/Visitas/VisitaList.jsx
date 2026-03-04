@@ -584,7 +584,7 @@ const VisitaList = () => {
                     padding: 1.5rem !important; 
                     display: flex; 
                     flex-direction: column; 
-                    gap: 1.25rem; 
+                    gap: 1.5rem; 
                     border: 1px solid rgba(255,255,255,0.3);
                 }
                 
@@ -600,14 +600,14 @@ const VisitaList = () => {
                 .client-name { font-weight: 800; color: var(--text-heading); font-size: 1.05rem; letter-spacing: -0.01em; }
                 .location { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
 
-                .visit-body { position: relative; display: flex; flex-direction: column; gap: 0.75rem; }
+                .visit-body { position: relative; display: flex; flex-direction: column; gap: 1.25rem; }
                 .notes { font-size: 0.95rem; color: var(--text-body); line-height: 1.6; margin: 0; opacity: 0.9; }
 
                 .visit-details-grid {
                     display: grid;
                     grid-template-columns: 1fr;
-                    gap: 8px;
-                    padding: 10px;
+                    gap: 12px;
+                    padding: 12px;
                     background: rgba(0,0,0,0.02);
                     border-radius: 12px;
                     border: 1px dashed var(--border-subtle);
@@ -625,7 +625,8 @@ const VisitaList = () => {
                 .visit-media-grid {
                     display: grid;
                     grid-template-columns: repeat(2, 1fr);
-                    gap: 10px;
+                    gap: 14px;
+                    margin-top: 0.25rem;
                 }
                 .visit-photo-item {
                     position: relative;
