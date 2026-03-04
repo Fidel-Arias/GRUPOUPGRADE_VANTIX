@@ -166,9 +166,13 @@ const CRMList = () => {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('es-ES', {
+        if (!dateString) return 'Fecha no reg.';
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return 'Fecha inválida';
+
+        return d.toLocaleDateString('es-ES', {
             day: '2-digit', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
+            hour: '2-digit', minute: '2-digit', hour12: true
         });
     };
 
@@ -306,18 +310,25 @@ const CRMList = () => {
                                         <div className="lux-card">
                                             <div className="lux-card-glow" />
                                             <div className="lux-header">
-                                                <div className="client-info-v3">
-                                                    <div className="client-avatar-v3">
-                                                        {(item.nombre_destinatario || item.email_destino || 'U').charAt(0).toUpperCase()}
-                                                        <div className="status-dot-v3" />
+                                                <div className="client-data-group">
+                                                    <div className="client-info-v3">
+                                                        <div className="client-avatar-v3">
+                                                            {(item.nombre_destinatario || item.email_destino || 'U').charAt(0).toUpperCase()}
+                                                            <div className="status-dot-v3" />
+                                                        </div>
+                                                        <div className="client-txt-v3">
+                                                            <h4>{item.nombre_destinatario || 'Cliente Corporativo'}</h4>
+                                                            <span>{item.numero_destino || item.email_destino}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="client-txt-v3">
-                                                        <h4>{item.nombre_destinatario || 'Cliente Corporativo'}</h4>
-                                                        <span>{item.numero_destino || item.email_destino}</span>
-                                                    </div>
+                                                    {item.resultado && (
+                                                        <div className={`res-badge ${item.resultado.toLowerCase().replace(/ /g, '-')}`}>
+                                                            {item.resultado}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className={`lux-badge ${activeTab}`}>
-                                                    {activeTab === 'llamadas' ? <PhoneCall size={12} /> : <Mail size={12} />}
+                                                    {activeTab === 'llamadas' ? <PhoneCall size={16} /> : <Mail size={16} />}
                                                 </div>
                                             </div>
 
@@ -328,9 +339,16 @@ const CRMList = () => {
                                                         <p>{item.asunto}</p>
                                                     </div>
                                                 )}
-                                                <div className="lux-notes-box">
-                                                    <p>{item.notas || item.cuerpo_email}</p>
-                                                </div>
+                                                {(item.notas || item.cuerpo_email) ? (
+                                                    <div className="lux-notes-box">
+                                                        <p>{item.notas || item.cuerpo_email}</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="lux-notes-placeholder">
+                                                        <Activity size={14} />
+                                                        <span>Sin notas adicionales registradas</span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {item.evidencia_url && (
@@ -553,61 +571,87 @@ const CRMList = () => {
                 }
                 .lux-card:hover .lux-card-glow { opacity: 1; }
 
-                .lux-header { display: flex; justify-content: space-between; align-items: flex-start; }
+                .lux-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+                .client-data-group { display: flex; flex-direction: column; gap: 10px; flex: 1; }
                 .client-info-v3 { display: flex; align-items: center; gap: 12px; }
                 
                 .client-avatar-v3 {
                     position: relative;
                     width: 52px; height: 52px; border-radius: 16px;
-                    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+                    background: linear-gradient(135deg, var(--bg-app), var(--border-subtle));
                     color: var(--primary); font-weight: 950; font-size: 1.25rem;
                     display: flex; align-items: center; justify-content: center;
                     border: 1.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
                 }
+                :global(.dark) .client-avatar-v3 { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); }
                 .status-dot-v3 {
                     position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px;
                     background: #10b981; border: 2px solid white; border-radius: 50%;
                 }
+                :global(.dark) .status-dot-v3 { border-color: #1e293b; }
 
-                .client-txt-v3 h4 { font-size: 1.05rem; font-weight: 900; color: var(--text-heading); line-height: 1.2; }
-                .client-txt-v3 span { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+                .client-txt-v3 h4 { font-size: 1.1rem; font-weight: 950; color: var(--text-heading); line-height: 1.2; letter-spacing: -0.02em; }
+                .client-txt-v3 span { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; }
 
-                .lux-badge { padding: 10px; border-radius: 12px; }
-                .lux-badge.llamadas { background: #e0f2fe; color: var(--primary); }
-                .lux-badge.emails { background: #dcfce7; color: #059669; }
-
-                .lux-body { display: flex; flex-direction: column; gap: 10px; }
-                .lux-subject { 
-                    padding: 0.75rem; background: #f8fafc; border-radius: 12px; 
-                    border: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 2px;
+                .res-badge {
+                    display: inline-flex; width: fit-content; padding: 4px 12px; border-radius: 8px; font-size: 0.7rem; 
+                    font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;
+                    background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
                 }
-                .lux-subject p { font-size: 0.85rem; font-weight: 800; color: var(--text-heading); margin: 0; }
+                .res-badge.contestó { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+                .res-badge.no-contestó { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+                .res-badge.buzón-de-voz { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
 
-                .lux-notes-box p { font-size: 0.95rem; line-height: 1.6; color: var(--text-body); margin: 0; opacity: 0.9; }
+                .lux-badge { 
+                    width: 44px; height: 44px; border-radius: 12px; 
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                }
+                .lux-badge.llamadas { background: var(--primary-glow); color: var(--primary); }
+                .lux-badge.emails { background: #ecfdf5; color: #10b981; }
+
+                .lux-body { display: flex; flex-direction: column; gap: 12px; }
+                .lux-subject { 
+                    padding: 1rem; background: #f8fafc; border-radius: 16px; 
+                    border: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 4px;
+                }
+                .sub-tag { font-size: 0.6rem; font-weight: 950; color: var(--text-muted); letter-spacing: 0.1em; }
+                .lux-subject p { font-size: 0.9rem; font-weight: 850; color: var(--text-heading); margin: 0; }
+
+                .lux-notes-box { padding: 0.5rem 0; }
+                .lux-notes-box p { font-size: 0.95rem; line-height: 1.7; color: var(--text-body); margin: 0; font-weight: 500; }
+
+                .lux-notes-placeholder {
+                    display: flex; align-items: center; gap: 8px; padding: 1.25rem;
+                    background: #f8fafc; border: 1.5px dashed #e2e8f0; border-radius: 16px;
+                    color: var(--text-muted); font-size: 0.8rem; font-weight: 700;
+                }
+                :global(.dark) .lux-notes-placeholder { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.1); }
 
                 .lux-evidence {
-                    position: relative; height: 180px; border-radius: 18px; overflow: hidden;
-                    border: 1px solid var(--border-subtle); cursor: pointer;
+                    position: relative; height: 200px; border-radius: 20px; overflow: hidden;
+                    border: 1px solid var(--border-subtle); cursor: pointer; margin: 0.5rem 0;
                 }
-                .lux-evidence img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+                .lux-evidence img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
                 .lux-overlay {
-                    position: absolute; inset: 0; background: rgba(0,0,0,0.6);
+                    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7);
                     backdrop-filter: blur(4px); display: flex; flex-direction: column;
-                    align-items: center; justify-content: center; gap: 8px;
+                    align-items: center; justify-content: center; gap: 10px;
                     color: white; opacity: 0; transition: 0.3s;
                 }
-                .lux-overlay span { font-size: 0.75rem; font-weight: 950; letter-spacing: 0.2rem; }
-                .lux-evidence:hover img { transform: scale(1.08); }
+                .lux-overlay span { font-size: 0.7rem; font-weight: 950; letter-spacing: 0.3rem; margin-top: 5px; }
+                .lux-evidence:hover img { transform: scale(1.1); }
                 .lux-evidence:hover .lux-overlay { opacity: 1; }
 
                 .lux-footer {
                     display: flex; justify-content: space-between; align-items: center;
-                    padding-top: 1.25rem; border-top: 1px dashed var(--border-light);
+                    padding-top: 1.25rem; border-top: 1px solid var(--border-light);
                 }
-                .lux-time { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); font-weight: 700; }
+                .lux-time { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted); font-weight: 800; }
                 .lux-duration { 
                     font-size: 0.75rem; font-weight: 950; color: var(--primary); 
-                    background: var(--primary-glow); padding: 4px 12px; border-radius: 8px;
+                    background: var(--primary-glow); padding: 6px 14px; border-radius: 10px;
+                    border: 1px solid var(--primary-soft);
                 }
 
                 .crm-empty-lux {

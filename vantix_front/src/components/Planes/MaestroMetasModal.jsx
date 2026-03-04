@@ -143,7 +143,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
         formData.meta_ventas, formData.puntos_venta
     ]);
 
-    const handleChange = (e) => {
+    const handleChange = React.useCallback((e) => {
         const { name, value, type } = e.target;
 
         if (name === 'nombre_meta') {
@@ -155,7 +155,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
             ...prev,
             [name]: type === 'number' ? (name === 'meta_ventas' ? parseFloat(value) : parseInt(value)) : value
         }));
-    };
+    }, [existingMetas]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -180,7 +180,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
         }
     };
 
-    const MetaInput = ({ icon: Icon, label, name, value, sublabel }) => (
+    const MetaInput = React.memo(({ icon: Icon, label, name, value, sublabel, onChange }) => (
         <div className="meta-input-card glass-morphism">
             <div className="card-header">
                 <div className="icon-wrap">
@@ -196,13 +196,13 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                     type="number"
                     name={name}
                     value={value}
-                    onChange={handleChange}
+                    onChange={onChange}
                     min="0"
                 />
                 <span className="unit">UNID.</span>
             </div>
         </div>
-    );
+    ));
 
     if (!isOpen) return null;
 
@@ -271,6 +271,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                                 name="meta_visitas"
                                 value={formData.meta_visitas}
                                 sublabel="Visitas presenciales"
+                                onChange={handleChange}
                             />
                             <MetaInput
                                 icon={Users}
@@ -278,6 +279,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                                 name="meta_visitas_asistidas"
                                 value={formData.meta_visitas_asistidas}
                                 sublabel="Soporte técnico / Acompañ."
+                                onChange={handleChange}
                             />
                             <MetaInput
                                 icon={Phone}
@@ -285,6 +287,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                                 name="meta_llamadas"
                                 value={formData.meta_llamadas}
                                 sublabel="Seguimiento llamadas"
+                                onChange={handleChange}
                             />
                             <MetaInput
                                 icon={Mail}
@@ -292,6 +295,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                                 name="meta_emails"
                                 value={formData.meta_emails}
                                 sublabel="Correos y propuestas"
+                                onChange={handleChange}
                             />
                             <MetaInput
                                 icon={FileText}
@@ -299,6 +303,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                                 name="meta_cotizaciones"
                                 value={formData.meta_cotizaciones}
                                 sublabel="Nuevas cotizaciones"
+                                onChange={handleChange}
                             />
                             <MetaInput
                                 icon={TrendingUp}
@@ -306,6 +311,7 @@ const MaestroMetasModal = ({ isOpen, onClose, onSave, existingMeta = null }) => 
                                 name="meta_ventas"
                                 value={formData.meta_ventas}
                                 sublabel="Monto objetivo (USD)"
+                                onChange={handleChange}
                             />
                         </div>
 
