@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import {
+    Bus,
     ChevronRight,
     LogOut,
     Mail,
@@ -88,6 +89,13 @@ export const HomeScreen = () => {
             icon: <Mail size={32} color={Colors.accent} />,
             color: '#FFFBEB',
             description: 'Envío de información'
+        },
+        {
+            id: 'movilidad',
+            title: 'Movilidad',
+            icon: <Bus size={32} color={'#F59E0B'} />,
+            color: '#FFF7ED',
+            description: 'Registro de gastos'
         },
     ];
 
