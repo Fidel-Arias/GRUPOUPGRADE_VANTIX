@@ -480,16 +480,20 @@ const PlanesList = () => {
                                     <div className="plan-card-header">
                                         <div className="date-info-main">
                                             <div className="calendar-icon-box">
-                                                <Calendar size={20} />
+                                                <Calendar size={22} />
                                             </div>
                                             <div className="date-text">
-                                                <span className="week-title">Plan de Trabajo</span>
+                                                <div className="title-row">
+                                                    <span className="week-title">PLAN DE TRABAJO</span>
+                                                </div>
                                                 <span className="week-dates">{new Date(plan.fecha_inicio_semana).toLocaleDateString()} - {new Date(plan.fecha_fin_semana).toLocaleDateString()}</span>
                                             </div>
                                         </div>
-                                        <Badge variant={getStatusVariant(plan.estado)}>
-                                            {plan.estado}
-                                        </Badge>
+                                        <div className="header-status">
+                                            <Badge variant={getStatusVariant(plan.estado)}>
+                                                {plan.estado}
+                                            </Badge>
+                                        </div>
                                     </div>
 
                                     <div className="plan-card-body-alt">
@@ -504,14 +508,16 @@ const PlanesList = () => {
                                             <span>Ver Informe</span>
                                             <ChevronRight size={18} />
                                         </button>
-                                        <div className="footer-actions">
-                                            <button className="action-btn" onClick={() => handleExport(plan)} title="Exportar CSV">
-                                                <ExternalLink size={18} />
-                                            </button>
-                                            <button className="action-btn delete" onClick={() => handleDelete(plan.id_plan)} title="Eliminar">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
+                                        {user?.is_admin && (
+                                            <div className="footer-actions">
+                                                <button className="action-btn" onClick={() => handleExport(plan)} title="Exportar CSV">
+                                                    <ExternalLink size={18} />
+                                                </button>
+                                                <button className="action-btn delete" onClick={() => handleDelete(plan.id_plan)} title="Eliminar">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </PremiumCard>
                             ))}
@@ -796,41 +802,46 @@ const PlanesList = () => {
                     border: 1px solid rgba(60, 60, 60, 0.5);
                 }
 
-                .plan-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-                .date-info-main { display: flex; gap: 15px; align-items: center; }
+                .plan-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+                .date-info-main { display: flex; gap: 18px; align-items: center; }
                 .calendar-icon-box { 
-                    width: 48px; height: 48px; border-radius: 14px; 
-                    background: #f8fafc; color: var(--primary);
+                    width: 52px; height: 52px; border-radius: 16px; 
+                    background: white; color: var(--primary);
                     display: flex; align-items: center; justify-content: center;
                     border: 1px solid var(--border-subtle);
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
                 }
                 :global(.dark) .calendar-icon-box {
-                    background: rgba(59, 130, 246, 0.2);
-                    border: 1px solid rgba(59, 130, 246, 0.3);
+                    background: rgba(30,30,30,0.4);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    color: white;
                 }
 
-                .date-text { display: flex; flex-direction: column; }
-                .week-title { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-                .week-dates { font-size: 1.1rem; font-weight: 800; color: var(--text-heading); letter-spacing: -0.01em; }
+                .date-text { display: flex; flex-direction: column; gap: 2px; }
+                .week-title { font-size: 0.7rem; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+                .week-dates { font-size: 1.25rem; font-weight: 950; color: var(--text-heading); letter-spacing: -0.03em; }
 
                 .plan-card-body-alt { 
-                    padding: 1.25rem; background: #f8fafc; border-radius: 16px; 
+                    padding: 1.5rem; background: var(--bg-app); border-radius: 20px; 
                     border: 1px solid var(--border-light); 
+                    transition: all 0.2s;
                 }
                 :global(.dark) .plan-card-body-alt {
-                    background: rgba(30, 30, 30, 0.2);
-                    border: 1px solid rgba(60, 60, 60, 0.5);
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.05);
                 }
 
-                .plan-stat { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-body); font-weight: 700; }
+                .plan-stat { display: flex; align-items: center; gap: 12px; font-size: 0.95rem; color: var(--text-body); font-weight: 850; }
+                .plan-stat :global(svg) { color: var(--primary); opacity: 0.8; }
 
-                .plan-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 5px; }
+                .plan-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 1rem; }
                 .btn-view-premium {
-                    padding: 10px 20px; border-radius: 14px; border: 1px solid var(--border-subtle);
-                    background: white; color: var(--text-heading); font-weight: 800; font-size: 0.85rem;
-                    display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;
+                    padding: 0 1.5rem; border-radius: 16px; border: 1px solid var(--border-subtle);
+                    background: white; color: var(--text-heading); font-weight: 850; font-size: 0.85rem;
+                    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    height: 48px;
                 }
-                .btn-view-premium:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+                .btn-view-premium:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow-md); background: var(--primary-glow); }
                 :global(.dark) .btn-view-premium { background: var(--bg-panel); border-color: var(--border-light); }
 
                 .footer-actions { display: flex; gap: 8px; }
