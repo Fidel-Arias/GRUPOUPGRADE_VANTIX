@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Date, Numeric, ForeignKey, Text, Time, text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -17,6 +17,8 @@ class GastoMovilidad(Base):
     
     # Usamos Numeric para dinero en SQLAlchemy
     monto_gastado = Column(Numeric(10, 2), nullable=False)
+    
+    hora_registro = Column(Time, server_default=text("CURRENT_TIME"))
 
     # --- RELACIÓN AGREGADA ---
     plan = relationship("PlanTrabajoSemanal", back_populates="gastos")

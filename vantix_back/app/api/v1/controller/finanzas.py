@@ -21,6 +21,34 @@ def crear_gasto_movilidad(
     if not plan:
         raise HTTPException(status_code=404, detail="El plan de trabajo especificado no existe")
     
+    # Validar que el plan pertenezca al usuario (o que sea admin)
+    if plan.id_empleado != current_user.id_empleado and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="No puedes registrar gastos para un plan que no te pertenece.")
+        
+    # Validar que el plan esté aprobado
+    from app.models.enums import EstadoPlanEnum, TipoActividadEnum
+    if plan.estado != EstadoPlanEnum.APROBADO:
+        raise HTTPException(status_code=403, detail="Solo puedes registrar gastos en un plan que ya ha sido Aprobado por el supervisor.")
+    
+    from app.models.enums import TipoActividadEnum
+    from app.models.plan import DetallePlanTrabajo
+    from app.models.finanzas import GastoMovilidad
+
+    visitas_permitidas = db.query(DetallePlanTrabajo).filter(
+        DetallePlanTrabajo.id_plan == gasto_in.id_plan,
+        DetallePlanTrabajo.tipo_actividad.in_([TipoActividadEnum.VISITA, TipoActividadEnum.VISITA_ASISTIDA])
+    ).count()
+
+    gastos_actuales = db.query(GastoMovilidad).filter(
+        GastoMovilidad.id_plan == gasto_in.id_plan
+    ).count()
+
+    if gastos_actuales >= visitas_permitidas:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Límite alcanzado: Solo puedes registrar {visitas_permitidas} gastos de movilidad según la cantidad de visitas programadas en tu agenda."
+        )
+
     return crud.gasto.create(db, obj_in=gasto_in)
 
 @router.get("/", response_model=List[schemas.GastoResponse])

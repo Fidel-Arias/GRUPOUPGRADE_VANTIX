@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from datetime import date
+from datetime import date, time
 from typing import Optional
 from decimal import Decimal
 
@@ -27,5 +27,7 @@ class GastoUpdate(BaseModel):
 
 class GastoResponse(GastoBase):
     id_gasto: int
+    hora_registro: Optional[time] = None
+    
     class Config:
         from_attributes = True

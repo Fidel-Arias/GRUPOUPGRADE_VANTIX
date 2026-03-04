@@ -29,6 +29,7 @@ const menuItems = [
   { icon: MapPin, label: 'Registro Visitas', path: '/visitas', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
   { icon: PhoneCall, label: 'CRM / Llamadas', path: '/crm', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
   { icon: FileText, label: 'Cotizaciones', path: '/cotizaciones', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.1)' },
+  { icon: DollarSign, label: 'Órdenes de Ventas', path: '/ventas', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
   { icon: TrendingUp, label: 'Rendimiento (KPI)', path: '/kpi', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
   { icon: DollarSign, label: 'Gastos de Movilidad', path: '/finanzas', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
 ];
