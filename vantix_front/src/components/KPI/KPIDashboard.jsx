@@ -280,7 +280,6 @@ const KPIDashboard = () => {
     }, [advisors, allReports]);
 
     const stats = report ? [
-        { label: 'Efectividad', value: `${report.porcentaje_alcance || 0}%`, icon: <Target size={20} />, color: '#0ea5e9', growth: 'ALCANCE' },
         { label: 'Puntos Red', value: report.puntos_alcanzados.toString(), icon: <Zap size={20} />, color: '#f59e0b', growth: 'PUNTOS' },
         { label: 'Bonos Gen.', value: `S/ ${(incentivos.filter(i => i.id_plan_origen === report.id_plan).reduce((acc, i) => acc + parseFloat(i.monto_bono), 0)).toFixed(2)}`, icon: <DollarSign size={20} />, color: '#10b981', growth: 'SEMANA' },
         { label: 'Actividades', value: (report.real_visitas + report.real_llamadas + report.real_emails + report.real_cotizaciones).toString(), icon: <Activity size={20} />, color: '#6366f1', growth: 'TOTAL' },
@@ -526,7 +525,6 @@ const KPIDashboard = () => {
                                             <tr>
                                                 <th>#</th>
                                                 <th>INTEGRANTE DEL EQUIPO</th>
-                                                <th>PRODUCTIVIDAD</th>
                                                 <th>PUNTOS</th>
                                                 <th className="text-right">ESTADO</th>
                                             </tr>
@@ -544,12 +542,7 @@ const KPIDashboard = () => {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td>
-                                                        <div className="mini-prog-box">
-                                                            <div className="mini-bar"><div className="fill" style={{ width: `${emp.avgPerformance}%` }}></div></div>
-                                                            <span className="pct">{emp.avgPerformance}%</span>
-                                                        </div>
-                                                    </td>
+
                                                     <td><span className="pts-val">{emp.totalPoints}</span></td>
                                                     <td className="text-right">
                                                         <Badge variant="teal">Activo</Badge>

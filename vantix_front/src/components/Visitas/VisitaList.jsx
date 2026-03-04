@@ -196,7 +196,10 @@ const VisitaList = () => {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('es-ES', {
+        if (!dateString) return '---';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Fecha inválida';
+        return date.toLocaleDateString('es-ES', {
             day: '2-digit', month: 'short', year: 'numeric',
             hour: '2-digit', minute: '2-digit'
         });
@@ -307,7 +310,9 @@ const VisitaList = () => {
                                     <div className="avatar">{(v.cliente?.nombre_cliente || 'C').charAt(0).toUpperCase()}</div>
                                     <div className="text">
                                         <span className="client-name">{v.cliente?.nombre_cliente || 'S/N'}</span>
-                                        <span className="location">{v.distrito || 'Sin distrito'}</span>
+                                        <span className="location">
+                                            {v.cliente?.distrito?.nombre || (typeof v.cliente?.distrito === 'string' ? v.cliente.distrito : null) || v.distrito?.nombre || (typeof v.distrito === 'string' ? v.distrito : null) || 'Sin distrito'}
+                                        </span>
                                     </div>
                                 </div>
                                 <Badge variant={getStatusVariant(v.resultado)}>{v.resultado}</Badge>
@@ -315,25 +320,84 @@ const VisitaList = () => {
 
                             <div className="visit-body">
                                 <p className="notes">{v.observaciones}</p>
+
+                                <div className="visit-details-grid">
+                                    {v.nombre_tecnico && (
+                                        <div className="detail-item">
+                                            <Zap size={14} />
+                                            <span>Técnico: <strong>{v.nombre_tecnico}</strong></span>
+                                        </div>
+                                    )}
+                                    {v.cliente?.ruc_dni && (
+                                        <div className="detail-item">
+                                            <Activity size={14} />
+                                            <span>RUC/DNI: <strong>{v.cliente.ruc_dni}</strong></span>
+                                        </div>
+                                    )}
+                                    {(v.nombre_contacto || v.telefono_contacto) && (
+                                        <div className="detail-item">
+                                            <Users size={14} />
+                                            <span>{v.nombre_contacto || 'Contacto'}: <strong>{v.telefono_contacto || ''}</strong></span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            {v.foto_url && (
-                                <div className="visit-photo" onClick={() => setPreviewPhoto(`${BASE_URL}${v.foto_url}`)}>
-                                    <img src={`${BASE_URL}${v.foto_url}`} alt="Visita" />
-                                    <div className="overlay"><Eye size={20} /></div>
+                            {(v.url_foto_lugar || v.url_foto_sello || v.foto_url) && (
+                                <div className="visit-media-grid">
+                                    {v.url_foto_lugar && (
+                                        <div className="visit-photo-item" onClick={() => setPreviewPhoto(v.url_foto_lugar)}>
+                                            <img src={v.url_foto_lugar} alt="Lugar" />
+                                            <div className="photo-label">
+                                                <Camera size={12} />
+                                                <span>FOTO LUGAR</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {v.url_foto_sello && (
+                                        <div className="visit-photo-item" onClick={() => setPreviewPhoto(v.url_foto_sello)}>
+                                            <img src={v.url_foto_sello} alt="Sello" />
+                                            <div className="photo-label">
+                                                <Camera size={12} />
+                                                <span>FOTO SELLO</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!v.url_foto_lugar && !v.url_foto_sello && v.foto_url && (
+                                        <div className="visit-photo-item full" onClick={() => setPreviewPhoto(v.foto_url.startsWith('http') ? v.foto_url : `${BASE_URL}${v.foto_url}`)}>
+                                            <img src={v.foto_url.startsWith('http') ? v.foto_url : `${BASE_URL}${v.foto_url}`} alt="Visita" />
+                                            <div className="photo-label">
+                                                <Camera size={12} />
+                                                <span>CAPTURA</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             <div className="visit-footer">
                                 <div className="time">
                                     <Clock size={14} />
-                                    <span>{formatDate(v.fecha_registro)}</span>
+                                    <span>{formatDate(v.fecha_hora_checkin || v.fecha_registro)}</span>
                                 </div>
-                                {user?.is_admin && (
-                                    <button className="delete-btn" onClick={() => setDeleteConfirm(v.id_visita)}>
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
+                                <div className="actions">
+                                    {v.geolocalizacion_lat && v.geolocalizacion_lon && (
+                                        <a
+                                            href={`https://www.google.com/maps?q=${v.geolocalizacion_lat},${v.geolocalizacion_lon}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="geo-link"
+                                            title="Ver ubicación"
+                                        >
+                                            <MapPin size={16} />
+                                        </a>
+                                    )}
+                                    {user?.is_admin && (
+                                        <button className="delete-btn" onClick={() => setDeleteConfirm(v.id_visita)}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </PremiumCard>
                     ))}
@@ -520,7 +584,7 @@ const VisitaList = () => {
                     padding: 1.5rem !important; 
                     display: flex; 
                     flex-direction: column; 
-                    gap: 1.25rem; 
+                    gap: 1.5rem; 
                     border: 1px solid rgba(255,255,255,0.3);
                 }
                 
@@ -536,22 +600,60 @@ const VisitaList = () => {
                 .client-name { font-weight: 800; color: var(--text-heading); font-size: 1.05rem; letter-spacing: -0.01em; }
                 .location { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
 
-                .visit-body { position: relative; }
+                .visit-body { position: relative; display: flex; flex-direction: column; gap: 1.25rem; }
                 .notes { font-size: 0.95rem; color: var(--text-body); line-height: 1.6; margin: 0; opacity: 0.9; }
 
-                .visit-photo {
-                    position: relative; height: 200px; border-radius: 16px; overflow: hidden;
-                    border: 1px solid var(--border-subtle); cursor: pointer;
-                    box-shadow: var(--shadow-sm);
+                .visit-details-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 12px;
+                    padding: 12px;
+                    background: rgba(0,0,0,0.02);
+                    border-radius: 12px;
+                    border: 1px dashed var(--border-subtle);
                 }
-                .visit-photo img { width: 100%; height: 100%; object-fit: cover; }
-                .visit-photo .overlay {
-                    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.4);
-                    display: flex; align-items: center; justify-content: center;
-                    color: white; opacity: 0; transition: 0.3s;
+                .detail-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 0.8rem;
+                    color: var(--text-muted);
+                }
+                .detail-item strong { color: var(--text-heading); }
+                .detail-item :global(svg) { color: var(--primary); opacity: 0.7; }
+
+                .visit-media-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 14px;
+                    margin-top: 0.25rem;
+                }
+                .visit-photo-item {
+                    position: relative;
+                    height: 120px;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    border: 1px solid var(--border-subtle);
+                }
+                .visit-photo-item.full { grid-column: span 2; height: 180px; }
+                .visit-photo-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+                .visit-photo-item:hover img { transform: scale(1.05); }
+                
+                .photo-label {
+                    position: absolute;
+                    bottom: 0; left: 0; right: 0;
+                    background: rgba(0,0,0,0.6);
                     backdrop-filter: blur(4px);
+                    color: white;
+                    padding: 4px 8px;
+                    font-size: 10px;
+                    font-weight: 800;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    text-transform: uppercase;
                 }
-                .visit-photo:hover .overlay { opacity: 1; }
 
                 .visit-footer {
                     display: flex; justify-content: space-between; align-items: center;
@@ -559,23 +661,21 @@ const VisitaList = () => {
                 }
                 .time { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted); font-weight: 700; }
                 
+                .visit-footer .actions { display: flex; align-items: center; gap: 10px; }
+                .geo-link {
+                    width: 36px; height: 36px; border-radius: 10px;
+                    background: #eff6ff; color: #3b82f6;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: 0.2s;
+                }
+                .geo-link:hover { background: #dbeafe; transform: translateY(-2px); }
+
                 .delete-btn {
                     width: 36px; height: 36px; border-radius: 10px; border: none;
                     background: #fff1f2; color: #ef4444; display: flex; align-items: center;
                     justify-content: center; cursor: pointer; transition: 0.2s;
                 }
                 .delete-btn:hover { background: #fee2e2; transform: scale(1.1); }
-
-                /* Table */
-                .table-card { padding: 0 !important; overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
-                .elite-table { width: 100%; border-collapse: collapse; text-align: left; }
-                .elite-table th {
-                    padding: 1.25rem 1.5rem; background: #f8fafc; font-size: 0.75rem; 
-                    font-weight: 800; color: var(--text-muted); text-transform: uppercase;
-                    letter-spacing: 0.08em; border-bottom: 1px solid var(--border-subtle);
-                }
-                :global(.dark) .elite-table th { background: rgba(255,255,255,0.03); }
-                .elite-table td { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
                 .table-client-cell .name { font-weight: 800; color: var(--text-heading); font-size: 0.95rem; }
                 .table-geo, .table-time { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-body); font-weight: 600; }
