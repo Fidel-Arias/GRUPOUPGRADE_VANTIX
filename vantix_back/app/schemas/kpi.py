@@ -7,6 +7,8 @@ from decimal import Decimal
 
 class MaestroMetasBase(BaseModel):
     nombre_meta: str
+    fecha_inicio_semana: Optional[date] = None
+    fecha_fin_semana: Optional[date] = None
     meta_visitas: int = 25
     meta_visitas_asistidas: int = 0
     meta_llamadas: int = 30
@@ -28,6 +30,8 @@ class MaestroMetasCreate(MaestroMetasBase):
 
 class MaestroMetasUpdate(BaseModel):
     nombre_meta: Optional[str] = None
+    fecha_inicio_semana: Optional[date] = None
+    fecha_fin_semana: Optional[date] = None
     meta_visitas: Optional[int] = None
     meta_visitas_asistidas: Optional[int] = None
     meta_llamadas: Optional[int] = None

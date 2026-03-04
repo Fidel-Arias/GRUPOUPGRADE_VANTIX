@@ -51,6 +51,8 @@ class MaestroMetas(Base):
 
     id_maestro = Column(Integer, primary_key=True, index=True)
     nombre_meta = Column(String(100), nullable=False) # e.g. 'Semana Estándar'
+    fecha_inicio_semana = Column(Date, nullable=True) # Inicio de la semana de vigencia
+    fecha_fin_semana = Column(Date, nullable=True) # Fin de la semana de vigencia
     
     # Metas (Objetivos)
     meta_visitas = Column(Integer, default=25)
