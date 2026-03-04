@@ -1,0 +1,35 @@
+---
+import Layout from "../layouts/Layout.astro";
+import VentasList from "../components/Ventas/VentasList";
+---
+
+<Layout title="Órdenes de Ventas">
+    <div class="page-wrapper">
+        <VentasList client:load />
+    </div>
+
+    <!-- GSAP Entrance Animation -->
+    <script>
+        import { gsap } from "gsap";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+
+            tl.from(".section-animate", {
+                y: 40,
+                opacity: 0,
+                duration: 1.2,
+                stagger: 0.15,
+                clearProps: "all",
+            });
+        });
+    </script>
+
+    <style>
+        .page-wrapper {
+            padding: 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    </style>
+</Layout>
