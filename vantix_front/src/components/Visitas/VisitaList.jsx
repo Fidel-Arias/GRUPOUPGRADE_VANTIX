@@ -381,9 +381,9 @@ const VisitaList = () => {
                                     <span>{formatDate(v.fecha_hora_checkin || v.fecha_registro)}</span>
                                 </div>
                                 <div className="actions">
-                                    {v.geo_localizacion_lat && v.geo_localizacion_lon && (
+                                    {v.geolocalizacion_lat && v.geolocalizacion_lon && (
                                         <a
-                                            href={`https://www.google.com/maps?q=${v.geo_localizacion_lat},${v.geo_localizacion_lon}`}
+                                            href={`https://www.google.com/maps?q=${v.geolocalizacion_lat},${v.geolocalizacion_lon}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="geo-link"
