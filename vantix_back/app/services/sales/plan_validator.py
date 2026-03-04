@@ -10,12 +10,18 @@ from app.schemas.plan import PlanCreate
 class PlanValidatorService:
     @staticmethod
     def create_weekly_plan(db: Session, plan_in: PlanCreate, id_empleado: int) -> PlanTrabajoSemanal:
-        # 1. VALIDACIÓN: Usar el último maestro de metas configurado
-        maestro_activo = db.query(MaestroMetas).order_by(MaestroMetas.id_maestro.desc()).first()
+        # 1. VALIDACIÓN: Buscar el maestro de metas configurado para esta semana específica
+        maestro_activo = db.query(MaestroMetas).filter(
+            MaestroMetas.fecha_inicio_semana <= plan_in.fecha_inicio_semana,
+            MaestroMetas.fecha_fin_semana >= plan_in.fecha_inicio_semana
+        ).first()
+        
+        # Si no se encuentra uno exacto, usamos el último creado como "comodín" o histórico (opcional), 
+        # pero según lo solicitado, alertaremos que se debe crear la meta:
         if not maestro_activo:
             raise HTTPException(
                 status_code=400,
-                detail="No se puede crear el plan: No hay un Maestro de Metas configurado por el administrador."
+                detail="Atención Requerida: No hay metas configuradas para esta semana. Contacte al administrador para que cree nuevas metas."
             )
 
         # 2. Validar si ya existe un plan para esa fecha y ese empleado

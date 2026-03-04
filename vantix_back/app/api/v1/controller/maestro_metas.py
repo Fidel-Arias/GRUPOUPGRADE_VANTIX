@@ -24,6 +24,23 @@ def crear_meta_maestra(
     """Crear un nuevo conjunto de metas maestras generales. Requiere ADMIN."""
     return crud.maestro_metas.create(db, obj_in=obj_in)
 
+from datetime import date
+from typing import Optional
+
+@router.get("/current", response_model=Optional[schemas.kpi.MaestroMetasResponse])
+def obtener_meta_maestra_actual(
+    db: Session = Depends(deps.get_db),
+    current_user: models.empleado.Empleado = Depends(deps.get_current_active_user)
+):
+    """Obtener la meta maestra configurada para la fecha actual. Retorna null si no hay."""
+    hoy = date.today()
+    meta = db.query(models.kpi.MaestroMetas).filter(
+        models.kpi.MaestroMetas.fecha_inicio_semana <= hoy,
+        models.kpi.MaestroMetas.fecha_fin_semana >= hoy
+    ).first()
+    
+    return meta
+
 @router.get("/{id_maestro}", response_model=schemas.kpi.MaestroMetasResponse)
 def obtener_meta_maestra(
     id_maestro: int,
