@@ -7,3 +7,4 @@ from .crud_crm import llamada, email
 from .crud_finanzas import gasto
 from .crud_kpi import kpi, incentivo, maestro_metas
 from .crud_geo import departamento, provincia, distrito
+from .crud_cotizacion import cotizacion

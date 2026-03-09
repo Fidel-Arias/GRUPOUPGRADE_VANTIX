@@ -6,3 +6,4 @@ from .crm import RegistroLlamada, RegistroEmail
 from .finanzas import GastoMovilidad
 from .kpi import InformeProductividad, IncentivoPago
 from .geo import Departamento, Provincia, Distrito
+from .cotizacion import Cotizacion, DetalleCotizacion

@@ -15,3 +15,4 @@ from .kpi import (
 )
 from .crm import LlamadaCreate, LlamadaResponse, EmailCreate, EmailResponse
 from . import token
+from .cotizacion import CotizacionCreate, CotizacionUpdate, CotizacionResponse, DetalleCotizacionCreate, DetalleCotizacionUpdate, DetalleCotizacionResponse

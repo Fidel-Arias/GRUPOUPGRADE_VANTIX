@@ -72,3 +72,53 @@ def mostrar_reporte_ventas(
         fecha_fin=fecha_fin,
         limit=limit
     )
+
+@router.get("/productos", response_model=List[schemas.external.ExternalProductoResponse])
+def mostrar_listado_productos(
+    search: Optional[str] = Query(None, description="Buscar por nombre o código"),
+    skip: int = Query(0, description="Cantidad de registros a saltar (offset)"),
+    limit: int = Query(100, ge=1, le=1000, description="Límite máximo de productos a retornar"),
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    """
+    Obtiene el catálogo de productos disponibles desde la base de datos externa UpgradeDB.
+    Se utiliza principalmente para poder armar las cotizaciones en Vantix.
+    Soporta búsqueda parcial por nombre o código.
+    """
+    return ExternalDBService.fetch_productos(limit=limit, offset=skip, search=search)
+
+@router.get("/almacenes", response_model=List[schemas.external.ExternalAlmacenResponse])
+def mostrar_listado_almacenes(
+    search: Optional[str] = Query(None, description="Buscar por nombre o código"),
+    skip: int = Query(0, description="Cantidad de registros a saltar (offset)"),
+    limit: int = Query(100, ge=1, le=1000, description="Límite máximo de almacenes a retornar"),
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    """
+    Obtiene el catálogo de almacenes disponibles desde la base de datos externa UpgradeDB.
+    Se utiliza principalmente para poder armar las cotizaciones en Vantix.
+    Soporta búsqueda parcial por nombre o código.
+    """
+    return ExternalDBService.fetch_almacenes(limit=limit, offset=skip, search=search)
+
+@router.get("/monedas", response_model=List[schemas.external.ExternalMonedaResponse])
+def mostrar_listado_monedas(
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    """
+    Obtiene el catálogo de monedas disponibles desde la base de datos externa UpgradeDB.
+    """
+    return ExternalDBService.fetch_monedas()
+
+@router.get("/formas-pago", response_model=List[schemas.external.ExternalFormaPagoResponse])
+def mostrar_listado_formas_pago(
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user)
+):
+    """
+    Obtiene el catálogo de formas de pago disponibles desde la base de datos externa UpgradeDB.
+    """
+    return ExternalDBService.fetch_formas_pago()

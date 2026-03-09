@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.api.v1.controller import (
     maestro, cartera, admin, geo, empleado, plan, visita, 
     finanzas, kpi, crm, auth, sync_externa, almacenamiento,
-    maestro_metas
+    maestro_metas, cotizacion
 )
 
 api_router = APIRouter()
@@ -21,3 +21,4 @@ api_router.include_router(finanzas.router, prefix="/finanzas", tags=["Gastos de 
 api_router.include_router(kpi.router, prefix="/kpi", tags=["Rendimiento (KPI) e Incentivos"])
 api_router.include_router(crm.router, prefix="/crm", tags=["Gestión de Contactos (Llamadas/Emails)"])
 api_router.include_router(almacenamiento.router, prefix="/almacenamiento", tags=["Explorador de Archivos Remoto"])
+api_router.include_router(cotizacion.router, prefix="/cotizaciones", tags=["Cotizaciones de Venta"])

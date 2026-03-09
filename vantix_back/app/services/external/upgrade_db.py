@@ -203,3 +203,120 @@ class ExternalDBService:
                 return {row[0]: Decimal(str(row[1] or 0)) for row in result}
         finally:
             conn.close()
+
+    @staticmethod
+    def fetch_productos(limit: int = 100, offset: int = 0, search: str = None):
+        """
+        Trae el listado de productos desde la base de datos externa para ser usados en las cotizaciones.
+        Permite búsqueda por nombre o código.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                query = """
+                    SELECT 
+                        p.id,
+                        p.codigo,
+                        p.nombre,
+                        p.descripcion,
+                        m.nombre as marca,
+                        p.modelo,
+                        p.ecom_precio
+                    FROM extcs.productos p
+                    LEFT JOIN extcs.marcas m ON p.marca_id = m.id
+                    WHERE 1=1
+                """
+                params = []
+                
+                if search:
+                    query += " AND (p.nombre ILIKE %s OR p.codigo ILIKE %s)"
+                    search_term = f"%{search}%"
+                    params.extend([search_term, search_term])
+                    
+                query += " ORDER BY p.nombre ASC LIMIT %s OFFSET %s"
+                params.extend([limit, offset])
+                
+                cur.execute(query, params)
+                return cur.fetchall()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def fetch_almacenes(limit: int = 100, offset: int = 0, search: str = None):
+        """
+        Trae el listado de almacenes desde la base de datos externa.
+        Permite búsqueda por nombre o código.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                query = """
+                    SELECT 
+                        id,
+                        nombre,
+                        direccion,
+                        sucursal_id,
+                        inactivo,
+                        codigo
+                    FROM extcs.almacenes
+                    WHERE 1=1
+                """
+                params = []
+                
+                if search:
+                    query += " AND (nombre ILIKE %s OR codigo ILIKE %s)"
+                    search_term = f"%{search}%"
+                    params.extend([search_term, search_term])
+                    
+                query += " ORDER BY nombre ASC LIMIT %s OFFSET %s"
+                params.extend([limit, offset])
+                
+                cur.execute(query, params)
+                return cur.fetchall()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def fetch_monedas():
+        """
+        Trae el listado de monedas desde la base de datos externa.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                query = """
+                    SELECT 
+                        id,
+                        nombre,
+                        simbolo,
+                        nacional,
+                        inactivo
+                    FROM public.monedas
+                    ORDER BY id ASC
+                """
+                cur.execute(query)
+                return cur.fetchall()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def fetch_formas_pago():
+        """
+        Trae el listado de formas de pago desde la base de datos externa.
+        """
+        conn = ExternalDBService.get_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                query = """
+                    SELECT 
+                        id,
+                        nombre,
+                        efectivo,
+                        inactivo
+                    FROM public.formas_pago
+                    ORDER BY id ASC
+                """
+                cur.execute(query)
+                return cur.fetchall()
+        finally:
+            conn.close()
