@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, date
 from app.api import deps
 from app.services.external.upgrade_db import ExternalDBService
-from app.schemas.external import ExternalCotizacionDetalleResponse, ExternalVentaDetalleResponse
+from app.schemas.external import ExternalVentaDetalleResponse
 from app import crud, schemas
 
 router = APIRouter()
